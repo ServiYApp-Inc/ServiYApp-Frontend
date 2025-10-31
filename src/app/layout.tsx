@@ -7,7 +7,7 @@ const nunito = Nunito({ subsets: ["latin"], weight: ["400","600","700"] });
 
 export const metadata = {
   title: "ServiYApp",
-  description: "Descubrí la belleza donde estés",
+  description: "Descubre la belleza donde estés",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

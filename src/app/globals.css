@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  /* Base */
+
   --background: #f5f5f5;
   --foreground: #171717;
 
-  /* Colores de marca */
   --color-primary: #1d2846;
   --color-primary-hover: #323d5a;
   --color-selected: #6A7286;
-
-  /* Colores de interfaz */
   --color-bg-light: #ffffff;
   --color-bg-hover: #cac9c9;
+
+ 
+  --color-accent: #172863;
+  --color-text-muted: #6B7280;
+  --color-card-border: #E5E7EB;
+  --color-icon-bg: #E6ECFF;
+  --color-white: #ffffff;
 }
 
 /* Modo oscuro (FUTURO USO)*/
