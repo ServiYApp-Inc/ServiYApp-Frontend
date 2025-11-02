@@ -107,7 +107,7 @@ export default function RegisterUserForm() {
 	};
 
 	const handleGoogle = () => {
-		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 		window.location.href = `${base}/auth/google/user`;
 	};
 
