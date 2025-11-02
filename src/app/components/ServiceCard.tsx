@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faClock, faTag } from "@fortawesome/free-solid-svg-icons";
 import FavBtn from "./FavBtn";
 import SeeMoreBtn from "./SeeMoreBtn";
-import { Service } from "../(app)/services/page";
+import { Service } from "../(app)/user/services/page";
 
 
 
