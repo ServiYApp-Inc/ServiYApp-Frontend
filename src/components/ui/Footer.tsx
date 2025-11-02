@@ -10,12 +10,10 @@ export function Footer() {
 				{/* Logo + descripción */}
 				<div className="space-y-4">
 					<div className="flex items-center gap-3">
-						<div
-							className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 
-                            bg-white/10 border border-white/20 text-white"
-						>
+						<span className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 bg-white/10 border border-white/20 text-white">
 							S
-						</div>
+						</span>
+
 						<span className="text-lg font-semibold tracking-wide text-white">
 							serviYApp
 						</span>

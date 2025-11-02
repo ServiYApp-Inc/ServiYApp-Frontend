@@ -46,3 +46,9 @@ body {
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
 }
 
+.fa-icon {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  vertical-align: middle;
+}

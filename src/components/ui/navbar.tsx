@@ -45,7 +45,6 @@ export function Navbar() {
 	return (
 		<nav className="fixed top-0 w-full bg-bg-light/95 backdrop-blur shadow-sm z-100">
 			<div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-
 				{/* LOGO */}
 				<Link href="/" className="flex items-center gap-3">
 					<div
@@ -61,7 +60,6 @@ export function Navbar() {
 
 				{/* DESKTOP NAV */}
 				<div className="hidden md:flex items-center gap-6">
-
 					{/* CLIENTE DROPDOWN */}
 					<div className="relative" ref={clientRef}>
 						<button
@@ -109,11 +107,7 @@ export function Navbar() {
 								setOpenProvider((v) => !v);
 								setOpenClient(false);
 							}}
-							className="px-5 py-2 rounded-full font-semibold border-2 transition hover:bg-primary hover:text-white"
-							style={{
-								borderColor: "var(--color-primary)",
-								color: "var(--color-primary)",
-							}}
+							className="px-5 py-2 rounded-full font-semibold text-white transition hover:opacity-90 bg-primary"
 						>
 							Soy Proveedor
 						</button>

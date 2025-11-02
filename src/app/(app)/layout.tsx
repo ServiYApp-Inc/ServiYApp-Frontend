@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
+import LogoutButton from "../components/LogoutButton"; // 👈 importa tu botón
 import "../globals.css";
 
 export default function AppLayout({
@@ -43,12 +44,13 @@ export default function AppLayout({
 
 			{/* Contenido principal */}
 			<main
-				className="flex-1 transition-all duration-300"
+				className="flex-1 transition-all duration-300 relative"
 				style={{
 					marginLeft: sidebarWidth,
 					padding: "2rem",
 				}}
 			>
+				
 				{/* Evita solaparse con header y navbar mobile */}
 				<div className="pt-10 pb-10 md:pt-0 md:pb-0">{children}</div>
 			</main>
