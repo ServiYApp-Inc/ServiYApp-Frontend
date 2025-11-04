@@ -142,9 +142,9 @@ export default async function PageServices() {
 				Filtra por:
 				<ul className="flex flex-col lg:flex-row text-black font-semibold gap-2 rounded-lg mb-4">
 					<FilterTag icon={faDollarSign} label="Menor Precio" />
-					<FilterTag icon={faStar} label="Mejore Valorado" />
+					<FilterTag icon={faStar} label="Mejores Valorados" />
 					<FilterTag icon={faClock} label="Menor Duracion" />
-					<FilterTag icon={faTag} label="Categoria" />
+					<FilterTag icon={faTag} label="Categoria"/>
 				</ul>
 			</span>
 
