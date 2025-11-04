@@ -28,7 +28,15 @@ const services: IService[] = [
 		"names": "Juan",
 		"surnames": "Pérez",
 		"email": "juanperez@gmail.com",
-		"phone": "123456789"
+		"phone": "123456789",
+		"region": {
+			"id": "10",
+			"name": "Buenos Aires"
+			},
+		"city": {
+			"id": "100",
+			"name": "La Plata"
+			}
 		},
 		"rating": 4.5,
 		"price": 15.0,
@@ -50,7 +58,15 @@ const services: IService[] = [
 		"names": "María",
 		"surnames": "Gómez",
 		"email": "maria.gomez@mail.com",
-		"phone": "298765432"
+		"phone": "298765432",
+		"region": {
+			"id": "10",
+			"name": "Buenos Aires"
+			},
+		"city": {
+			"id": "100",
+			"name": "La Plata"
+			}
 		},
 		"rating": 4.8,
 		"price": 30.0,
@@ -72,7 +88,15 @@ const services: IService[] = [
 		"names": "Lucía",
 		"surnames": "Romero",
 		"email": "lucia.romero@beauty.com",
-		"phone": "341123987"
+		"phone": "341123987",
+		"region": {
+			"id": "10",
+			"name": "Buenos Aires"
+			},
+		"city": {
+			"id": "100",
+			"name": "La Plata"
+			}
 		},
 		"rating": 4.6,
 		"price": 18.0,
@@ -94,7 +118,15 @@ const services: IService[] = [
 		"names": "Sofía",
 		"surnames": "López",
 		"email": "sofia.lopez@spa.com",
-		"phone": "3415550101"
+		"phone": "3415550101",
+		"region": {
+			"id": "11",
+			"name": "Santa Fe"
+			},
+		"city": {
+			"id": "101",
+			"name": "Rosario"
+			}
 		},
 		"rating": 4.7,
 		"price": 40.0,
@@ -116,7 +148,15 @@ const services: IService[] = [
 		"names": "Carolina",
 		"surnames": "Díaz",
 		"email": "carolina.diaz@lashes.com",
-		"phone": "299887766"
+		"phone": "299887766",
+		"region": {
+			"id": "11",
+			"name": "Santa Fe"
+			},
+		"city": {
+			"id": "101",
+			"name": "Rosario"
+			}
 		},
 		"rating": 4.9,
 		"price": 55.0,
@@ -138,7 +178,15 @@ const services: IService[] = [
 		"names": "Juan",
 		"surnames": "Pérez",
 		"email": "juanperez@gmail.com",
-		"phone": "123456789"
+		"phone": "123456789",
+		"region": {
+			"id": "11",
+			"name": "Santa Fe"
+			},
+		"city": {
+			"id": "102",
+			"name": "Santa Fe"
+			}
 		},
 		"rating": 4.4,
 		"price": 35.0,
@@ -160,7 +208,15 @@ const services: IService[] = [
 		"names": "Romina",
 		"surnames": "Vega",
 		"email": "romina.vega@haircare.com",
-		"phone": "3416662233"
+		"phone": "3416662233",
+			"region": {
+			"id": "11",
+			"name": "Santa Fe"
+			},
+		"city": {
+			"id": "103",
+			"name": "Perez"
+			}
 		},
 		"rating": 4.8,
 		"price": 28.0,
@@ -182,7 +238,15 @@ const services: IService[] = [
 		"names": "Camila",
 		"surnames": "Santos",
 		"email": "camila.santos@bodycare.com",
-		"phone": "299445667"
+		"phone": "299445667",
+		"region": {
+			"id": "12",
+			"name": "Córdoba"
+			},
+		"city": {
+			"id": "110",
+			"name": "Cordoba"
+			}
 		},
 		"rating": 4.6,
 		"price": 20.0,
@@ -204,7 +268,15 @@ const services: IService[] = [
 		"names": "Juan",
 		"surnames": "Pérez",
 		"email": "juanperez@gmail.com",
-		"phone": "123456789"
+		"phone": "123456789",
+		"region": {
+			"id": "12",
+			"name": "Córdoba"
+			},
+		"city": {
+			"id": "110",
+			"name": "Cordoba"
+			}
 		},
 		"rating": 4.9,
 		"price": 48.0,
@@ -267,9 +339,8 @@ export default async function PageServices() {
 				Filtra por:
 				<ul className="flex flex-col lg:flex-row text-black font-semibold gap-2 rounded-lg mb-4">
 					<FilterTag icon={faDollarSign} label="Menor Precio" />
-					<FilterTag icon={faStar} label="Mejore Valorado" />
+					<FilterTag icon={faStar} label="Mejores Valorados" />
 					<FilterTag icon={faClock} label="Menor Duracion" />
-					<FilterTag icon={faTag} label="Categoria" />
 				</ul>
 			</span>
 
