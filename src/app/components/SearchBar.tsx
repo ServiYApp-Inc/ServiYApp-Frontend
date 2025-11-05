@@ -86,7 +86,7 @@ export default function SearchBar() {
 
 	const handleSearch = () => {};
 
-	return (
+	return ( 
 		<form
 			onSubmit={(e) => {
 				e.preventDefault();
@@ -109,7 +109,7 @@ export default function SearchBar() {
 						setRegionId(selectedRegion?.id || "");
 					}}
 					className="text-black/70 text-sm focus:outline-none border-b border-black/10 lg:border-none"
-				>
+					>
 					<option value="">Selecciona una provincia</option>
 					{loadingCities ? (
 						<option>Cargando...</option>
@@ -123,6 +123,7 @@ export default function SearchBar() {
 						<option disabled>No hay regiones disponibles</option>
 					)}
 				</select>
+
 			</div>
 
 			{/* Ciudades */}
@@ -132,7 +133,7 @@ export default function SearchBar() {
 					value={city}
 					onChange={(e) => setCity(e.target.value)}
 					className="text-black/70 text-sm focus:outline-none border-b border-black/10 lg:border-none"
-				>
+					>
 					<option value="">Selecciona una ciudad</option>
 					{loadingCities ? (
 						<option>Cargando...</option>
@@ -144,6 +145,7 @@ export default function SearchBar() {
 						))
 					)}
 				</select>
+
 			</div>
 
 			{/* Categorias */}
