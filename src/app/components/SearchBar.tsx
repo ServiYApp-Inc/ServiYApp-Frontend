@@ -9,6 +9,7 @@ import {
 	getRegionsByCountry,
 } from "../services/provider.service";
 import { useAuthStore } from "../store/auth.store";
+import { getFilteredServices } from "../(app)/user/services/service.service";
 
 export default function SearchBar() {
 	const { user } = useAuthStore();
@@ -84,7 +85,22 @@ export default function SearchBar() {
 		fetchCategories();
 	}, []);
 
-	const handleSearch = () => {};
+	const handleSearch = async () => {
+		try {
+		const filters = {
+		country: user?.country?.name,
+		region,
+		city,
+		category,
+		service,
+		};
+
+		const data = await getFilteredServices(filters);
+		console.log("Servicios filtrados:", data);
+	} catch (error) {
+		console.error("Error al buscar servicios:", error);
+	}
+	};
 
 	return ( 
 		<form
