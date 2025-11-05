@@ -87,6 +87,7 @@ export default function RegisterUserForm() {
 				password: values.password,
 				phone: fullPhone,
 				role: "user",
+				country: values.country
 			};
 
 			await Api.post("/auth/register/user", payload);
