@@ -24,3 +24,8 @@ export const registerProvider = async (payload: any) => {
 	return data;
 };
 
+export const getCategories = async () => {
+	const { data } = await Api.get("/categories");
+	return data;
+};
+

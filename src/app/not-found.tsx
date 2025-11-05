@@ -8,7 +8,7 @@ export default function NotFound() {
         Oops... la página que buscás no existe o fue movida 
       </p>
       <a
-        href="/services"
+        href="users/services"
         className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white px-6 py-3 rounded-2xl font-semibold transition"
       >
         Volver a Servicios
