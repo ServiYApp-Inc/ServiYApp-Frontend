@@ -2,23 +2,15 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import IUser from "../interfaces/IUser";
 
 export type Role = "admin" | "provider" | "user";
-export interface User {
-	id: string;
-	email: string;
-	names?: string;
-	surnames?: string;
-	profilePicture?:string;
-	country: string;
-}
-
 interface AuthState {
 	token: string | null;
 	role: Role | null;
-	user: User | null;
+	user:IUser | null;
 	isAuthenticated: boolean;
-	setAuth: (data: { token: string; role: Role; user: User }) => void;
+	setAuth: (data: { token: string; role: Role; user: IUser }) => void;
 	clearAuth: () => void;
 }
 

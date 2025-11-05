@@ -3,15 +3,16 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
-import { getCategories, getCitiesByRegion, getRegionsByCountry } from "../services/provider.service";
+import {
+	getCategories,
+	getCitiesByRegion,
+	getRegionsByCountry,
+} from "../services/provider.service";
 import { useAuthStore } from "../store/auth.store";
 
-
-
 export default function SearchBar() {
-	
 	const { user } = useAuthStore();
-	
+
 	// Estados locales
 	const [service, setService] = useState("");
 	const [region, setRegion] = useState("");
@@ -21,20 +22,23 @@ export default function SearchBar() {
 	const [cities, setCities] = useState<{ id: string; name: string }[]>([]); // cambia según provincia seleccionada
 	const [regions, setRegions] = useState<{ id: string; name: string }[]>([]);
 	const [regionId, setRegionId] = useState("");
-	const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-
+	const [categories, setCategories] = useState<
+		{ id: string; name: string }[]
+	>([]);
 
 	const [loadingRegions, setLoadingRegions] = useState(false);
 	const [loadingCities, setLoadingCities] = useState(false);
-	
+
 	useEffect(() => {
-	const fetchRegions = async () => {
-		if (!user?.country) return;
+		const fetchRegions = async () => {
+			if (!user?.country) return;
 
 			try {
+				SVGAnimateElement;
 				setLoadingRegions(true);
-				const data = await getRegionsByCountry(user.country); // ← ID del país
+				const data = await getRegionsByCountry(user.country.id); // ← ID del país
 				// const data = await getRegionsByCountry("d25ca36e-7fd4-4a49-ae48-27f981d18b4b"); // ← ID del país
+				console.log(data);
 				setRegions(data);
 			} catch (error) {
 				console.error("Error al obtener regiones:", error);
@@ -46,23 +50,22 @@ export default function SearchBar() {
 		fetchRegions();
 	}, []);
 
-	
 	// useEffect: actualiza ciudades según la provincia
 	useEffect(() => {
 		const fetchCities = async () => {
 			if (!regionId) {
-			setCities([]);
-			return;
+				setCities([]);
+				return;
 			}
 
 			try {
-			setLoadingCities(true);
-			const data = await getCitiesByRegion(regionId);
-			setCities(data);
+				setLoadingCities(true);
+				const data = await getCitiesByRegion(regionId);
+				setCities(data);
 			} catch (error) {
-			console.error("Error al obtener ciudades:", error);
+				console.error("Error al obtener ciudades:", error);
 			} finally {
-			setLoadingCities(false);
+				setLoadingCities(false);
 			}
 		};
 
@@ -70,8 +73,8 @@ export default function SearchBar() {
 	}, [regionId]);
 
 	useEffect(() => {
-	const fetchCategories = async () => {
-			try { 
+		const fetchCategories = async () => {
+			try {
 				const data = await getCategories();
 				setCategories(data); // ← guardamos las categorías
 			} catch (error) {
@@ -81,10 +84,9 @@ export default function SearchBar() {
 		fetchCategories();
 	}, []);
 
-	const handleSearch = () => {
-	};	
+	const handleSearch = () => {};
 
-	return ( 
+	return (
 		<form
 			onSubmit={(e) => {
 				e.preventDefault();
@@ -100,22 +102,28 @@ export default function SearchBar() {
 				<select
 					value={regionId}
 					onChange={(e) => {
-						const selectedRegion = regions.find(r => r.id === e.target.value);
+						const selectedRegion = regions.find(
+							(r) => r.id === e.target.value
+						);
 						setRegion(selectedRegion?.name || "");
 						setRegionId(selectedRegion?.id || "");
 					}}
 					className="text-black/70 text-sm focus:outline-none border-b border-black/10 lg:border-none"
-					>
+				>
 					<option value="">Selecciona una provincia</option>
-					{regions.map((regionItem) => (
-						<option key={regionItem.id} value={regionItem.id}>
-						{regionItem.name}
-						</option>
-					))}
+					{loadingCities ? (
+						<option>Cargando...</option>
+					) : regions?.length > 0 ? (
+						regions.map((regionItem) => (
+							<option key={regionItem.id} value={regionItem.id}>
+								{regionItem.name}
+							</option>
+						))
+					) : (
+						<option disabled>No hay regiones disponibles</option>
+					)}
 				</select>
-
 			</div>
-
 
 			{/* Ciudades */}
 			<div className="flex flex-col text-black px-3 w-full lg:w-auto lg:border-l md:border-black/10">
@@ -124,19 +132,18 @@ export default function SearchBar() {
 					value={city}
 					onChange={(e) => setCity(e.target.value)}
 					className="text-black/70 text-sm focus:outline-none border-b border-black/10 lg:border-none"
-					>
+				>
 					<option value="">Selecciona una ciudad</option>
 					{loadingCities ? (
 						<option>Cargando...</option>
 					) : (
 						cities.map((c) => (
-						<option key={c.id} value={c.name}>
-							{c.name}
-						</option>
+							<option key={c.id} value={c.name}>
+								{c.name}
+							</option>
 						))
 					)}
 				</select>
-
 			</div>
 
 			{/* Categorias */}
@@ -167,8 +174,6 @@ export default function SearchBar() {
 					className="text-black/70 text-sm focus:outline-none placeholder:text-black/40 border-b border-black/10 lg:border-none"
 				/>
 			</div>
-
-
 
 			{/* Botón buscar */}
 			<button
