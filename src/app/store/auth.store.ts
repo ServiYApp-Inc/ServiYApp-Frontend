@@ -10,6 +10,7 @@ export interface User {
 	names?: string;
 	surnames?: string;
 	profilePicture?:string;
+	country: string;
 }
 
 interface AuthState {
