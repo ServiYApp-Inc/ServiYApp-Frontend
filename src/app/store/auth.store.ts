@@ -8,7 +8,7 @@ export type Role = "admin" | "provider" | "user";
 interface AuthState {
 	token: string | null;
 	role: Role | null;
-	user:IUser | null;
+	user: IUser | null;
 	isAuthenticated: boolean;
 	setAuth: (data: { token: string; role: Role; user: IUser }) => void;
 	clearAuth: () => void;
@@ -37,6 +37,10 @@ export const useAuthStore = create<AuthState>()(
 					user: null,
 					isAuthenticated: false,
 				});
+				localStorage.removeItem("serviyapp-auth");
+				localStorage.removeItem("access_token");
+				localStorage.removeItem("user_id");
+				localStorage.removeItem("user_role");
 			},
 		}),
 		{
