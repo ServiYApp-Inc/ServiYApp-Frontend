@@ -145,7 +145,7 @@ export default function ProviderDashboard() {
 			<div className="bg-[var(--color-primary)] p-6 rounded-3xl text-white flex flex-col gap-8">
 				<div className="flex flex-col md:flex-row items-center gap-6">
 					<img
-						src={provider?.photo || "/default-avatar.png"}
+						src={provider?.profilePicture || "/default-avatar.png"}
 						alt="Provider profilePicture"
 						className="w-[130px] h-[130px] rounded-full border-2 border-white object-cover"
 					/>

@@ -28,8 +28,8 @@ import {
 	getRegionsByCountry,
 	registerProvider,
 } from "../services/provider.service";
-import { useAuthStore } from "@/app/store/auth.store";
 import Swal from "sweetalert2";
+import { useAuthStore } from "../store/auth.store";
 
 const registerSchema = Yup.object().shape({
 	names: Yup.string()
