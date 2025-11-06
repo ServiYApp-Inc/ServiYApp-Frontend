@@ -2,34 +2,36 @@
 
 import { useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-	faCamera,
-	faSpinner,
-	faImage,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCamera, faSpinner, faImage } from "@fortawesome/free-solid-svg-icons";
 import { Api } from "@/app/services/api";
 import { toast } from "react-toastify";
 import { useAuthStore } from "@/app/store/auth.store";
 
 interface UploadProfilePictureProps {
 	onSuccess?: () => void;
+	role?: "user" | "provider" | "admin"; // 👈 Nuevo: rol opcional para flexibilidad
+	endpointBase?: string; // 👈 Si quieres pasar manualmente el recurso (users/providers/admins)
 }
 
 export default function UploadProfilePicture({
 	onSuccess,
+	role,
+	endpointBase,
 }: UploadProfilePictureProps) {
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [uploading, setUploading] = useState(false);
 	const [preview, setPreview] = useState<string | null>(null);
 	const { user, token, setAuth } = useAuthStore();
 
+	// Determinar el endpoint según el rol o prop explícita
+	const base = endpointBase || (role === "provider" ? "providers" : role === "admin" ? "admins" : "users");
+
 	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
-		// Validar tipo y tamaño
 		if (!file.type.startsWith("image/")) {
-			toast.error("Por favor selecciona una imagen válida (JPG o PNG)");
+			toast.error("Selecciona una imagen válida (JPG o PNG)");
 			return;
 		}
 		if (file.size > 3 * 1024 * 1024) {
@@ -37,17 +39,21 @@ export default function UploadProfilePicture({
 			return;
 		}
 
-		// Generar preview temporal
 		const objectUrl = URL.createObjectURL(file);
 		setPreview(objectUrl);
 
+		if (!user?.id) {
+			toast.error("No se encontró el usuario en sesión");
+			return;
+		}
+
 		const formData = new FormData();
-		formData.append("file", file);
+		formData.append("file", file); // 👈 coincide con tu backend
 
 		setUploading(true);
 		try {
 			const { data } = await Api.patch(
-				`/users/${user?.id}/upload-profile`,
+				`/${base}/${user.id}/upload-profile`, // 👈 endpoint dinámico
 				formData,
 				{
 					headers: {
@@ -59,7 +65,7 @@ export default function UploadProfilePicture({
 
 			setAuth({
 				token: token!,
-				role: "user",
+				role: role || (user as any).role, // 👈 mantiene el rol actual
 				user: {
 					...(user as any),
 					profilePicture: data.profilePicture,
@@ -68,9 +74,9 @@ export default function UploadProfilePicture({
 
 			toast.success("Foto de perfil actualizada ✅");
 			onSuccess?.();
-		} catch (error) {
-			console.error(error);
-			toast.error("Error al subir la foto. Inténtalo nuevamente.");
+		} catch (error: any) {
+			console.error("🚨 Error:", error.response?.data || error);
+			toast.error(error.response?.data?.message || "Error al subir la foto.");
 		} finally {
 			setUploading(false);
 		}
@@ -115,7 +121,7 @@ export default function UploadProfilePicture({
 				) : (
 					<>
 						<FontAwesomeIcon icon={faCamera} />
-						Seleccionar foto
+						Cambiar foto
 					</>
 				)}
 			</button>
