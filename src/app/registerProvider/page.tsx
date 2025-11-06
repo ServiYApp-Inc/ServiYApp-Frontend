@@ -1,574 +1,95 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
 import { motion } from "framer-motion";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-	faUser,
-	faEnvelope,
-	faPhone,
-	faLock,
-	faGlobe,
-	faCity,
-	faMapMarkerAlt,
-	faEye,
-	faEyeSlash,
-	faSpinner,
-} from "@fortawesome/free-solid-svg-icons";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
-import ReactCountryFlag from "react-country-flag";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import {
-	getCitiesByRegion,
-	getCountries,
-	getRegionsByCountry,
-	registerProvider,
-} from "../services/provider.service";
-import Swal from "sweetalert2";
+import Link from "next/link";
+import RegisterProviderForm from "../components/RegisterProviderForm";
 
-const registerSchema = Yup.object().shape({
-	names: Yup.string()
-		.matches(
-			/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,50}$/,
-			"Solo letras y espacios (2–50 caracteres)."
-		)
-		.required("El nombre es obligatorio."),
-	surnames: Yup.string()
-		.matches(
-			/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,50}$/,
-			"Solo letras y espacios (2–50 caracteres)."
-		)
-		.required("El apellido es obligatorio."),
-	userName: Yup.string()
-		.matches(
-			/^[a-zA-Z0-9.]+$/,
-			"Solo se permiten letras, números y puntos."
-		)
-		.min(3)
-		.max(20)
-		.required("El nombre de usuario es obligatorio."),
-	email: Yup.string()
-		.email("Correo electrónico no válido.")
-		.required("El correo es obligatorio."),
-	password: Yup.string()
-		.min(8, "Debe tener al menos 8 caracteres.")
-		.matches(/[A-Z]/, "Debe incluir una mayúscula.")
-		.matches(/[a-z]/, "Debe incluir una minúscula.")
-		.matches(/\d/, "Debe incluir un número.")
-		.matches(/[@$!%*?&]/, "Debe incluir un símbolo especial.")
-		.required("La contraseña es obligatoria."),
-	confirmPassword: Yup.string()
-		.oneOf([Yup.ref("password")], "Las contraseñas no coinciden.")
-		.required("Confirma tu contraseña."),
-	countryId: Yup.string().required("Selecciona un país."),
-	regionId: Yup.string().required("Selecciona una región."),
-	cityId: Yup.string().required("Selecciona una ciudad."),
-	address: Yup.string()
-		.min(3, "La dirección es demasiado corta.")
-		.required("La dirección es obligatoria."),
-	phone: Yup.string()
-		.matches(/^[0-9]{8,10}$/, "Solo números (8–10 dígitos).")
-		.required("El teléfono es obligatorio."),
-});
-
-export default function RegisterProvider() {
-	const router = useRouter();
-	const [countries, setCountries] = useState<any[]>([]);
-	const [regions, setRegions] = useState<any[]>([]);
-	const [cities, setCities] = useState<any[]>([]);
-	const [showPassword, setShowPassword] = useState(false);
-	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-	useEffect(() => {
-		const fetchCountriesData = async () => {
-			try {
-				const data = await getCountries();
-				setCountries(data);
-			} catch (error) {
-				console.error("Error cargando países:", error);
-			}
-		};
-		fetchCountriesData();
-	}, []);
-
+export default function RegisterProviderPage() {
 	return (
-		<motion.div
-			initial={{ opacity: 0, y: 30 }}
-			animate={{ opacity: 1, y: 0 }}
-			exit={{ opacity: 0, y: -30 }}
-			transition={{ duration: 0.4 }}
-			className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 md:px-8 py-6"
-			style={{ backgroundColor: "var(--background)" }}
-		>
-			<ToastContainer position="top-center" autoClose={3000} />
-
-			<div
-				className="w-full max-w-md rounded-2xl shadow-sm p-6 sm:p-8 md:p-10 border"
+		<div className="flex min-h-screen overflow-hidden">
+			{/* PANEL IZQUIERDO (diseño refinado y animado) */}
+			<motion.div
+				initial={{ opacity: 0, x: -40 }}
+				animate={{ opacity: 1, x: 0 }}
+				transition={{ duration: 0.6 }}
+				className="hidden md:flex flex-col justify-between items-center w-2/5 text-white p-12 pt-30 sticky top-0 h-screen relative"
 				style={{
-					backgroundColor: "var(--color-bg-light)",
-					borderColor: "var(--color-bg-hover)",
+					backgroundImage:
+						"url('https://madivasalon.com/wp-content/uploads/2024/09/Salon-de-belleza-en-San-Cristobal.jpg')",
+					backgroundSize: "cover",
+					backgroundPosition: "center",
 				}}
 			>
-				<h1
-					className="text-2xl font-bold text-center mb-1"
-					style={{ color: "var(--color-primary)" }}
-				>
-					Crea tu cuenta
-				</h1>
-				<p
-					className="text-center mb-6 text-sm"
-					style={{ color: "var(--color-foreground)" }}
-				>
-					Regístrate o continúa con Google
-				</p>
-
-				<Formik
-					initialValues={{
-						names: "",
-						surnames: "",
-						userName: "",
-						email: "",
-						password: "",
-						confirmPassword: "",
-						countryId: "",
-						regionId: "",
-						cityId: "",
-						address: "",
-						phone: "",
+				{/* Overlay degradado con blur */}
+				<div
+					className="absolute inset-0"
+					style={{
+						background:
+							"linear-gradient(180deg, rgba(29,40,70,0.95) 0%, rgba(29,40,70,0.88) 50%, rgba(29,40,70,0.95) 100%)",
+						backdropFilter: "blur(6px)",
 					}}
-					validationSchema={registerSchema}
-					onSubmit={async (values, { setSubmitting }) => {
-						try {
-							const selectedCountry = countries.find(
-								(c) => c.id === values.countryId
-							);
+				/>
 
-							const payload = {
-								names: values.names,
-								surnames: values.surnames,
-								userName: values.userName,
-								email: values.email,
-								password: values.password,
-								phone: `${
-									selectedCountry?.lada?.replace("+", "") ||
-									""
-								}${values.phone}`,
-								address: values.address,
-								countryId: values.countryId,
-								regionId: values.regionId,
-								cityId: values.cityId,
-							};
+				{/* CONTENIDO CENTRAL */}
+				<div className="relative z-10 text-center flex flex-col items-center max-w-sm mt-12">
+					<h1 className="text-6xl font-bold mb-10 tracking-tight leading-tight">
+						¡El éxito empieza aquí!
+					</h1>
 
-							console.log("📦 Payload enviado:", payload);
+					<p className="text-base text-gray-200 mb-5">
+						¿Ya tienes una cuenta?
+					</p>
 
-							const res = await registerProvider(payload);
+					{/* BOTÓN PRINCIPAL */}
+					<Link
+						href="/loginProvider"
+						className="px-10 py-2 rounded-xl text-base font-semibold transition-all duration-300 backdrop-blur-md bg-white/20 border border-white/30 hover:bg-white hover:text-[var(--color-primary)] hover:shadow-xl"
+					>
+						Inicia sesión
+					</Link>
+				</div>
 
-							const { access_token, provider } = res;
+				{/* CONTENIDO INFERIOR */}
+				<div className="relative z-10 flex justify-between items-end w-full px-6 mb-3 text-sm">
+					{/* Izquierda: volver (sutil) */}
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.8, duration: 0.6 }}
+					>
+						<Link
+							href="/"
+							className="underline hover:text-gray-200 transition-all opacity-70 hover:opacity-100"
+							style={{ fontSize: "0.85rem" }}
+						>
+							← Volver a la página principal
+						</Link>
+					</motion.div>
 
-							localStorage.setItem("access_token", access_token);
-							localStorage.setItem(
-								"serviyapp-auth",
-								JSON.stringify({
-									state: {
-										token: access_token,
-										role: "provider",
-										user: provider,
-										isAuthenticated: true,
-									},
-								})
-							);
+					
+				</div>
+			</motion.div>
 
-							toast.success(
-								"¡Registro exitoso! Bienvenido a ServiYApp 💇‍♀️"
-							);
-
-							setTimeout(() => {
-								router.push("/provider/dashboard");
-							}, 2000);
-						} catch (error: any) {
-							console.error(
-								"❌ Error en el registro:",
-								error.response?.data
-							);
-							if (error.response?.status === 409) {
-								Swal.fire({
-									icon: "error",
-									title: "Correo ya registrado",
-									text: "Por favor usa otro correo electrónico",
-								});
-							} else {
-								Swal.fire({
-									icon: "error",
-									title: "Error en el registro",
-									text: "Intenta nuevamente más tarde.",
-								});
-							}
-						} finally {
-							setSubmitting(false);
-						}
-					}}
+			{/* PANEL DERECHO (scroll + degradado + links extra) */}
+			<div
+				className="flex flex-col justify-start items-center w-full md:w-3/5 overflow-y-auto h-screen"
+				style={{
+					background:
+						"linear-gradient(180deg, #ffffff 0%, #f8f9fb 100%)",
+				}}
+			>
+				<motion.div
+					initial={{ opacity: 0, y: 30 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.4 }}
+					className="w-full px-2 sm:px-6 md:px-0 lg:px-0 py-0"
 				>
-					{({ values, setFieldValue, isSubmitting, isValid }) => (
-						<Form className="space-y-4">
-							{/* Nombre y Apellido */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-								<div className="relative">
-									<FontAwesomeIcon
-										icon={faUser}
-										className="absolute left-3 top-3 text-gray-400"
-									/>
-									<Field
-										type="text"
-										name="names"
-										placeholder="Nombres"
-										className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
-									/>
-									<ErrorMessage
-										name="names"
-										component="p"
-										className="text-red-500 text-xs mt-1"
-									/>
-								</div>
-
-								<div className="relative">
-									<FontAwesomeIcon
-										icon={faUser}
-										className="absolute left-3 top-3 text-gray-400"
-									/>
-									<Field
-										type="text"
-										name="surnames"
-										placeholder="Apellidos"
-										className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
-									/>
-									<ErrorMessage
-										name="surnames"
-										component="p"
-										className="text-red-500 text-xs mt-1"
-									/>
-								</div>
-							</div>
-
-							{/* Email */}
-							<div className="relative">
-								<FontAwesomeIcon
-									icon={faEnvelope}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									type="email"
-									name="email"
-									placeholder="Correo electrónico"
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
-								/>
-								<ErrorMessage
-									name="email"
-									component="p"
-									className="text-red-500 text-xs mt-1"
-								/>
-							</div>
-
-							{/* Username */}
-							<div className="relative">
-								<FontAwesomeIcon
-									icon={faUser}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									type="text"
-									name="userName"
-									placeholder="Nombre de usuario"
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
-								/>
-								<ErrorMessage
-									name="userName"
-									component="p"
-									className="text-red-500 text-xs mt-1"
-								/>
-							</div>
-
-							{/* País */}
-							<div className="relative w-full">
-								<FontAwesomeIcon
-									icon={faGlobe}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									as="select"
-									name="countryId"
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2"
-									onChange={async (
-										e: React.ChangeEvent<HTMLSelectElement>
-									) => {
-										const countryId = e.target.value;
-										setFieldValue("countryId", countryId);
-										setFieldValue("regionId", "");
-										setFieldValue("cityId", "");
-										const data = await getRegionsByCountry(
-											countryId
-										);
-										setRegions(data);
-									}}
-								>
-									<option value="">Selecciona un país</option>
-									{countries.map((c) => (
-										<option key={c.id} value={c.id}>
-											{c.name}
-										</option>
-									))}
-								</Field>
-							</div>
-
-							{/* Región */}
-							<div className="relative w-full">
-								<FontAwesomeIcon
-									icon={faCity}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									as="select"
-									name="regionId"
-									disabled={!values.countryId}
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 disabled:opacity-60"
-									onChange={async (
-										e: React.ChangeEvent<HTMLSelectElement>
-									) => {
-										const regionId = e.target.value;
-										setFieldValue("regionId", regionId);
-										setFieldValue("cityId", "");
-										const data = await getCitiesByRegion(
-											regionId
-										);
-										setCities(data);
-									}}
-								>
-									<option value="">
-										{values.countryId
-											? "Selecciona una región"
-											: "Selecciona un país"}
-									</option>
-									{regions.map((r) => (
-										<option key={r.id} value={r.id}>
-											{r.name}
-										</option>
-									))}
-								</Field>
-							</div>
-
-							{/* Ciudad */}
-							<div className="relative w-full">
-								<FontAwesomeIcon
-									icon={faCity}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									as="select"
-									name="cityId"
-									disabled={!values.regionId}
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 disabled:opacity-60"
-								>
-									<option value="">
-										{values.regionId
-											? "Selecciona una ciudad"
-											: "Selecciona una región"}
-									</option>
-									{cities.map((c) => (
-										<option key={c.id} value={c.id}>
-											{c.name}
-										</option>
-									))}
-								</Field>
-							</div>
-
-							{/* Dirección */}
-							<div className="relative">
-								<FontAwesomeIcon
-									icon={faMapMarkerAlt}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									type="text"
-									name="address"
-									placeholder="Dirección"
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
-								/>
-							</div>
-
-							{/* Teléfono */}
-							<div className="relative flex items-center">
-								<FontAwesomeIcon
-									icon={faPhone}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<div
-									className="absolute left-9 top-2 flex items-center gap-1"
-									style={{ width: "95px" }}
-								>
-									{values.countryId ? (
-										<>
-											<ReactCountryFlag
-												countryCode={
-													countries.find(
-														(c) =>
-															c.id ===
-															values.countryId
-													)?.code || "MX"
-												}
-												svg
-												style={{
-													width: "1.3em",
-													height: "1.3em",
-													marginRight: "4px",
-												}}
-											/>
-											<span className="text-sm text-gray-700 font-medium">
-												+
-												{countries.find(
-													(c) =>
-														c.id ===
-														values.countryId
-												)?.phoneCode ||
-													countries
-														.find(
-															(c) =>
-																c.id ===
-																values.countryId
-														)
-														?.lada?.replace(
-															"+",
-															""
-														) ||
-													"52"}
-											</span>
-										</>
-									) : (
-										<span className="text-sm text-gray-400">
-											LADA
-										</span>
-									)}
-								</div>
-								<Field
-									type="tel"
-									name="phone"
-									placeholder="Teléfono"
-									value={values.phone}
-									onChange={(
-										e: React.ChangeEvent<HTMLSelectElement>
-									) => setFieldValue("phone", e.target.value)}
-									className="w-full pl-[125px] pr-3 py-2 border rounded-lg text-sm focus:ring-2 transition-all"
-								/>
-							</div>
-
-							{/* Contraseña */}
-							<div className="relative">
-								<FontAwesomeIcon
-									icon={faLock}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									type={showPassword ? "text" : "password"}
-									name="password"
-									placeholder="Contraseña"
-									className="w-full pl-9 pr-10 py-2 border rounded-lg text-sm focus:ring-2"
-								/>
-								<button
-									type="button"
-									onClick={() =>
-										setShowPassword(!showPassword)
-									}
-									className="absolute right-3 top-3 text-gray-400"
-								>
-									<FontAwesomeIcon
-										icon={showPassword ? faEyeSlash : faEye}
-									/>
-								</button>
-							</div>
-
-							{/* Confirmar contraseña */}
-							<div className="relative">
-								<FontAwesomeIcon
-									icon={faLock}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									type={
-										showConfirmPassword
-											? "text"
-											: "password"
-									}
-									name="confirmPassword"
-									placeholder="Confirmar contraseña"
-									className="w-full pl-9 pr-10 py-2 border rounded-lg text-sm focus:ring-2"
-								/>
-								<button
-									type="button"
-									onClick={() =>
-										setShowConfirmPassword(
-											!showConfirmPassword
-										)
-									}
-									className="absolute right-3 top-3 text-gray-400"
-								>
-									<FontAwesomeIcon
-										icon={
-											showConfirmPassword
-												? faEyeSlash
-												: faEye
-										}
-									/>
-								</button>
-							</div>
-
-							{/* Botón principal */}
-							<button
-								type="submit"
-								disabled={!isValid || isSubmitting}
-								style={{
-									backgroundColor: "var(--color-primary)",
-								}}
-								className={`w-full font-semibold text-white py-2 rounded-lg text-sm sm:text-base flex justify-center items-center ${
-									!isValid || isSubmitting
-										? "cursor-not-allowed"
-										: ""
-								}`}
-							>
-								{isSubmitting ? (
-									<FontAwesomeIcon icon={faSpinner} spin />
-								) : (
-									"Registrarme"
-								)}
-							</button>
-
-							{/* Divider y Google */}
-							<div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500 mt-2">
-								<span className="w-1/4 border-b border-gray-300"></span>
-								<span>O intenta</span>
-								<span className="w-1/4 border-b border-gray-300"></span>
-							</div>
-
-							<button
-								type="button"
-								className="w-full flex items-center justify-center gap-2 font-medium py-2 rounded-lg border text-sm sm:text-base"
-								style={{
-									borderColor: "var(--color-primary)",
-									backgroundColor: "var(--color-bg-light)",
-									color: "var(--color-primary)",
-								}}
-								onClick={() => {
-									window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/provider`;
-								}}
-							>
-								<FontAwesomeIcon icon={faGoogle} />
-								Registrarse con Google
-							</button>
-						</Form>
-					)}
-				</Formik>
+					{/* Formulario */}
+					<div className="w-full">
+						<RegisterProviderForm />
+					</div>
+				</motion.div>
 			</div>
-		</motion.div>
+		</div>
 	);
 }
