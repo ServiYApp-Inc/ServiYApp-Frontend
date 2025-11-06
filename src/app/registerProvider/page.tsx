@@ -456,9 +456,9 @@ export default function RegisterProvider() {
 									name="phone"
 									placeholder="Teléfono"
 									value={values.phone}
-									onChange={(e) =>
-										setFieldValue("phone", e.target.value)
-									}
+									onChange={(
+										e: React.ChangeEvent<HTMLSelectElement>
+									) => setFieldValue("phone", e.target.value)}
 									className="w-full pl-[125px] pr-3 py-2 border rounded-lg text-sm focus:ring-2 transition-all"
 								/>
 							</div>

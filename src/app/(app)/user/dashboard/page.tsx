@@ -1,29 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
 import { toast } from "react-toastify";
 
 export default function UserDashboard() {
-	const params = useSearchParams();
 	const router = useRouter();
 	const setAuth = useAuthStore((s) => s.setAuth);
 	const { user, isAuthenticated } = useAuthStore();
 	const [loading, setLoading] = useState(true);
-	const [isClient, setIsClient] = useState(false); //  para evitar mismatches
+	const [isClient, setIsClient] = useState(false);
 
 	useEffect(() => {
-		setIsClient(true); //  sólo renderiza contenido real en cliente
+		setIsClient(true);
 
+		// 🔹 Aquí sí podemos usar window sin romper el build
+		const params = new URLSearchParams(window.location.search);
 		const token = params.get("token");
 		const id = params.get("id");
 		const role = params.get("role");
 
 		(async () => {
 			try {
-				//  Si viene del login con Google
+				// 🟢 Si viene del login con Google
 				if (token && id) {
 					localStorage.setItem("access_token", token);
 
@@ -39,11 +40,11 @@ export default function UserDashboard() {
 
 					toast.success(`Bienvenida, ${data.names}!`);
 
-					// Limpia la URL
+					// 🧹 Limpia la URL
 					const cleanUrl = window.location.pathname;
 					window.history.replaceState({}, "", cleanUrl);
 				} else {
-					//  Si no hay sesión persistida, redirige
+					// 🟠 Si no hay sesión persistida, redirige
 					const storedToken = localStorage.getItem("access_token");
 					if (!storedToken && !isAuthenticated) {
 						router.push("/loginUser");
@@ -60,7 +61,6 @@ export default function UserDashboard() {
 		})();
 	}, []);
 
-	//  Evita renderizar contenido antes del cliente
 	if (!isClient || loading)
 		return (
 			<div className="flex justify-center items-center h-screen text-gray-500">
