@@ -37,7 +37,7 @@ const registerSchema = Yup.object().shape({
 			"Solo letras y espacios (2–50 caracteres)."
 		)
 		.required("El nombre es obligatorio."),
-	lastName: Yup.string()
+	surnames: Yup.string()
 		.matches(
 			/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{2,50}$/,
 			"Solo letras y espacios (2–50 caracteres)."
@@ -64,9 +64,9 @@ const registerSchema = Yup.object().shape({
 	confirmPassword: Yup.string()
 		.oneOf([Yup.ref("password")], "Las contraseñas no coinciden.")
 		.required("Confirma tu contraseña."),
-	country: Yup.string().required("Selecciona un país."),
-	region: Yup.string().required("Selecciona una región."),
-	city: Yup.string().required("Selecciona una ciudad."),
+	countryId: Yup.string().required("Selecciona un país."),
+	regionId: Yup.string().required("Selecciona una región."),
+	cityId: Yup.string().required("Selecciona una ciudad."),
 	address: Yup.string()
 		.min(3, "La dirección es demasiado corta.")
 		.required("La dirección es obligatoria."),
@@ -129,14 +129,14 @@ export default function RegisterProvider() {
 				<Formik
 					initialValues={{
 						names: "",
-						lastName: "",
+						surnames: "",
 						userName: "",
 						email: "",
 						password: "",
 						confirmPassword: "",
-						country: "",
-						region: "",
-						city: "",
+						countryId: "",
+						regionId: "",
+						cityId: "",
 						address: "",
 						phone: "",
 					}}
@@ -144,42 +144,56 @@ export default function RegisterProvider() {
 					onSubmit={async (values, { setSubmitting }) => {
 						try {
 							const selectedCountry = countries.find(
-								(c) => c.id === values.country
+								(c) => c.id === values.countryId
 							);
+
 							const payload = {
-								firstName: values.names,
-								lastName: values.lastName,
-								username: values.userName,
+								names: values.names,
+								surnames: values.surnames,
+								userName: values.userName,
 								email: values.email,
 								password: values.password,
-								phone: `${selectedCountry?.phoneCode || ""}${
-									values.phone
-								}`,
-								country: values.country,
-								region: values.region,
-								city: values.city,
+								phone: `${
+									selectedCountry?.lada?.replace("+", "") ||
+									""
+								}${values.phone}`,
 								address: values.address,
+								countryId: values.countryId,
+								regionId: values.regionId,
+								cityId: values.cityId,
 							};
+
+							console.log("📦 Payload enviado:", payload);
 
 							const res = await registerProvider(payload);
 
-							toast.success(
-								"¡Registro exitoso! Serás redirigido en breve..."
+							const { access_token, provider } = res;
+
+							localStorage.setItem("access_token", access_token);
+							localStorage.setItem(
+								"serviyapp-auth",
+								JSON.stringify({
+									state: {
+										token: access_token,
+										role: "provider",
+										user: provider,
+										isAuthenticated: true,
+									},
+								})
 							);
 
-							localStorage.setItem(
-								"access_token",
-								res.access_token
-							);
-							localStorage.setItem(
-								"provider_id",
-								res.provider.id
+							toast.success(
+								"¡Registro exitoso! Bienvenido a ServiYApp 💇‍♀️"
 							);
 
 							setTimeout(() => {
-								router.push("/loginProvider");
+								router.push("/provider/dashboard");
 							}, 2000);
 						} catch (error: any) {
+							console.error(
+								"❌ Error en el registro:",
+								error.response?.data
+							);
 							if (error.response?.status === 409) {
 								Swal.fire({
 									icon: "error",
@@ -227,12 +241,12 @@ export default function RegisterProvider() {
 									/>
 									<Field
 										type="text"
-										name="lastName"
+										name="surnames"
 										placeholder="Apellidos"
 										className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
 									/>
 									<ErrorMessage
-										name="lastName"
+										name="surnames"
 										component="p"
 										className="text-red-500 text-xs mt-1"
 									/>
@@ -274,6 +288,178 @@ export default function RegisterProvider() {
 									name="userName"
 									component="p"
 									className="text-red-500 text-xs mt-1"
+								/>
+							</div>
+
+							{/* País */}
+							<div className="relative w-full">
+								<FontAwesomeIcon
+									icon={faGlobe}
+									className="absolute left-3 top-3 text-gray-400"
+								/>
+								<Field
+									as="select"
+									name="countryId"
+									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2"
+									onChange={async (
+										e: React.ChangeEvent<HTMLSelectElement>
+									) => {
+										const countryId = e.target.value;
+										setFieldValue("countryId", countryId);
+										setFieldValue("regionId", "");
+										setFieldValue("cityId", "");
+										const data = await getRegionsByCountry(
+											countryId
+										);
+										setRegions(data);
+									}}
+								>
+									<option value="">Selecciona un país</option>
+									{countries.map((c) => (
+										<option key={c.id} value={c.id}>
+											{c.name}
+										</option>
+									))}
+								</Field>
+							</div>
+
+							{/* Región */}
+							<div className="relative w-full">
+								<FontAwesomeIcon
+									icon={faCity}
+									className="absolute left-3 top-3 text-gray-400"
+								/>
+								<Field
+									as="select"
+									name="regionId"
+									disabled={!values.countryId}
+									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 disabled:opacity-60"
+									onChange={async (
+										e: React.ChangeEvent<HTMLSelectElement>
+									) => {
+										const regionId = e.target.value;
+										setFieldValue("regionId", regionId);
+										setFieldValue("cityId", "");
+										const data = await getCitiesByRegion(
+											regionId
+										);
+										setCities(data);
+									}}
+								>
+									<option value="">
+										{values.countryId
+											? "Selecciona una región"
+											: "Selecciona un país"}
+									</option>
+									{regions.map((r) => (
+										<option key={r.id} value={r.id}>
+											{r.name}
+										</option>
+									))}
+								</Field>
+							</div>
+
+							{/* Ciudad */}
+							<div className="relative w-full">
+								<FontAwesomeIcon
+									icon={faCity}
+									className="absolute left-3 top-3 text-gray-400"
+								/>
+								<Field
+									as="select"
+									name="cityId"
+									disabled={!values.regionId}
+									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 disabled:opacity-60"
+								>
+									<option value="">
+										{values.regionId
+											? "Selecciona una ciudad"
+											: "Selecciona una región"}
+									</option>
+									{cities.map((c) => (
+										<option key={c.id} value={c.id}>
+											{c.name}
+										</option>
+									))}
+								</Field>
+							</div>
+
+							{/* Dirección */}
+							<div className="relative">
+								<FontAwesomeIcon
+									icon={faMapMarkerAlt}
+									className="absolute left-3 top-3 text-gray-400"
+								/>
+								<Field
+									type="text"
+									name="address"
+									placeholder="Dirección"
+									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
+								/>
+							</div>
+
+							{/* Teléfono */}
+							<div className="relative flex items-center">
+								<FontAwesomeIcon
+									icon={faPhone}
+									className="absolute left-3 top-3 text-gray-400"
+								/>
+								<div
+									className="absolute left-9 top-2 flex items-center gap-1"
+									style={{ width: "95px" }}
+								>
+									{values.countryId ? (
+										<>
+											<ReactCountryFlag
+												countryCode={
+													countries.find(
+														(c) =>
+															c.id ===
+															values.countryId
+													)?.code || "MX"
+												}
+												svg
+												style={{
+													width: "1.3em",
+													height: "1.3em",
+													marginRight: "4px",
+												}}
+											/>
+											<span className="text-sm text-gray-700 font-medium">
+												+
+												{countries.find(
+													(c) =>
+														c.id ===
+														values.countryId
+												)?.phoneCode ||
+													countries
+														.find(
+															(c) =>
+																c.id ===
+																values.countryId
+														)
+														?.lada?.replace(
+															"+",
+															""
+														) ||
+													"52"}
+											</span>
+										</>
+									) : (
+										<span className="text-sm text-gray-400">
+											LADA
+										</span>
+									)}
+								</div>
+								<Field
+									type="tel"
+									name="phone"
+									placeholder="Teléfono"
+									value={values.phone}
+									onChange={(e) =>
+										setFieldValue("phone", e.target.value)
+									}
+									className="w-full pl-[125px] pr-3 py-2 border rounded-lg text-sm focus:ring-2 transition-all"
 								/>
 							</div>
 
@@ -337,178 +523,7 @@ export default function RegisterProvider() {
 								</button>
 							</div>
 
-							{/* País */}
-							<div className="relative w-full">
-								<FontAwesomeIcon
-									icon={faGlobe}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									as="select"
-									name="country"
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2"
-									onChange={async (
-										e: React.ChangeEvent<HTMLSelectElement>
-									) => {
-										const countryId = e.target.value;
-										setFieldValue("country", countryId);
-										setFieldValue("region", "");
-										setFieldValue("city", "");
-										const data = await getRegionsByCountry(
-											countryId
-										);
-										setRegions(data);
-									}}
-								>
-									<option value="">Selecciona un país</option>
-									{countries.map((c) => (
-										<option key={c.id} value={c.id}>
-											{c.name}
-										</option>
-									))}
-								</Field>
-							</div>
-
-							{/* Región */}
-							<div className="relative w-full">
-								<FontAwesomeIcon
-									icon={faCity}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									as="select"
-									name="region"
-									disabled={!values.country}
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 disabled:opacity-60"
-									onChange={async (
-										e: React.ChangeEvent<HTMLSelectElement>
-									) => {
-										const regionId = e.target.value;
-										setFieldValue("region", regionId);
-										setFieldValue("city", "");
-										const data = await getCitiesByRegion(
-											regionId
-										);
-										setCities(data);
-									}}
-								>
-									<option value="">
-										{values.country
-											? "Selecciona una región"
-											: "Selecciona un país"}
-									</option>
-									{regions.map((r) => (
-										<option key={r.id} value={r.id}>
-											{r.name}
-										</option>
-									))}
-								</Field>
-							</div>
-
-							{/* Ciudad */}
-							<div className="relative w-full">
-								<FontAwesomeIcon
-									icon={faCity}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									as="select"
-									name="city"
-									disabled={!values.region}
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 disabled:opacity-60"
-								>
-									<option value="">
-										{values.region
-											? "Selecciona una ciudad"
-											: "Selecciona una región"}
-									</option>
-									{cities.map((c) => (
-										<option key={c.id} value={c.id}>
-											{c.name}
-										</option>
-									))}
-								</Field>
-							</div>
-
-							{/* Dirección */}
-							<div className="relative">
-								<FontAwesomeIcon
-									icon={faMapMarkerAlt}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<Field
-									type="text"
-									name="address"
-									placeholder="Dirección"
-									className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2"
-								/>
-							</div>
-
-							{/* Teléfono */}
-							<div className="relative flex items-center">
-								<FontAwesomeIcon
-									icon={faPhone}
-									className="absolute left-3 top-3 text-gray-400"
-								/>
-								<div
-									className="absolute left-9 top-2 flex items-center gap-1"
-									style={{ width: "95px" }}
-								>
-									{values.country ? (
-										<>
-											<ReactCountryFlag
-												countryCode={
-													countries.find(
-														(c) =>
-															c.id ===
-															values.country
-													)?.code || "MX"
-												}
-												svg
-												style={{
-													width: "1.3em",
-													height: "1.3em",
-													marginRight: "4px",
-												}}
-											/>
-											<span className="text-sm text-gray-700 font-medium">
-												+
-												{countries.find(
-													(c) =>
-														c.id === values.country
-												)?.phoneCode ||
-													countries
-														.find(
-															(c) =>
-																c.id ===
-																values.country
-														)
-														?.lada?.replace(
-															"+",
-															""
-														) ||
-													"52"}
-											</span>
-										</>
-									) : (
-										<span className="text-sm text-gray-400">
-											LADA
-										</span>
-									)}
-								</div>
-								<Field
-									type="tel"
-									name="phone"
-									placeholder="Teléfono"
-									value={values.phone}
-									onChange={(
-										e: React.ChangeEvent<HTMLInputElement>
-									) => setFieldValue("phone", e.target.value)}
-									className="w-full pl-[125px] pr-3 py-2 border rounded-lg text-sm focus:ring-2 transition-all"
-								/>
-							</div>
-
-							{/* Botón */}
+							{/* Botón principal */}
 							<button
 								type="submit"
 								disabled={!isValid || isSubmitting}
@@ -528,14 +543,13 @@ export default function RegisterProvider() {
 								)}
 							</button>
 
-							{/* Divider */}
+							{/* Divider y Google */}
 							<div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500 mt-2">
 								<span className="w-1/4 border-b border-gray-300"></span>
 								<span>O intenta</span>
 								<span className="w-1/4 border-b border-gray-300"></span>
 							</div>
 
-							{/* Google */}
 							<button
 								type="button"
 								className="w-full flex items-center justify-center gap-2 font-medium py-2 rounded-lg border text-sm sm:text-base"
@@ -551,19 +565,6 @@ export default function RegisterProvider() {
 								<FontAwesomeIcon icon={faGoogle} />
 								Registrarse con Google
 							</button>
-
-							<p className="text-center text-sm mt-2">
-								¿Ya tienes una cuenta?{" "}
-								<a
-									onClick={() =>
-										router.push("/registerProvider/step2")
-									}
-									className="font-semibold cursor-pointer"
-									style={{ color: "var(--color-primary)" }}
-								>
-									Inicia Sesión
-								</a>
-							</p>
 						</Form>
 					)}
 				</Formik>

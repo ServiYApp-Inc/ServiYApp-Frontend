@@ -72,13 +72,13 @@ export default function CompleteRegister() {
 			const searchParams = new URLSearchParams(window.location.search);
 			const t = searchParams.get("token");
 			const id = searchParams.get("id");
-			const role = searchParams.get("role"); // ✅ agregado
+			const role = searchParams.get("role"); //  agregado
 			if (t && id) {
 				localStorage.setItem("access_token", t);
 				localStorage.setItem("provider_id", id);
 			}
 			if (role) {
-				localStorage.setItem("user_role", role); // ✅ agregado
+				localStorage.setItem("user_role", role); //  agregado
 			}
 		}
 	}, []);
@@ -156,6 +156,7 @@ export default function CompleteRegister() {
 								regionId: values.region,
 								cityId: values.city,
 								address: values.address,
+								
 							};
 
 							if (values.createPassword && values.password)
@@ -165,8 +166,12 @@ export default function CompleteRegister() {
 							const providerId =
 								localStorage.getItem("provider_id");
 
+							console.log(payload);
+							console.log(token);
+							console.log(providerId);
+
 							await axios.patch(
-								`${process.env.NEXT_PUBLIC_API_URL}/providers/complete/${providerId}`,
+								`${process.env.NEXT_PUBLIC_API_URL}/providers/${providerId}`,
 								payload,
 								{
 									headers: {
@@ -181,12 +186,8 @@ export default function CompleteRegister() {
 							);
 
 							setTimeout(() => {
-								// ✅ agregado: redirigir según rol
-								const role =
-									localStorage.getItem("user_role") ||
-									"provider";
-								if (role === "user") router.push("/user/home");
-								else router.push("/provider/home");
+								//  redirigir
+								router.push("/provider/dashboard");
 							}, 2000);
 						} catch (error: any) {
 							console.error("Error completando perfil:", error);
