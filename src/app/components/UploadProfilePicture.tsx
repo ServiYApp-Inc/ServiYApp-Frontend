@@ -2,7 +2,11 @@
 
 import { useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCamera, faSpinner, faImage } from "@fortawesome/free-solid-svg-icons";
+import {
+	faCamera,
+	faSpinner,
+	faImage,
+} from "@fortawesome/free-solid-svg-icons";
 import { Api } from "@/app/services/api";
 import { toast } from "react-toastify";
 import { useAuthStore } from "@/app/store/auth.store";
@@ -11,7 +15,9 @@ interface UploadProfilePictureProps {
 	onSuccess?: () => void;
 }
 
-export default function UploadProfilePicture({ onSuccess }: UploadProfilePictureProps) {
+export default function UploadProfilePicture({
+	onSuccess,
+}: UploadProfilePictureProps) {
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [uploading, setUploading] = useState(false);
 	const [preview, setPreview] = useState<string | null>(null);
@@ -36,20 +42,24 @@ export default function UploadProfilePicture({ onSuccess }: UploadProfilePicture
 		setPreview(objectUrl);
 
 		const formData = new FormData();
-		formData.append("profilePicture", file);
+		formData.append("file", file);
 
 		setUploading(true);
 		try {
-			const { data } = await Api.patch(`/users/${user?.id}`, formData, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "multipart/form-data",
-				},
-			});
+			const { data } = await Api.patch(
+				`/users/${user?.id}/upload-profile`,
+				formData,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "multipart/form-data",
+					},
+				}
+			);
 
 			setAuth({
 				token: token!,
-				role: "provider",
+				role: "user",
 				user: {
 					...(user as any),
 					profilePicture: data.profilePicture,
