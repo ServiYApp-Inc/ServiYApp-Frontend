@@ -8,4 +8,5 @@ export default interface IUser {
 	profilePicture?: string;
 	country: ICountry;
 	role: "admin" | "provider" | "user";
+	phone: string;
 }
