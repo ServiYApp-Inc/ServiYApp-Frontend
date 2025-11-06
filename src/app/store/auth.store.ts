@@ -2,15 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import IUser from "../interfaces/IUser";
 
 export type Role = "admin" | "provider" | "user";
-export interface User {
-	id: string;
-	email: string;
-	names?: string;
-	surnames?: string;
-	profilePicture?: string;
-}
 
 export interface CartItem {
 	id: string;
@@ -23,9 +17,9 @@ export interface CartItem {
 interface AuthState {
 	token: string | null;
 	role: Role | null;
-	user: User | null;
+	user: IUser | null;
 	isAuthenticated: boolean;
-	setAuth: (data: { token: string; role: Role; user: User }) => void;
+	setAuth: (data: { token: string; role: Role; user: IUser }) => void;
 	clearAuth: () => void;
 
 	// 🛒 ---- Estado y acciones del carrito ----
@@ -34,7 +28,6 @@ interface AuthState {
 	removeFromCart: (id: string) => void;
 	clearCart: () => void;
 	getTotal: () => number;
-	// 🛒 ---------------------------------------
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -48,18 +41,27 @@ export const useAuthStore = create<AuthState>()(
 			setAuth: (data) =>
 				set({
 					token: data.token,
-					role: data.role,
+					role: data.user.role,
 					user: data.user,
 					isAuthenticated: true,
 				}),
 
-			clearAuth: () =>
+			clearAuth: () => {
+				// 🔴 Limpiar estado global
 				set({
 					token: null,
 					role: null,
 					user: null,
 					isAuthenticated: false,
-				}),
+					cart: [], // vaciamos carrito también por seguridad
+				});
+
+				// 🔴 Limpiar almacenamiento local
+				localStorage.removeItem("serviyapp-auth");
+				localStorage.removeItem("access_token");
+				localStorage.removeItem("user_id");
+				localStorage.removeItem("user_role");
+			},
 
 			// 🛒 ---- Lógica del carrito ----
 			cart: [],
