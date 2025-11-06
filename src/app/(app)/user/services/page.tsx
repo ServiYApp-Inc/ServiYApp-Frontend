@@ -17,7 +17,7 @@ export default function PageServices() {
 	const [activeFilter, setActiveFilter] = useState<string>("");
 	const [page, setPage] = useState<number>(1);
 	const [limit] = useState<number>(9); // cantidad por página
-	const [totalPages, setTotalPages] = useState<number>(1);
+	const [totalPages, setTotalPages] = useState<number>(0);
 	const [param, setParam] = useState<string | undefined>(undefined);
 	const [pageNumber, setPageNumber] = useState(1);
 
@@ -48,23 +48,28 @@ export default function PageServices() {
 	const handleFilter = async (param: string) => {
 		const newFilter = activeFilter === param ? "" : param;
 		setActiveFilter(newFilter);
+		setParam(newFilter || undefined); // ✅ Guarda el filtro activo en el estado
 		setPage(1);
 		await fetchServices(newFilter || undefined, 1);
 	};
 
+
 	const handlePageChange = (newPage: number) => {
 		if (newPage >= 1 && newPage <= totalPages) {
-		setPage(newPage);
-		fetchServices(activeFilter || undefined, newPage);
+			setPage(newPage);
+			fetchServices(param || undefined, newPage); // ✅ Usa el param del estado
 		}
 	};
 
 	// ✅ NUEVO: función para recibir resultados desde SearchBar
-	const handleSearchResults = (data: IService[]) => {
-		setServices(data);
-		setPage(1);
-		setActiveFilter(""); // opcional: resetea filtros al buscar
+const handleSearchResults = (data: IService[]) => {
+	setServices(data);
+	setPage(1);
+	setActiveFilter("");
+	setParam(undefined); // ✅ resetea filtros anteriores
+	setTotalPages(1);    // ✅ oculta paginado si es búsqueda
 	};
+
 
 	return (
 		<main className="flex flex-col justify-start bg--background overflow-x-hidden overflow-y-hidden min-h-screen px-2 pb-20 md:pb-4 max-w-[1300px] mx-auto">
@@ -123,7 +128,7 @@ export default function PageServices() {
 		</div>
 
 		{/* 🔹 Paginador */}
-		<div className="flex justify-center items-center gap-3 mt-10">
+		{totalPages > 1 && services.length >= limit &&( <div className="flex justify-center items-center gap-3 mt-10">
 			<button
 			onClick={() => handlePageChange(page - 1)}
 			disabled={page === 1}
@@ -164,7 +169,7 @@ export default function PageServices() {
 			>
 			Siguiente
 			</button>
-		</div>
+		</div>)}
 		</main>
 	);
 	}

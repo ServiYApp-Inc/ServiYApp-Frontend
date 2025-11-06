@@ -57,8 +57,7 @@ export default function SearchBar({ onResults }: { onResults?: (data: any[]) => 
 			if (!regionId) {
 				setCities([]);
 				return;
-			}
-
+			} 
 			try {
 				setLoadingCities(true);
 				const data = await getCitiesByRegion(regionId);
