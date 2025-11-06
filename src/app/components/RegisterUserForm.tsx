@@ -96,7 +96,7 @@ export default function RegisterUserForm() {
 				autoClose: 2000,
 			});
 			resetForm();
-			setTimeout(() => router.push("/loginUser"), 2000);
+			setTimeout(() => router.push("/user/dashboard"), 2000);
 		} catch (error: any) {
 			const msg =
 				error?.response?.data?.message ||

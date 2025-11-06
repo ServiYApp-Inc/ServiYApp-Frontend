@@ -5,6 +5,7 @@ export default interface IUser {
 	email: string;
 	names?: string;
 	surnames?: string;
-	profilePicture?:string;
+	profilePicture?: string;
 	country: ICountry;
+	role: "admin" | "provider" | "user";
 }
