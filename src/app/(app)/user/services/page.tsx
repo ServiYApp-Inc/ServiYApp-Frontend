@@ -7,7 +7,7 @@ import {
 	faStar,
 	faClock,
 	faDollarSign,
-	} from "@fortawesome/free-solid-svg-icons";
+} from "@fortawesome/free-solid-svg-icons";
 import FilterTag from "@/app/components/FilterTag";
 import IService from "@/app/interfaces/IService";
 import ServiceCard from "@/app/components/ServiceCard";
@@ -16,26 +16,26 @@ export default function PageServices() {
 	const [services, setServices] = useState<IService[]>([]);
 	const [activeFilter, setActiveFilter] = useState<string>("");
 	const [page, setPage] = useState<number>(1);
-	const [limit] = useState<number>(6); // cantidad por página
+	const [limit] = useState<number>(9); // cantidad por página
 	const [totalPages, setTotalPages] = useState<number>(1);
+	const [param, setParam] = useState<string | undefined>(undefined);
+	const [pageNumber, setPageNumber] = useState(1);
 
-	const fetchServices = async (param?: string, pageNumber: number = 1) => {
+	const fetchServices = async (paramValue = param, page = pageNumber) => {
 		try {
 		const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/services`;
-		const endpoint = param
-			? `${baseUrl}/find-all/${param}` // filtros viejos (opcional)
-			: `${baseUrl}/find-all-paged?page=${pageNumber}&limit=${limit}`;
+		const endpoint = paramValue
+			? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}`
+			: `${baseUrl}/find-all-paged?page=${page}&limit=${limit}`;
 
 		const res = await axios.get(endpoint);
 		setServices(res.data);
 
 		if (res.data.length < limit) {
-			setTotalPages(pageNumber);
+			setTotalPages(page);
 		} else {
-			setTotalPages(pageNumber + 1); // estimación temporal
+			setTotalPages(page + 1);
 		}
-
-		console.log(res.data);
 		} catch (error) {
 		console.error("Error fetching services:", error);
 		}
@@ -46,20 +46,24 @@ export default function PageServices() {
 	}, [page]);
 
 	const handleFilter = async (param: string) => {
+		const newFilter = activeFilter === param ? "" : param;
+		setActiveFilter(newFilter);
 		setPage(1);
-		if (activeFilter === param) {
-		setActiveFilter("");
-		await fetchServices(undefined, 1);
-		} else {
-		setActiveFilter(param);
-		await fetchServices(param, 1);
-		}
+		await fetchServices(newFilter || undefined, 1);
 	};
 
 	const handlePageChange = (newPage: number) => {
 		if (newPage >= 1 && newPage <= totalPages) {
 		setPage(newPage);
+		fetchServices(activeFilter || undefined, newPage);
 		}
+	};
+
+	// ✅ NUEVO: función para recibir resultados desde SearchBar
+	const handleSearchResults = (data: IService[]) => {
+		setServices(data);
+		setPage(1);
+		setActiveFilter(""); // opcional: resetea filtros al buscar
 	};
 
 	return (
@@ -77,7 +81,8 @@ export default function PageServices() {
 			Profesionales certificados a tu domicilio
 			</span>
 
-			<SearchBar />
+			{/* ✅ Le pasamos la función al hijo */}
+			<SearchBar onResults={handleSearchResults} />
 		</div>
 
 		{/* Filtros */}
@@ -131,7 +136,6 @@ export default function PageServices() {
 			Anterior
 			</button>
 
-			{/* Números de página */}
 			{[...Array(totalPages)].map((_, index) => {
 			const num = index + 1;
 			return (
