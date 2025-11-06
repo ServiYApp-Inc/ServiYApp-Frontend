@@ -14,7 +14,7 @@ export const getFilteredServices = async (filters: {
         if (filters.service) params.append("serviceName", filters.service);
 
         const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/services/filtered-find?${params.toString()}&page=1&limit=9`
+            `${process.env.NEXT_PUBLIC_API_URL}services/filtered-find?${params.toString()}&page=1&limit=9`
         );
         
         console.log(filters);

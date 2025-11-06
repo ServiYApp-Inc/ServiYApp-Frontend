@@ -23,7 +23,7 @@ export default function PageServices() {
 
 	const fetchServices = async (paramValue = param, page = pageNumber) => {
 		try {
-		const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/services`;
+		const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}services`;
 		const endpoint = paramValue
 			? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}`
 			: `${baseUrl}/find-all-paged?page=${page}&limit=${limit}`;
