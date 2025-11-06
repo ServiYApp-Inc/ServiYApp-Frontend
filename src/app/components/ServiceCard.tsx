@@ -38,7 +38,7 @@ export default function ServiceCard({
 				</span>
 			</div>
 
-			<p className="pt-4 px-4 text-2xl font-semibold text-[var(--color-primary)]">
+			<p className="pt-4 px-4 text-2xl font-semibold text-[var(--color-primary)] overflow-hidden text-ellipsis whitespace-nowrap">
 				{name}
 			</p>
 			<span className="px-4 text-md text-[#949492] font-medium">

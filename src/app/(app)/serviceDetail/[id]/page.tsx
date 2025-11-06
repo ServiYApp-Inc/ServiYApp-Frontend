@@ -16,6 +16,8 @@ export default async function ServiceDetailPage({ params }: { params: { id: stri
     try {
         const fetchedData = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/services/find/${id}`)
         service = fetchedData.data;
+        console.log(service);
+        
         if (!service) {
             notFound();
         }
