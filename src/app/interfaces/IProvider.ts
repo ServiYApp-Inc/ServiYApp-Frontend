@@ -20,5 +20,4 @@ export default interface IProvider {
 	isComplete?: string;
 	registrationDate?:string;
 
-
 }
