@@ -16,49 +16,61 @@ export default function PageServices() {
 	const [services, setServices] = useState<IService[]>([]);
 	const [activeFilter, setActiveFilter] = useState<string>("");
 	const [page, setPage] = useState<number>(1);
-	const [limit] = useState<number>(6); // cantidad por página
+	const [limit] = useState<number>(9); // cantidad por página
 	const [totalPages, setTotalPages] = useState<number>(1);
+	const [param, setParam] = useState<string | undefined>(undefined);
+	const [pageNumber, setPageNumber] = useState(1);
 
-	const fetchServices = async (param?: string, pageNumber: number = 1) => {
-		try {
+const fetchServices = async (paramValue = param, page = pageNumber) => {
+	try {
 		const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/services`;
-		const endpoint = param
-			? `${baseUrl}/find-all/${param}` // filtros viejos (opcional)
-			: `${baseUrl}/find-all-paged?page=${pageNumber}&limit=${limit}`;
+		const endpoint = paramValue
+		? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}`
+		: `${baseUrl}/find-all-paged?page=${page}&limit=${limit}`;
 
 		const res = await axios.get(endpoint);
 		setServices(res.data);
 
 		if (res.data.length < limit) {
-			setTotalPages(pageNumber);
+		setTotalPages(page);
 		} else {
-			setTotalPages(pageNumber + 1); // estimación temporal
+		setTotalPages(page + 1);
 		}
-
-		console.log(res.data);
-		} catch (error) {
+	} catch (error) {
 		console.error("Error fetching services:", error);
-		}
+	}
 	};
 
 	useEffect(() => {
 		fetchServices(undefined, page);
 	}, [page]);
 
+	// const handleFilter = async (param: string) => {
+	// 	setPage(1);
+	// 	if (activeFilter === param) {
+	// 	setActiveFilter("");
+	// 	await fetchServices(undefined, 1);
+	// 	} else {
+	// 	setActiveFilter(param);
+	// 	await fetchServices(param, 1);
+	// 	}
+	// };
 	const handleFilter = async (param: string) => {
+		const newFilter = activeFilter === param ? "" : param;
+		setActiveFilter(newFilter);
 		setPage(1);
-		if (activeFilter === param) {
-		setActiveFilter("");
-		await fetchServices(undefined, 1);
-		} else {
-		setActiveFilter(param);
-		await fetchServices(param, 1);
-		}
+		await fetchServices(newFilter || undefined, 1);
 	};
 
+	// const handlePageChange = (newPage: number) => {
+	// 	if (newPage >= 1 && newPage <= totalPages) {
+	// 	setPage(newPage);
+	// 	}
+	// };
 	const handlePageChange = (newPage: number) => {
 		if (newPage >= 1 && newPage <= totalPages) {
-		setPage(newPage);
+			setPage(newPage);
+			fetchServices(activeFilter || undefined, newPage);
 		}
 	};
 
