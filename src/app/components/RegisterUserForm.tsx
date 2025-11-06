@@ -22,6 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ReactCountryFlag from "react-country-flag";
 import { getCountries } from "../services/provider.service";
 import { Api } from "@/app/services/api";
+import { useAuthStore } from "@/app/store/auth.store";
 
 const registerSchema = Yup.object().shape({
 	names: Yup.string()
@@ -57,6 +58,7 @@ const registerSchema = Yup.object().shape({
 
 export default function RegisterUserForm() {
 	const router = useRouter();
+	const { setAuth } = useAuthStore();
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [countries, setCountries] = useState<any[]>([]);
@@ -87,16 +89,31 @@ export default function RegisterUserForm() {
 				password: values.password,
 				phone: fullPhone,
 				role: "user",
-				country: values.country
+				country: values.country,
 			};
 
-			await Api.post("/auth/register/user", payload);
+			const { data } = await Api.post("/auth/register/user", payload);
 
-			toast.success("Usuario registrado correctamente.", {
-				autoClose: 2000,
-			});
-			resetForm();
-			setTimeout(() => router.push("/user/dashboard"), 2000);
+			// ✅ Si el backend devuelve token y user → autenticar directamente
+			if (data?.access_token && data?.user) {
+				setAuth({
+					token: data.access_token,
+					role: data.user.role || "",
+					user: data.user,
+				});
+
+				toast.success("¡Registro exitoso! Bienvenida 💄", {
+					autoClose: 2000,
+				});
+				resetForm();
+				setTimeout(() => router.push("/user/dashboard"), 2000);
+			} else {
+				toast.warning(
+					"Registro completado. Inicia sesión manualmente.",
+					{ autoClose: 2500 }
+				);
+				setTimeout(() => router.push("/loginUser"), 2000);
+			}
 		} catch (error: any) {
 			const msg =
 				error?.response?.data?.message ||
@@ -157,8 +174,7 @@ export default function RegisterUserForm() {
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faUser}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<Field
 									type="text"
@@ -177,8 +193,7 @@ export default function RegisterUserForm() {
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faUser}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<Field
 									type="text"
@@ -197,8 +212,7 @@ export default function RegisterUserForm() {
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faEnvelope}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<Field
 									type="email"
@@ -217,8 +231,7 @@ export default function RegisterUserForm() {
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faGlobe}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<Field
 									as="select"
@@ -246,8 +259,7 @@ export default function RegisterUserForm() {
 							<div className="relative flex items-center">
 								<FontAwesomeIcon
 									icon={faPhone}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<div className="absolute left-9 top-2 flex items-center gap-1 w-[85px]">
 									{values.country ? (
@@ -300,8 +312,7 @@ export default function RegisterUserForm() {
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faLock}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<Field
 									type={showPassword ? "text" : "password"}
@@ -318,11 +329,7 @@ export default function RegisterUserForm() {
 								>
 									<FontAwesomeIcon
 										icon={showPassword ? faEyeSlash : faEye}
-										className="fa-icon"
-										style={{
-											width: "14px",
-											height: "14px",
-										}}
+										className="w-3.5 h-3.5"
 									/>
 								</button>
 								<ErrorMessage
@@ -336,8 +343,7 @@ export default function RegisterUserForm() {
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faLock}
-									className="fa-icon absolute left-3 top-3 text-gray-400"
-									style={{ width: "14px", height: "14px" }}
+									className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5"
 								/>
 								<Field
 									type={
@@ -364,11 +370,7 @@ export default function RegisterUserForm() {
 												? faEyeSlash
 												: faEye
 										}
-										className="fa-icon"
-										style={{
-											width: "14px",
-											height: "14px",
-										}}
+										className="w-3.5 h-3.5"
 									/>
 								</button>
 								<ErrorMessage
@@ -392,11 +394,7 @@ export default function RegisterUserForm() {
 									<FontAwesomeIcon
 										icon={faSpinner}
 										spin
-										className="fa-icon"
-										style={{
-											width: "14px",
-											height: "14px",
-										}}
+										className="w-3.5 h-3.5"
 									/>
 								) : (
 									"Registrarme"
@@ -423,8 +421,7 @@ export default function RegisterUserForm() {
 							>
 								<FontAwesomeIcon
 									icon={faGoogle}
-									className="fa-icon"
-									style={{ width: "14px", height: "14px" }}
+									className="w-3.5 h-3.5"
 								/>
 								Registrarme con Google
 							</button>
@@ -435,7 +432,9 @@ export default function RegisterUserForm() {
 								<Link
 									href="/loginUser"
 									className="font-semibold hover:underline"
-									style={{ color: "var(--color-primary)" }}
+									style={{
+										color: "var(--color-primary)",
+									}}
 								>
 									Inicia sesión
 								</Link>
