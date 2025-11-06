@@ -3,8 +3,7 @@
 :root {
 
   --background: #f5f5f5;
-  --foreground: #171717;
-
+ 
   --color-primary: #1d2846;
   --color-primary-hover: #323d5a;
   --color-selected: #6A7286;
@@ -22,8 +21,7 @@
 /* Modo oscuro (FUTURO USO)*/
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ededed;
   }
 }
 

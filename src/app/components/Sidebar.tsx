@@ -12,8 +12,16 @@ import {
 	faBars,
 	faBell,
 	faPowerOff,
+	faCartShopping,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuthStore } from "@/app/store/auth.store";
+
+interface MenuItem {
+	icon: any;
+	label: string;
+	href: string;
+	showBadge?: boolean; // ✅ propiedad opcional para el carrito
+}
 
 export default function Sidebar({
 	isCollapsed,
@@ -24,7 +32,7 @@ export default function Sidebar({
 }) {
 	const pathname = usePathname();
 	const router = useRouter();
-	const { role, user, clearAuth } = useAuthStore();
+	const { role, user, clearAuth, cart } = useAuthStore();
 
 	const isAuthenticated = !!user;
 
@@ -43,7 +51,8 @@ export default function Sidebar({
 
 	const basePath = getBasePath();
 
-	const menuItems = [
+	// 🔹 Menú base
+	let menuItems: MenuItem[] = [
 		{ icon: faHome, label: "Inicio", href: `${basePath}/dashboard` },
 		{ icon: faCalendar, label: "Citas", href: `${basePath}/appointments` },
 		{ icon: faSearch, label: "Servicios", href: `${basePath}/services` },
@@ -59,6 +68,16 @@ export default function Sidebar({
 		},
 	];
 
+	// 🛒 Agregar carrito solo si es usuario
+	if (role === "user") {
+		menuItems.splice(3, 0, {
+			icon: faCartShopping,
+			label: "Carrito",
+			href: `${basePath}/cart`,
+			showBadge: true,
+		});
+	}
+
 	const handleLogout = () => {
 		clearAuth();
 		router.push("/");
@@ -68,6 +87,7 @@ export default function Sidebar({
 
 	return (
 		<>
+			{/* 🖥️ SIDEBAR (Desktop) */}
 			<aside
 				className="fixed top-0 left-0 h-full flex-col justify-between transition-all duration-400 shadow-lg hidden md:flex"
 				style={{
@@ -75,6 +95,7 @@ export default function Sidebar({
 					width: isCollapsed ? "4.5rem" : "13rem",
 				}}
 			>
+				{/* LOGO */}
 				<div>
 					<div
 						className="flex items-center gap-4 px-6 py-5 border-b"
@@ -94,6 +115,7 @@ export default function Sidebar({
 						</span>
 					</div>
 
+					{/* PERFIL */}
 					<div
 						className="flex items-center gap-3 px-4 border-b h-[78px]"
 						style={{ borderColor: "var(--color-primary-hover)" }}
@@ -156,9 +178,11 @@ export default function Sidebar({
 					</div>
 				</div>
 
+				{/* MENÚ PRINCIPAL */}
 				<nav className="mt-6 flex flex-col items-start relative flex-1">
 					{menuItems.map((item) => {
 						const active = pathname === item.href;
+						const isCart = item.label === "Carrito";
 						return (
 							<div
 								key={item.label}
@@ -169,7 +193,7 @@ export default function Sidebar({
 								)}
 								<Link
 									href={item.href}
-									className={`flex items-center px-6 py-2.5 w-full text-sm font-medium rounded-md transition-all duration-300 ${
+									className={`flex items-center px-6 py-2.5 w-full text-sm font-medium rounded-md transition-all duration-300 relative ${
 										active
 											? "text-white"
 											: "text-gray-300 hover:text-white"
@@ -190,7 +214,7 @@ export default function Sidebar({
 												"transparent";
 									}}
 								>
-									<div className="w-6 flex justify-center">
+									<div className="w-6 flex justify-center relative">
 										<FontAwesomeIcon
 											icon={item.icon}
 											className="text-base"
@@ -199,6 +223,12 @@ export default function Sidebar({
 												height: "1.25rem",
 											}}
 										/>
+										{/* 🔹 Badge del carrito */}
+										{isCart && cart.length > 0 && (
+											<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[0.6rem] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+												{cart.length}
+											</span>
+										)}
 									</div>
 									<span
 										className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ${
@@ -215,6 +245,7 @@ export default function Sidebar({
 					})}
 				</nav>
 
+				{/* FOOTER */}
 				<div>
 					{isAuthenticated && (
 						<div className="relative group">
@@ -328,6 +359,7 @@ export default function Sidebar({
 				</div>
 			</aside>
 
+			{/* 📱 MOBILE HEADER & NAV */}
 			<header className="md:hidden fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-4 z-50 bg-white">
 				<div className="flex items-center gap-2">
 					<div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-white">
@@ -365,14 +397,16 @@ export default function Sidebar({
 				</div>
 			</header>
 
+			{/* 📱 MOBILE NAVBAR */}
 			<nav className="fixed bottom-0 left-0 right-0 bg-bg-light border-t border-bg-hover flex justify-around items-center py-2 shadow-sm md:hidden z-40">
 				{menuItems.map((item) => {
 					const active = pathname === item.href;
+					const isCart = item.label === "Carrito";
 					return (
 						<Link
 							key={item.label}
 							href={item.href}
-							className="flex flex-col items-center justify-center text-xs font-medium"
+							className="flex flex-col items-center justify-center text-xs font-medium relative"
 							style={{
 								color: active
 									? "var(--color-primary)"
@@ -384,6 +418,12 @@ export default function Sidebar({
 								className="mb-1"
 								style={{ width: "1.2rem", height: "1.2rem" }}
 							/>
+							{/* Badge móvil */}
+							{isCart && cart.length > 0 && (
+								<span className="absolute top-0 right-3 bg-red-500 text-white text-[0.6rem] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+									{cart.length}
+								</span>
+							)}
 							<span>{item.label}</span>
 						</Link>
 					);
