@@ -50,3 +50,21 @@ body {
   font-size: 14px;
   vertical-align: middle;
 }
+
+html {
+	scroll-behavior: smooth;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-primary);
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-primary-hover);
+}
