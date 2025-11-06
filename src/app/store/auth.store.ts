@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import IUser from "../interfaces/IUser";
+import IProvider from "../interfaces/IProvider";
 
 export type Role = "admin" | "provider" | "user";
 
@@ -17,7 +18,7 @@ export interface CartItem {
 interface AuthState {
 	token: string | null;
 	role: Role | null;
-	user: IUser | null;
+	user: IProvider | IUser | null;
 	isAuthenticated: boolean;
 	setAuth: (data: { token: string; role: Role; user: IUser }) => void;
 	clearAuth: () => void;

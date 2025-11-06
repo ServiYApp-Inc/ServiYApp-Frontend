@@ -29,3 +29,12 @@ export const getCategories = async () => {
 	return data;
 };
 
+export const updateProvider = async (
+	id: string,
+	values: any,
+	token: string
+) => {
+	return Api.patch(`/providers/${id}`, values, {
+		headers: { Authorization: `Bearer ${token}` },
+	});
+};
