@@ -54,6 +54,7 @@ export default function ServiceForm() {
             photo: values.photo,
             duration: Number(values.duration),
             categoryId: values.category,
+            status: 'inactive'
         };
 
         // Si el usuario tiene rol de provider, agregamos el ID
@@ -67,7 +68,7 @@ export default function ServiceForm() {
             return;
             }
 
-            console.log("📦 Datos que se envían al backend:", serviceData);
+            console.log("Datos que se envían al backend:", serviceData);
 
             const createdService = await createService(serviceData);
 
