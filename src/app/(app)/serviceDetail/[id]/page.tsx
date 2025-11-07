@@ -50,7 +50,7 @@ export default function ServiceDetailPage() {
       quantity: 1,
       image: service.photo,
     });
-    router.push("/cart");
+    router.push("/confirmation");
   };
 
   return (
