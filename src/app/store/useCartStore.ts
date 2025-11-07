@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface CartItem {
-  id: number;
+  id: string; // usa string para coincidir con tus IDs de servicios
   name: string;
   price: number;
   image?: string;
@@ -14,7 +14,7 @@ interface CartItem {
 interface CartState {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: number) => void;
+  removeFromCart: (id: string) => void;
   clearCart: () => void;
   getTotal: () => number;
 }
@@ -46,12 +46,11 @@ export const useCartStore = create<CartState>()(
 
       clearCart: () => set({ items: [] }),
 
-      getTotal: () => {
-        return get().items.reduce(
+      getTotal: () =>
+        get().items.reduce(
           (acc, item) => acc + item.price * item.quantity,
           0
-        );
-      },
+        ),
     }),
     {
       name: "serviyapp-cart", // 🧠 clave única en localStorage
