@@ -88,7 +88,7 @@ export default function CompleteRegister() {
 		const fetchCountries = async () => {
 			try {
 				const res = await axios.get(
-					`${process.env.NEXT_PUBLIC_API_URL}/locations/countries`
+					`${process.env.NEXT_PUBLIC_API_URL}locations/countries`
 				);
 				setCountries(res.data);
 			} catch (error) {
@@ -171,7 +171,7 @@ export default function CompleteRegister() {
 							console.log(providerId);
 
 							await axios.patch(
-								`${process.env.NEXT_PUBLIC_API_URL}/providers/${providerId}`,
+								`${process.env.NEXT_PUBLIC_API_URL}providers/${providerId}`,
 								payload,
 								{
 									headers: {
@@ -341,7 +341,7 @@ export default function CompleteRegister() {
 										setFieldValue("region", "");
 										setFieldValue("city", "");
 										const res = await axios.get(
-											`${process.env.NEXT_PUBLIC_API_URL}/locations/${countryId}/regions`
+											`${process.env.NEXT_PUBLIC_API_URL}locations/${countryId}/regions`
 										);
 										setRegions(res.data);
 									}}
@@ -373,7 +373,7 @@ export default function CompleteRegister() {
 										setFieldValue("region", regionId);
 										setFieldValue("city", "");
 										const res = await axios.get(
-											`${process.env.NEXT_PUBLIC_API_URL}/locations/regions/${regionId}/cities`
+											`${process.env.NEXT_PUBLIC_API_URL}locations/regions/${regionId}/cities`
 										);
 										setCities(res.data);
 									}}

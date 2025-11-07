@@ -147,7 +147,7 @@ export default function CompleteRegisterUser() {
 								payload.password = values.password;
 
 							const { data } = await axios.patch(
-								`${process.env.NEXT_PUBLIC_API_URL}/users/complete/${userId}`,
+								`${process.env.NEXT_PUBLIC_API_URL}users/complete/${userId}`,
 								payload,
 								{
 									headers: {
