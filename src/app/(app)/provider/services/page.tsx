@@ -1,3 +1,5 @@
+"use client";
+
 /*-- Componentes --*/
 import SearchBar from "@/app/components/SearchBar";
 import axios from "axios";
@@ -13,24 +15,44 @@ import { notFound } from "next/navigation";
 import IService from "@/app/interfaces/IService";
 import ServiceCard from "@/app/components/ServiceCard";
 import Link from "next/link";
+import { useAuthStore } from "@/app/store/auth.store";
+import { useEffect, useState } from "react";
+import { getProviderServices } from "../serviceRegister/service.service";
 
 
-export default async function PageServices() {
-	let services: IService[];
+export default function PageServices() {
+	const { user, role } = useAuthStore();
+	const [services, setServices] = useState<any[]>([]);
+	const [loading, setLoading] = useState(true);
 
-	try {
-		const fetchServices = await axios.get(
-			`${process.env.NEXT_PUBLIC_API_URL}services/find-all`
-		);
-		services = fetchServices.data;
-		if (services.length === 0) {
+	useEffect(() => {
+		const fetchServices = async () => {
+		try {
+			if (!user) {
+			console.error("Usuario no autenticado");
 			notFound();
-		}
-	} catch (error) {
-		console.error("Error fetching service data:", error);
-		notFound();
-	}
+			return;
+			}
 
+			let data;
+
+			data = await getProviderServices(user.id);
+			
+
+			setServices(data);
+			if (data.length === 0) notFound();
+		} catch (error) {
+			console.error("Error al obtener servicios:", error);
+			notFound();
+		} finally {
+			setLoading(false);
+		}
+		};
+
+		fetchServices();
+	}, [user, role]);
+
+	if (loading) return <p>Cargando servicios...</p>;
 	return (
 		<main className="flex flex-col justify-start bg--background overflow-x-hidden overflow-y-hidden min-h-screen px-2 pb-20 md:pb-4 max-w-[1300px] mx-auto">
 			<h1 className="font-bold text-[var(--color-primary)] text-[48px] mt-10 text-center md:text-left">
