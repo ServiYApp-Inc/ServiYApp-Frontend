@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,6 +7,7 @@ import { faCheckCircle, faShoppingCart } from "@fortawesome/free-solid-svg-icons
 import { Api } from "@/app/services/api";
 import Link from "next/link";
 import { useCartStore } from "@/app/store/useCartStore";
+import { useRouter } from "next/navigation";
 
 interface IService {
 	id: string;
@@ -21,27 +21,37 @@ interface IService {
 }
 
 export default function ConfirmOrderPage() {
-	const searchParams = useSearchParams();
 	const router = useRouter();
-	const id = searchParams.get("id");
 	const { addToCart } = useCartStore();
+
 	const [service, setService] = useState<IService | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		if (!id) return;
-		const fetchService = async () => {
-			try {
-				const { data } = await Api.get(`/services/find/${id}`);
-				setService(data);
-			} catch (error) {
-				console.error("Error al cargar servicio:", error);
-			} finally {
+		// ✅ Obtener el parámetro "id" del query string con window.location
+		if (typeof window !== "undefined") {
+			const params = new URLSearchParams(window.location.search);
+			const id = params.get("id");
+
+			if (!id) {
 				setLoading(false);
+				return;
 			}
-		};
-		fetchService();
-	}, [id]);
+
+			const fetchService = async () => {
+				try {
+					const { data } = await Api.get(`/services/find/${id}`);
+					setService(data);
+				} catch (error) {
+					console.error("Error al cargar servicio:", error);
+				} finally {
+					setLoading(false);
+				}
+			};
+
+			fetchService();
+		}
+	}, []);
 
 	const handleConfirm = () => {
 		if (!service) return;
@@ -100,7 +110,7 @@ export default function ConfirmOrderPage() {
 					</p>
 				</div>
 
-				{/* Info servicio */}
+				{/* Información del servicio */}
 				<div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
 					<img
 						src={service.photo || "/placeholder.jpg"}
