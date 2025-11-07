@@ -15,6 +15,8 @@ const ServiceSchema = Yup.object().shape({
     description: Yup.string()
         .required("La descripción es obligatoria")
         .min(10, "Debe tener al menos 10 caracteres"),
+    price: Yup.string()
+        .required("El precio es obligatorio"),
     photo: Yup.string().url("Debe ser una URL válida").required("La foto es obligatoria"),
     duration: Yup.number()
         .required("La duración es obligatoria")
@@ -51,15 +53,16 @@ export default function ServiceForm() {
         const serviceData: any = {
             name: values.name,
             description: values.description,
+            price: values.price,
             photo: values.photo,
             duration: Number(values.duration),
-            categoryId: values.category,
+            category: values.category,
             status: 'inactive'
         };
 
         // Si el usuario tiene rol de provider, agregamos el ID
         if (user.role === "provider" && user.id) {
-            serviceData.providerId = user.id;
+            serviceData.provider = user.id;
         }
 
         try {
@@ -94,6 +97,7 @@ export default function ServiceForm() {
             initialValues={{
             name: "",
             description: "",
+            price: "",
             photo: "",
             duration: "",
             category: "",
@@ -133,6 +137,24 @@ export default function ServiceForm() {
                 />
                 <ErrorMessage
                     name="description"
+                    component="p"
+                    className="text-red-400 text-sm mt-1"
+                />
+                </div>
+
+                {/* Precio */}
+                <div>
+                <label htmlFor="price" className="block mb-1 font-medium">
+                    Precio
+                </label>
+                <Field
+                    type="number"
+                    name="price"
+                    className="w-full p-2 rounded bg-white border border-gray-600"
+                    placeholder="Ej: 30"
+                />
+                <ErrorMessage
+                    name="price"
                     component="p"
                     className="text-red-400 text-sm mt-1"
                 />
