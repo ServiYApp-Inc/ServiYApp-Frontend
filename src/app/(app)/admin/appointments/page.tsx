@@ -9,7 +9,6 @@ import {
 	faSpinner,
 	faCalendarDays,
 	faTimes,
-	faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
@@ -18,6 +17,7 @@ interface ServiceOrder {
 	id: string;
 	service: { name: string };
 	user: { names: string; surnames: string; email: string };
+	provider: { names: string; surnames: string; email: string };
 	date: string;
 	startTime: string;
 	endTime: string;
@@ -26,26 +26,22 @@ interface ServiceOrder {
 	status: string;
 }
 
-export default function ProviderAppointmentsPage() {
-	const { user, token } = useAuthStore();
+export default function AdminAppointmentsPage() {
+	const { token } = useAuthStore();
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [processingId, setProcessingId] = useState<string | null>(null);
 	const [activeTab, setActiveTab] = useState<
-		"upcoming" | "cancelled" | "completed"
-	>("upcoming");
+		"all" | "upcoming" | "completed" | "cancelled"
+	>("all");
 
-	// Obtener citas del proveedor
+	// Obtener TODAS las citas del sistema
 	const fetchOrders = async () => {
 		try {
-			if (!user?.id || !token) return;
 			setLoading(true);
-			const { data } = await Api.get(
-				`/service-orders/provider/${user.id}`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				}
-			);
+			const { data } = await Api.get(`/service-orders/orders-all`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
 			setOrders(data);
 		} catch (error) {
 			console.error("Error obteniendo órdenes:", error);
@@ -55,7 +51,6 @@ export default function ProviderAppointmentsPage() {
 		}
 	};
 
-	// Confirmar cita
 	const handleConfirm = async (id: string) => {
 		setProcessingId(id);
 		try {
@@ -72,7 +67,6 @@ export default function ProviderAppointmentsPage() {
 		}
 	};
 
-	// Cancelar cita
 	const handleCancel = async (id: string) => {
 		setProcessingId(id);
 		try {
@@ -89,36 +83,38 @@ export default function ProviderAppointmentsPage() {
 		}
 	};
 
-	// Filtrar citas según la pestaña activa
+	// Filtros por pestañas
 	const filteredOrders = orders.filter((order) => {
+		if (activeTab === "all") return true;
 		if (activeTab === "upcoming")
 			return order.status === "pending" || order.status === "accepted";
-		if (activeTab === "cancelled") return order.status === "cancelled";
 		if (activeTab === "completed") return order.status === "completed";
+		if (activeTab === "cancelled") return order.status === "cancelled";
 		return true;
 	});
 
 	useEffect(() => {
-		if (user && token) fetchOrders();
-	}, [user, token]);
+		fetchOrders();
+	}, [token]);
 
 	return (
-		<main className="max-w-6xl mx-auto mt-10 px-4 font-nunito">
+		<main className="max-w-7xl mx-auto mt-10 px-4 font-nunito">
 			{/* TÍTULO */}
 			<h1 className="text-3xl font-bold text-[var(--color-primary)] mb-6 flex items-center gap-3">
 				<FontAwesomeIcon
 					icon={faCalendarDays}
 					className="text-[var(--color-primary)]"
 				/>
-				Mis Citas
+				Gestión de Citas
 			</h1>
 
 			{/* TABS */}
-			<div className="flex gap-3 mb-8">
+			<div className="flex gap-3 mb-8 flex-wrap">
 				{[
-					{ key: "upcoming", label: "Próximas" },					
-					{ key: "cancelled", label: "Canceladas" },
+					{ key: "all", label: "Todas" },
+					{ key: "upcoming", label: "Próximas" },
 					{ key: "completed", label: "Finalizadas" },
+					{ key: "cancelled", label: "Canceladas" },
 				].map((tab) => {
 					const active = activeTab === tab.key;
 					return (
@@ -164,6 +160,12 @@ export default function ProviderAppointmentsPage() {
 									Cliente
 								</th>
 								<th className="py-3 px-4 font-semibold">
+									Proveedor
+								</th>
+								{/* <th className="py-3 px-4 font-semibold">
+									Fecha
+								</th> */}
+								<th className="py-3 px-4 font-semibold">
 									Dirección
 								</th>
 								<th className="py-3 px-4 font-semibold">
@@ -177,6 +179,7 @@ export default function ProviderAppointmentsPage() {
 								</th>
 							</tr>
 						</thead>
+
 						<tbody>
 							{filteredOrders.map((order) => {
 								const formattedAddress =
@@ -205,6 +208,21 @@ export default function ProviderAppointmentsPage() {
 											{order.user?.names}{" "}
 											{order.user?.surnames}
 										</td>
+										<td className="py-3 px-4 capitalize">
+											{order.provider?.names}{" "}
+											{order.provider?.surnames}
+										</td>
+										{/* <td className="py-3 px-4">
+											{new Date(order.date).toLocaleDateString(
+												"es-MX",
+												{
+													day: "2-digit",
+													month: "short",
+													year: "numeric",
+												}
+											)}{" "}
+											{order.startTime}
+										</td> */}
 										<td className="py-3 px-4 truncate max-w-[220px]">
 											<span className="text-[var(--color-primary)] underline cursor-pointer">
 												{formattedAddress}
@@ -214,7 +232,7 @@ export default function ProviderAppointmentsPage() {
 											${order.price}
 										</td>
 
-										{/* ESTADO */}
+										{/* Estado */}
 										<td
 											className={`py-3 px-4 font-semibold ${
 												order.status === "accepted"
@@ -241,7 +259,7 @@ export default function ProviderAppointmentsPage() {
 												: order.status}
 										</td>
 
-										{/* ACCIONES */}
+										{/* Acciones */}
 										<td className="py-3 px-4 text-center">
 											{order.status === "pending" ? (
 												<button
@@ -273,33 +291,29 @@ export default function ProviderAppointmentsPage() {
 													)}
 												</button>
 											) : order.status === "accepted" ? (
-												<div className="flex items-center justify-center gap-2">
-													<button
-														onClick={() =>
-															handleCancel(
-																order.id
-															)
-														}
-														disabled={
-															processingId ===
-															order.id
-														}
-														className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2 mx-auto"
-													>
-														{processingId ===
-														order.id ? (
-															<FontAwesomeIcon
-																icon={faSpinner}
-																spin
-															/>
-														) : (
-															<FontAwesomeIcon
-																icon={faTimes}
-															/>
-														)}
-														Cancelar
-													</button>
-												</div>
+												<button
+													onClick={() =>
+														handleCancel(order.id)
+													}
+													disabled={
+														processingId ===
+														order.id
+													}
+													className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2 mx-auto"
+												>
+													{processingId ===
+													order.id ? (
+														<FontAwesomeIcon
+															icon={faSpinner}
+															spin
+														/>
+													) : (
+														<FontAwesomeIcon
+															icon={faTimes}
+														/>
+													)}
+													Cancelar
+												</button>
 											) : (
 												<span className="text-gray-400 text-sm">
 													—
