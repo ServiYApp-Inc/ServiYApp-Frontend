@@ -3,15 +3,9 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useState, useEffect } from "react";
-
-// Simulación: lista de categorías traídas del backend
-const getCategories = async () => {
-    return [
-        { id: "1", name: "Peluquería" },
-        { id: "2", name: "Spa" },
-        { id: "3", name: "Masajes" },
-    ];
-};
+import { getCategories } from "@/app/services/provider.service";
+import { useAuthStore } from "@/app/store/auth.store";
+import { createService } from "./service.service";
 
 // Esquema de validación con Yup
 const ServiceSchema = Yup.object().shape({
@@ -29,27 +23,68 @@ const ServiceSchema = Yup.object().shape({
 });
 
 export default function ServiceForm() {
+
+    const { user } = useAuthStore();
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
     useEffect(() => {
-    getCategories().then(setCategories);
+        const fetchCategories = async () => {
+            try {
+                const data = await getCategories();
+                setCategories(data); // ← guardamos las categorías
+                console.log(data);
+                
+            } catch (error) {
+                console.error("Error al obtener categorías:", error);
+            }
+        };
+        fetchCategories();
     }, []);
 
     const handleSubmit = async (values: any, { resetForm }: any) => {
-    const providerId = "id-del-usuario-logueado"; // lo tomás del store o auth context
-    const serviceData = {
-        ...values,
-        provider: providerId,
-        status: "ACTIVE",
+        if (!user) {
+            console.error("Usuario no autenticado");
+            return;
+        }
+
+        // Armamos el payload
+        const serviceData: any = {
+            name: values.name,
+            description: values.description,
+            photo: values.photo,
+            duration: Number(values.duration),
+            categoryId: values.category,
+        };
+
+        // Si el usuario tiene rol de provider, agregamos el ID
+        if (user.role === "provider" && user.id) {
+            serviceData.providerId = user.id;
+        }
+
+        try {
+            if (user.role !== "provider" && user.role !== "admin") {
+            alert("Solo los proveedores o administradores pueden registrar servicios");
+            return;
+            }
+
+            console.log("📦 Datos que se envían al backend:", serviceData);
+
+            const createdService = await createService(serviceData);
+
+            console.log("✅ Servicio creado:", createdService);
+            alert("Servicio registrado exitosamente");
+            resetForm();
+        } catch (error: any) {
+            const msg = error.response?.data?.message || error.message;
+            console.error("❌ Error al crear servicio:", msg);
+            alert(`Error: ${msg}`);
+        }
     };
 
-    console.log("Datos a enviar:", serviceData);
-    // Aquí harías la llamada al backend: await createService(serviceData);
-    resetForm();
-    };
+
 
     return (
-        <div className="max-w-lg mx-auto p-6 bg-gray-800 rounded-2xl shadow-lg text-white">
+        <div className="max-w-lg mx-auto p-6 bg-white rounded-2xl shadow-lg text-[var(--color-primary)]">
         <h2 className="text-2xl font-semibold mb-4 text-center">
             Registrar nuevo servicio
         </h2>
@@ -74,7 +109,7 @@ export default function ServiceForm() {
                 </label>
                 <Field
                     name="name"
-                    className="w-full p-2 rounded bg-gray-700 border border-gray-600"
+                    className="w-full p-2 rounded bg-white border border-gray-600"
                     placeholder="Ej: Corte de cabello"
                 />
                 <ErrorMessage
@@ -92,7 +127,7 @@ export default function ServiceForm() {
                 <Field
                     as="textarea"
                     name="description"
-                    className="w-full p-2 rounded bg-gray-700 border border-gray-600"
+                    className="w-full p-2 rounded bg-white border border-gray-600"
                     placeholder="Describe brevemente el servicio..."
                 />
                 <ErrorMessage
@@ -109,7 +144,7 @@ export default function ServiceForm() {
                 </label>
                 <Field
                     name="photo"
-                    className="w-full p-2 rounded bg-gray-700 border border-gray-600"
+                    className="w-full p-2 rounded bg-white border border-gray-600"
                     placeholder="https://ejemplo.com/foto.jpg"
                 />
                 <ErrorMessage
@@ -127,7 +162,7 @@ export default function ServiceForm() {
                 <Field
                     type="number"
                     name="duration"
-                    className="w-full p-2 rounded bg-gray-700 border border-gray-600"
+                    className="w-full p-2 rounded bg-white border border-gray-600"
                     placeholder="Ej: 30"
                 />
                 <ErrorMessage
@@ -145,7 +180,7 @@ export default function ServiceForm() {
                 <Field
                     as="select"
                     name="category"
-                    className="w-full p-2 rounded bg-gray-700 border border-gray-600"
+                    className="w-full p-2 rounded bg-white border border-gray-600"
                 >
                     <option value="">Seleccionar...</option>
                     {categories.map((cat) => (
