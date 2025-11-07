@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useCartStore } from "../../../src/app/store/useCartStore";
 
 interface ProductCardProps {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image?: string;

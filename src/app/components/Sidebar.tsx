@@ -15,6 +15,7 @@ import {
 	faCartShopping,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuthStore } from "@/app/store/auth.store";
+import { useCartStore } from "../store/useCartStore";
 
 interface MenuItem {
 	icon: any;
@@ -32,7 +33,8 @@ export default function Sidebar({
 }) {
 	const pathname = usePathname();
 	const router = useRouter();
-	const { role, user, clearAuth, cart } = useAuthStore();
+	const { role, user, clearAuth } = useAuthStore();
+	const { items } = useCartStore();
 
 	const isAuthenticated = !!user;
 
@@ -224,9 +226,9 @@ export default function Sidebar({
 											}}
 										/>
 										{/* 🔹 Badge del carrito */}
-										{isCart && cart.length > 0 && (
+										{isCart && items.length > 0 && (
 											<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[0.6rem] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
-												{cart.length}
+												{items.length}
 											</span>
 										)}
 									</div>
@@ -419,9 +421,9 @@ export default function Sidebar({
 								style={{ width: "1.2rem", height: "1.2rem" }}
 							/>
 							{/* Badge móvil */}
-							{isCart && cart.length > 0 && (
+							{isCart && items.length > 0 && (
 								<span className="absolute top-0 right-3 bg-red-500 text-white text-[0.6rem] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
-									{cart.length}
+									{items.length}
 								</span>
 							)}
 							<span>{item.label}</span>

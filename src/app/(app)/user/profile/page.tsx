@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useAuthStore } from "@/app/store/auth.store";
 import EditUserForm from "@/app/components/EditUserForm";
+import UploadProfilePicture from "@/app/components/UploadProfilePicture";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faBell,
@@ -20,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import ReactCountryFlag from "react-country-flag";
 
-// 👇 Importa ProfileItem dinámicamente, sin SSR
+// Import dinámico para evitar errores SSR
 const ProfileItem = dynamic(() => import("@/app/components/ProfileItem"), {
 	ssr: false,
 });
@@ -28,27 +29,44 @@ const ProfileItem = dynamic(() => import("@/app/components/ProfileItem"), {
 export default function ProfilePage() {
 	const { user } = useAuthStore();
 	const [showEdit, setShowEdit] = useState(false);
+	const [showUpload, setShowUpload] = useState(false);
 
 	return (
 		<main className="max-w-6xl mx-auto mt-10 px-4 font-nunito">
 			{/* HEADER */}
 			<section className="relative bg-[var(--color-primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg transition-all">
-				<div className="flex items-center gap-6">
-					{user?.profilePicture ? (
-						<img
-							src={user.profilePicture}
-							alt="User profile"
-							className="w-36 h-36 rounded-full border-4 border-white object-cover shadow-lg"
-						/>
-					) : (
-						<div className="w-36 h-36 rounded-full border-4 border-white flex items-center justify-center bg-white/20 shadow-lg">
-							<FontAwesomeIcon
-								icon={faUser}
-								className="text-4xl text-gray-200"
+				{/* FOTO + ICONO */}
+				<div className="flex items-center gap-6 relative">
+					<div className="relative group w-36 h-36">
+						{user?.profilePicture ? (
+							<img
+								src={user.profilePicture}
+								alt="User profile"
+								className="w-36 h-36 rounded-full border-4 border-white object-cover shadow-lg transition-all duration-300 group-hover:opacity-80"
 							/>
-						</div>
-					)}
+						) : (
+							<div className="w-36 h-36 rounded-full border-4 border-white flex items-center justify-center bg-white/20 shadow-lg group-hover:opacity-80 transition-all duration-300">
+								<FontAwesomeIcon
+									icon={faUser}
+									className="text-4xl text-gray-200"
+								/>
+							</div>
+						)}
 
+						{/* ICONO LAPICITO */}
+						<button
+							onClick={() => setShowUpload(true)}
+							className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow-md hover:bg-gray-100 transition-all opacity-90 hover:opacity-100"
+							title="Editar foto de perfil"
+						>
+							<FontAwesomeIcon
+								icon={faPenToSquare}
+								className="w-4 h-4"
+							/>
+						</button>
+					</div>
+
+					{/* INFO USUARIO */}
 					<div>
 						<h2 className="text-4xl font-bold tracking-tight">
 							{user?.names} {user?.surnames}
@@ -183,7 +201,7 @@ export default function ProfilePage() {
 				</div>
 			</section>
 
-			{/* MODAL */}
+			{/* MODAL EDITAR PERFIL */}
 			<AnimatePresence>
 				{showEdit && (
 					<motion.div
@@ -211,6 +229,46 @@ export default function ProfilePage() {
 									setShowEdit(false);
 									toast.success(
 										"Perfil actualizado correctamente",
+										{
+											position: "top-center",
+											autoClose: 2000,
+										}
+									);
+								}}
+							/>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
+			{/* MODAL SUBIR FOTO */}
+			<AnimatePresence>
+				{showUpload && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+					>
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.9, opacity: 0 }}
+							transition={{ duration: 0.25 }}
+							className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative"
+						>
+							<button
+								onClick={() => setShowUpload(false)}
+								className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+							>
+								×
+							</button>
+
+							<UploadProfilePicture
+								onSuccess={() => {
+									setShowUpload(false);
+									toast.success(
+										"Foto actualizada correctamente",
 										{
 											position: "top-center",
 											autoClose: 2000,

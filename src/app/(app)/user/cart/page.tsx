@@ -1,73 +1,162 @@
 "use client";
 
-import { useCartStore } from "../../../store/useCartStore";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+	faTrashAlt,
+	faMinus,
+	faPlus,
+	faArrowRight,
+} from "@fortawesome/free-solid-svg-icons";
+import { motion } from "framer-motion";
+import { useCartStore } from "@/app/store/useCartStore";
 
 export default function CartPage() {
-	const { items, removeFromCart, getTotal, clearCart } = useCartStore();
+	const router = useRouter();
+	const { items, addToCart, removeFromCart, clearCart, getTotal } =
+		useCartStore();
+	const total = getTotal();
 
 	return (
-		<div className="min-h-screen bg-gradient-to-b text-white py-10 px-4 font-nunito">
-			<div className="max-w-3xl mx-auto">
-				<h1 className="text-4xl font-bold mb-10 text-center text-black">
-					🛒 Tu Carrito
+		<main
+			className="min-h-screen px-4 py-10 flex justify-center"
+			style={{ backgroundColor: "var(--background)" }}
+		>
+			<section className="w-full max-w-5xl bg-white rounded-3xl shadow-lg p-8 md:p-10 font-nunito">
+				<h1 className="text-3xl font-bold text-[var(--color-primary)] mb-1">
+					Tu carrito
 				</h1>
+				<p className="text-gray-500 mb-6">
+					Revisa tus servicios antes de continuar al pago.
+				</p>
 
+				{/* Si no hay items */}
 				{items.length === 0 ? (
-					<p className="text-gray-400 text-center text-lg">
-						Tu carrito está vacío.
-					</p>
+					<div className="text-center text-gray-600 py-20">
+						<p className="mb-4">Tu carrito está vacío 🛍️</p>
+						<Link
+							href="/user/services"
+							className="text-[var(--color-primary)] font-semibold underline"
+						>
+							Explorar servicios
+						</Link>
+					</div>
 				) : (
-					<div className="space-y-5">
-						{items.map((item) => (
-							<div
-								key={item.id}
-								className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-800 p-5 rounded-2xl shadow-lg border border-red-700/40"
+					<>
+						{/* Lista de items */}
+						<div className="space-y-4">
+							{items.map((item) => (
+								<div
+									key={item.id}
+									className="flex items-center justify-between border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all"
+								>
+									<div className="flex items-center gap-4">
+										<img
+											src={
+												item.image || "/placeholder.jpg"
+											}
+											alt={item.name}
+											className="w-20 h-20 rounded-xl object-cover border"
+										/>
+										<div>
+											<h2 className="font-semibold text-lg text-[var(--color-primary)]">
+												{item.name}
+											</h2>
+											<p className="text-gray-500 text-sm">
+												${item.price} c/u
+											</p>
+
+											{/* Controles de cantidad */}
+											<div className="flex items-center gap-2 mt-2">
+												<button
+													onClick={() =>
+														addToCart({
+															...item,
+															quantity: -1,
+														})
+													}
+													className="w-8 h-8 flex items-center justify-center border rounded-lg hover:bg-gray-100 text-gray-600"
+												>
+													<FontAwesomeIcon
+														icon={faMinus}
+													/>
+												</button>
+												<span className="px-2 font-medium">
+													{item.quantity}
+												</span>
+												<button
+													onClick={() =>
+														addToCart({
+															...item,
+															quantity: 1,
+														})
+													}
+													className="w-8 h-8 flex items-center justify-center border rounded-lg hover:bg-gray-100 text-gray-600"
+												>
+													<FontAwesomeIcon
+														icon={faPlus}
+													/>
+												</button>
+											</div>
+										</div>
+									</div>
+
+									<div className="text-right">
+										<p className="text-lg font-semibold text-[var(--color-primary)]">
+											${item.price * item.quantity}
+										</p>
+										<button
+											onClick={() =>
+												removeFromCart(item.id)
+											}
+											className="text-sm text-red-600 hover:underline mt-1"
+										>
+											<FontAwesomeIcon
+												icon={faTrashAlt}
+												className="mr-1"
+											/>
+											Quitar
+										</button>
+									</div>
+								</div>
+							))}
+						</div>
+
+						{/* Total + botones */}
+						<div className="flex flex-col sm:flex-row justify-between items-center mt-10 gap-6">
+							<button
+								onClick={clearCart}
+								className="text-sm text-gray-500 underline hover:text-gray-700"
 							>
-								<div>
-									<h2 className="font-semibold text-lg">
-										{item.name}
-									</h2>
-									<p className="text-sm text-gray-400">
-										${item.price} × {item.quantity}
+								Vaciar carrito
+							</button>
+
+							<div className="flex items-center gap-8">
+								<div className="text-right">
+									<p className="text-gray-500 text-sm">
+										Total:
+									</p>
+									<p className="text-3xl font-extrabold text-[var(--color-primary)]">
+										${total}
 									</p>
 								</div>
 
-								<button
-									onClick={() => removeFromCart(item.id)}
-									className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm transition-all duration-200 shadow"
+								<motion.button
+									whileTap={{ scale: 0.97 }}
+									onClick={() =>
+										router.push("/user/order/checkout")
+									}
+									className="flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white px-8 py-3 rounded-2xl text-lg font-semibold hover:opacity-90 shadow-md hover:shadow-lg transition-all"
 								>
-									Quitar
-								</button>
-							</div>
-						))}
-
-						<div className="mt-8 bg-gray-800 border border-red-700/40 rounded-2xl shadow-xl p-6 text-right">
-							<p className="text-lg font-semibold mb-4">
-								Total:{" "}
-								<span className="text-red-400">
-									${getTotal().toFixed(2)}
-								</span>
-							</p>
-
-							<div className="flex gap-3 justify-end">
-								<button
-									onClick={clearCart}
-									className="bg-gray-700 hover:bg-gray-800 px-5 py-2 rounded-lg transition-all duration-200"
-								>
-									Vaciar carrito
-								</button>
-
-								<button
-									onClick={() => console.log("Ir al pago")}
-									className="bg-red-600 hover:bg-red-700 px-5 py-2 rounded-lg font-semibold transition-all duration-200 shadow-md"
-								>
-									Continuar al pago
-								</button>
+									Ir al pago
+									<FontAwesomeIcon icon={faArrowRight} />
+								</motion.button>
 							</div>
 						</div>
-					</div>
+					</>
 				)}
-			</div>
-		</div>
+			</section>
+		</main>
 	);
 }
