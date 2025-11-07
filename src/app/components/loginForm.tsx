@@ -50,7 +50,7 @@ export default function LoginForm({ role }: LoginFormProps) {
 
 			setAuth({
 				token: data.access_token,
-				role,
+				role: data.user?.role||"provider",
 				user: data.provider || data.user,
 			});
 
