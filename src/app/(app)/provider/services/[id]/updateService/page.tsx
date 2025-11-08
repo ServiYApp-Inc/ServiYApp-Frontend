@@ -111,7 +111,8 @@ export default function ServiceUpdateForm() {
 
 
     return (
-        <div className="max-w-lg mx-auto p-6 bg-white rounded-2xl shadow-lg text-[var(--color-primary)]">
+        <div className="flex flex-col items-center">
+        <div className="max-w-lg min-w-sm sm:min-w-md lg:min-w-lg mx-auto p-6 bg-white rounded-2xl shadow-lg text-[var(--color-primary)]">
         <h2 className="text-2xl font-semibold mb-4 text-center">
             Registrar nuevo servicio
         </h2>
@@ -254,6 +255,8 @@ export default function ServiceUpdateForm() {
             </Form>
             )}
         </Formik>
+        </div>
+            <button onClick={() => router.back()} className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">⬅ Volver a Servicios</button>
         </div>
     );
     }
