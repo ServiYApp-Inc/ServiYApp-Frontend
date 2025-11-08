@@ -49,8 +49,8 @@ export default function LoginForm({ role }: LoginFormProps) {
 		try {
 			const endpoint =
 				role === "provider"
-					? "/auth/login/provider"
-					: "/auth/login/user";
+					? "auth/login/provider"
+					: "auth/login/user";
 
 			const { data } = await Api.post(endpoint, values);
 
@@ -95,8 +95,8 @@ export default function LoginForm({ role }: LoginFormProps) {
 			// ✅ Usa plural porque así está en tu backend
 			const endpoint =
 				role === "provider"
-					? "/auth/providers/forgot-password"
-					: "/auth/users/forgot-password";
+					? "auth/providers/forgot-password"
+					: "auth/users/forgot-password";
 
 			console.log(
 				"📨 Enviando solicitud a:",

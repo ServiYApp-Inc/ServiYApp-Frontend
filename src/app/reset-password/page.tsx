@@ -26,23 +26,13 @@ export default function ResetPasswordPage() {
 	useEffect(() => {
 		const t = searchParams.get("token");
 		const uid = searchParams.get("id");
-		const r = searchParams.get("role");
+		const r = searchParams.get("type");
 
 		setToken(t);
 		setId(uid);
 		setRole(r);
 	}, [searchParams]);
-
-	// 🔹 Fallback por si vienen en el link completo (por seguridad)
-	useEffect(() => {
-		if (!role && typeof window !== "undefined") {
-			const url = new URL(window.location.href);
-			setRole(url.searchParams.get("role"));
-			setId(url.searchParams.get("id"));
-			setToken(url.searchParams.get("token"));
-		}
-	}, [role]);
-
+	console.log(role);
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -64,14 +54,20 @@ export default function ResetPasswordPage() {
 
 			// 🔹 Endpoint dinámico según el rol
 			let endpoint = "";
-			if (role === "provider") endpoint = `/providers/${id}`;
-			else if (role === "user") endpoint = `/users/${id}`;
-			else if (role === "admin") endpoint = `/admins/${id}`;
-			else throw new Error("Rol desconocido");
+			if (role === "provider") endpoint = `providers/${id}`;
+			else endpoint = `users/${id}`;
 
 			console.log("📡 Enviando PATCH a:", endpoint);
 
-			await Api.patch(endpoint, { password });
+			await Api.patch(
+				endpoint,
+				{ password },
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
 
 			toast.success("Contraseña actualizada correctamente.");
 			setTimeout(() => {
@@ -167,7 +163,9 @@ export default function ResetPasswordPage() {
 							color: "var(--color-bg-light)",
 						}}
 					>
-						{isSubmitting ? "Actualizando..." : "Cambiar contraseña"}
+						{isSubmitting
+							? "Actualizando..."
+							: "Cambiar contraseña"}
 					</button>
 				</form>
 			</div>
