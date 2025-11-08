@@ -77,248 +77,256 @@ export default function AddressFormModal({
 					animate={{ scale: 1, opacity: 1 }}
 					exit={{ scale: 0.9, opacity: 0 }}
 					onClick={(e) => e.stopPropagation()}
-					className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl border border-gray-200 relative"
+					className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-200 relative 
+					max-h-[92vh] flex flex-col"
 				>
 					{/* Cerrar modal */}
 					<button
 						onClick={onClose}
-						className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+						className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold z-20"
 					>
 						×
 					</button>
 
-					{/* Encabezado */}
-					<h2 className="text-2xl font-bold text-[var(--color-primary)] mb-6 text-center">
+					{/* Encabezado fijo */}
+					<h2 className="text-2xl font-bold text-[var(--color-primary)] py-5 px-8 text-center border-b sticky top-0">
 						{address ? "Editar dirección" : "Nueva dirección"}
 					</h2>
 
-					<Formik
-						initialValues={{
-							name: address?.name || "",
-							address: address?.address || "",
-							neighborhood: address?.neighborhood || "",
-							buildingType: address?.buildingType || "",
-							comments: address?.comments || "",
-							countryId: userCountryId || "",
-							regionId: address?.region?.id || "",
-							cityId: address?.city?.id || "",
-						}}
-						validationSchema={addressSchema}
-						enableReinitialize
-						onSubmit={async (values, { setSubmitting, resetForm }) => {
-							try {
-								if (address) {
-									await updateAddress(address.id, values, token!);
-									toast.success("Dirección actualizada correctamente");
-								} else {
-									const payload = {
-										...values,
-										status: true,
-										countryId: userCountryId,
-										userId: user?.id,
-									};
+					{/* Contenido scrollable */}
+					<div className="px-8 py-6 overflow-y-auto">
+						<Formik
+							initialValues={{
+								name: address?.name || "",
+								address: address?.address || "",
+								neighborhood: address?.neighborhood || "",
+								buildingType: address?.buildingType || "",
+								comments: address?.comments || "",
+								countryId: userCountryId || "",
+								regionId: address?.region?.id || "",
+								cityId: address?.city?.id || "",
+							}}
+							validationSchema={addressSchema}
+							enableReinitialize
+							onSubmit={async (values, { setSubmitting, resetForm }) => {
+								try {
+									if (address) {
+										await updateAddress(address.id, values, token!);
+										toast.success("Dirección actualizada correctamente");
+									} else {
+										const payload = {
+											...values,
+											status: true,
+											countryId: userCountryId,
+											userId: user?.id,
+										};
 
-									console.log("📦 Payload enviado:", payload);
+										console.log("📦 Payload enviado:", payload);
 
-									await createAddress(payload, token!);
-									toast.success("Dirección creada correctamente");
-									resetForm();
+										await createAddress(payload, token!);
+										toast.success("Dirección creada correctamente");
+										resetForm();
+									}
+									onSuccess();
+									onClose();
+								} catch (err: any) {
+									console.error("❌ Error al guardar dirección:", err);
+									toast.error(
+										err.response?.data?.message ||
+											"Error al guardar la dirección"
+									);
+								} finally {
+									setSubmitting(false);
 								}
-								onSuccess();
-								onClose();
-							} catch (err: any) {
-								console.error("❌ Error al guardar dirección:", err);
-								toast.error(
-									err.response?.data?.message ||
-										"Error al guardar la dirección"
-								);
-							} finally {
-								setSubmitting(false);
-							}
-						}}
-					>
-						{({ isSubmitting, setFieldValue }) => (
-							<Form className="space-y-4 text-gray-700">
-								{/* Nombre identificador */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">
-										Nombre de la dirección
-									</label>
-									<Field
-										name="name"
-										placeholder="Ej. Casa, Oficina, Departamento"
-										className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-									/>
-									<ErrorMessage
-										name="name"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+							}}
+						>
+							{({ isSubmitting, setFieldValue }) => (
+								<Form className="space-y-4 text-gray-700">
+									{/* Nombre identificador */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Nombre de la dirección
+										</label>
+										<Field
+											name="name"
+											placeholder="Ej. Casa, Oficina, Departamento"
+											className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+										/>
+										<ErrorMessage
+											name="name"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* Dirección completa */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">
-										Dirección (calle y número)
-									</label>
-									<Field
-										name="address"
-										placeholder="Ej. Av. de los Cedros #125"
-										className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-									/>
-									<ErrorMessage
-										name="address"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+									{/* Dirección completa */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Dirección (calle y número)
+										</label>
+										<Field
+											name="address"
+											placeholder="Ej. Av. de los Cedros #125"
+											className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+										/>
+										<ErrorMessage
+											name="address"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* Barrio o zona */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">
-										Barrio o zona (opcional)
-									</label>
-									<Field
-										name="neighborhood"
-										placeholder="Ej. Col. Reforma"
-										className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-									/>
-									<ErrorMessage
-										name="neighborhood"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+									{/* Barrio */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Barrio o zona (opcional)
+										</label>
+										<Field
+											name="neighborhood"
+											placeholder="Ej. Col. Reforma"
+											className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+										/>
+										<ErrorMessage
+											name="neighborhood"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* Tipo de edificación */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">
-										Tipo de edificación
-									</label>
-									<Field
-										as="select"
-										name="buildingType"
-										className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-									>
-										<option value="">Selecciona una opción</option>
-										<option value="Casa">Casa</option>
-										<option value="Departamento">Departamento</option>
-										<option value="Oficina">Oficina</option>
-										<option value="Local comercial">Local comercial</option>
-										<option value="Otro">Otro</option>
-									</Field>
-									<ErrorMessage
-										name="buildingType"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+									{/* Tipo de edificación */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Tipo de edificación
+										</label>
+										<Field
+											as="select"
+											name="buildingType"
+											className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+										>
+											<option value="">Selecciona una opción</option>
+											<option value="Casa">Casa</option>
+											<option value="Departamento">Departamento</option>
+											<option value="Oficina">Oficina</option>
+											<option value="Local comercial">Local comercial</option>
+											<option value="Otro">Otro</option>
+										</Field>
+										<ErrorMessage
+											name="buildingType"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* Comentarios adicionales */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">
-										Comentarios adicionales (opcional)
-									</label>
-									<Field
-										as="textarea"
-										name="comments"
-										rows={3}
-										placeholder="Ej. Tocar el timbre azul o dejar el paquete en recepción."
-										className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none resize-none"
-									/>
-									<ErrorMessage
-										name="comments"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+									{/* Comentarios */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Comentarios adicionales (opcional)
+										</label>
+										<Field
+											as="textarea"
+											name="comments"
+											rows={3}
+											placeholder="Ej. Tocar el timbre azul o dejar el paquete en recepción."
+											className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] outline-none resize-none"
+										/>
+										<ErrorMessage
+											name="comments"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* País (solo lectura) */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">País</label>
-									<input
-										type="text"
-										value={userCountryName || "No especificado"}
-										readOnly
-										className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-									/>
-								</div>
+									{/* País readonly */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											País
+										</label>
+										<input
+											type="text"
+											value={userCountryName || "No especificado"}
+											readOnly
+											className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+										/>
+									</div>
 
-								{/* Región */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">
-										Estado / Región
-									</label>
-									<Field
-										as="select"
-										name="regionId"
-										className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-										onChange={(e: any) => {
-											setFieldValue("regionId", e.target.value);
-											handleRegionChange(e.target.value);
-										}}
-									>
-										<option value="">Selecciona una región</option>
-										{regions.map((r) => (
-											<option key={r.id} value={r.id}>
-												{r.name}
-											</option>
-										))}
-									</Field>
-									<ErrorMessage
-										name="regionId"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+									{/* Región */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Estado / Región
+										</label>
+										<Field
+											as="select"
+											name="regionId"
+											className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+											onChange={(e: any) => {
+												setFieldValue("regionId", e.target.value);
+												handleRegionChange(e.target.value);
+											}}
+										>
+											<option value="">Selecciona una región</option>
+											{regions.map((r) => (
+												<option key={r.id} value={r.id}>
+													{r.name}
+												</option>
+											))}
+										</Field>
+										<ErrorMessage
+											name="regionId"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* Ciudad */}
-								<div>
-									<label className="block text-sm text-gray-500 mb-1">Ciudad</label>
-									<Field
-										as="select"
-										name="cityId"
-										className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
-									>
-										<option value="">Selecciona una ciudad</option>
-										{cities.map((c) => (
-											<option key={c.id} value={c.id}>
-												{c.name}
-											</option>
-										))}
-									</Field>
-									<ErrorMessage
-										name="cityId"
-										component="p"
-										className="text-red-500 text-sm mt-1"
-									/>
-								</div>
+									{/* Ciudad */}
+									<div>
+										<label className="block text-sm text-gray-500 mb-1">
+											Ciudad
+										</label>
+										<Field
+											as="select"
+											name="cityId"
+											className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] outline-none"
+										>
+											<option value="">Selecciona una ciudad</option>
+											{cities.map((c) => (
+												<option key={c.id} value={c.id}>
+													{c.name}
+												</option>
+											))}
+										</Field>
+										<ErrorMessage
+											name="cityId"
+											component="p"
+											className="text-red-500 text-sm mt-1"
+										/>
+									</div>
 
-								{/* Botones */}
-								<div className="flex justify-end gap-3 mt-6">
-									<button
-										type="button"
-										onClick={onClose}
-										className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
-									>
-										Cancelar
-									</button>
+									{/* Botones */}
+									<div className="flex justify-end gap-3 mt-6 pb-3">
+										<button
+											type="button"
+											onClick={onClose}
+											className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
+										>
+											Cancelar
+										</button>
 
-									<button
-										type="submit"
-										disabled={isSubmitting}
-										className="px-5 py-2 bg-[var(--color-primary)] text-white font-semibold rounded-lg hover:bg-[var(--color-hover)] transition-all"
-									>
-										{isSubmitting
-											? "Guardando..."
-											: address
-											? "Guardar cambios"
-											: "Guardar dirección"}
-									</button>
-								</div>
-							</Form>
-						)}
-					</Formik>
+										<button
+											type="submit"
+											disabled={isSubmitting}
+											className="px-5 py-2 bg-[var(--color-primary)] text-white font-semibold rounded-lg hover:bg-[var(--color-hover)] transition-all"
+										>
+											{isSubmitting
+												? "Guardando..."
+												: address
+												? "Guardar cambios"
+												: "Guardar dirección"}
+										</button>
+									</div>
+								</Form>
+							)}
+						</Formik>
+					</div>
 				</motion.div>
 			</motion.div>
 		</AnimatePresence>
