@@ -1,30 +1,21 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useAuthStore } from "@/app/store/auth.store";
 import EditUserForm from "@/app/components/EditUserForm";
 import UploadProfilePicture from "@/app/components/UploadProfilePicture";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-	faBell,
-	faCalendar,
-	faGear,
 	faPenToSquare,
 	faUser,
 	faEnvelope,
 	faPhone,
 	faGlobe,
 } from "@fortawesome/free-solid-svg-icons";
-import { faHeart, faStar } from "@fortawesome/free-regular-svg-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import ReactCountryFlag from "react-country-flag";
-
-// Import dinámico para evitar errores SSR
-const ProfileItem = dynamic(() => import("@/app/components/ProfileItem"), {
-	ssr: false,
-});
+import AddressList from "@/app/components/AddressList";
 
 export default function ProfilePage() {
 	const { user } = useAuthStore();
@@ -32,20 +23,20 @@ export default function ProfilePage() {
 	const [showUpload, setShowUpload] = useState(false);
 
 	return (
-		<main className="max-w-6xl mx-auto mt-10 px-4 font-nunito">
-			{/* HEADER */}
-			<section className="relative bg-[var(--color-primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg transition-all">
-				{/* FOTO + ICONO */}
+		<main className="max-w-5xl mx-auto mt-10 px-4 font-nunito">
+			{/* ENCABEZADO PERFIL */}
+			<section className="bg-[var(--color-primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg transition-all">
+				{/* FOTO PERFIL */}
 				<div className="flex items-center gap-6 relative">
 					<div className="relative group w-36 h-36">
 						{user?.profilePicture ? (
 							<img
 								src={user.profilePicture}
-								alt="User profile"
-								className="w-36 h-36 rounded-full border-4 border-white object-cover shadow-lg transition-all duration-300 group-hover:opacity-80"
+								alt="Foto de perfil"
+								className="w-36 h-36 rounded-full border-4 border-white object-cover shadow-lg group-hover:opacity-80 transition-all duration-300"
 							/>
 						) : (
-							<div className="w-36 h-36 rounded-full border-4 border-white flex items-center justify-center bg-white/20 shadow-lg group-hover:opacity-80 transition-all duration-300">
+							<div className="w-36 h-36 rounded-full border-4 border-white flex items-center justify-center bg-white/20 shadow-lg">
 								<FontAwesomeIcon
 									icon={faUser}
 									className="text-4xl text-gray-200"
@@ -53,22 +44,19 @@ export default function ProfilePage() {
 							</div>
 						)}
 
-						{/* ICONO LAPICITO */}
+						{/* ICONO EDITAR FOTO */}
 						<button
 							onClick={() => setShowUpload(true)}
-							className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow-md hover:bg-gray-100 transition-all opacity-90 hover:opacity-100"
+							className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow-md hover:bg-gray-100 transition-all"
 							title="Editar foto de perfil"
 						>
-							<FontAwesomeIcon
-								icon={faPenToSquare}
-								className="w-4 h-4"
-							/>
+							<FontAwesomeIcon icon={faPenToSquare} className="w-4 h-4" />
 						</button>
 					</div>
 
-					{/* INFO USUARIO */}
+					{/* INFO BÁSICA */}
 					<div>
-						<h2 className="text-4xl font-bold tracking-tight">
+						<h2 className="text-3xl font-bold tracking-tight">
 							{user?.names} {user?.surnames}
 						</h2>
 						<p className="text-lg opacity-90">{user?.email}</p>
@@ -82,22 +70,6 @@ export default function ProfilePage() {
 						</button>
 					</div>
 				</div>
-
-				{/* Estadísticas */}
-				<div className="flex justify-center md:justify-end gap-10">
-					<div className="text-center">
-						<p className="text-4xl font-bold">10</p>
-						<p className="text-lg opacity-80">Servicios</p>
-					</div>
-					<div className="text-center">
-						<p className="text-4xl font-bold">10</p>
-						<p className="text-lg opacity-80">Favoritos</p>
-					</div>
-					<div className="text-center">
-						<p className="text-4xl font-bold">10</p>
-						<p className="text-lg opacity-80">Reseñas</p>
-					</div>
-				</div>
 			</section>
 
 			{/* INFORMACIÓN PERSONAL */}
@@ -107,63 +79,56 @@ export default function ProfilePage() {
 				</h3>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+					{/* Nombre */}
 					<div className="flex items-center gap-3">
 						<FontAwesomeIcon
 							icon={faUser}
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">
-								Nombre completo
-							</span>
+							<span className="text-gray-500 block text-sm">Nombre completo</span>
 							{user?.names} {user?.surnames}
 						</p>
 					</div>
 
+					{/* Correo */}
 					<div className="flex items-center gap-3">
 						<FontAwesomeIcon
 							icon={faEnvelope}
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">
-								Correo electrónico
-							</span>
+							<span className="text-gray-500 block text-sm">Correo electrónico</span>
 							{user?.email}
 						</p>
 					</div>
 
+					{/* Teléfono */}
 					<div className="flex items-center gap-3">
 						<FontAwesomeIcon
 							icon={faPhone}
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">
-								Teléfono
-							</span>
+							<span className="text-gray-500 block text-sm">Teléfono</span>
 							{user?.phone || "No registrado"}
 						</p>
 					</div>
 
+					{/* País */}
 					<div className="flex items-center gap-3">
 						<FontAwesomeIcon
 							icon={faGlobe}
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<div className="font-medium flex items-center gap-2">
-							<span className="text-gray-500 block text-sm">
-								País
-							</span>
+							<span className="text-gray-500 block text-sm">País</span>
 							{user?.country ? (
 								<div className="flex items-center gap-2">
 									<ReactCountryFlag
 										countryCode={user.country.code}
 										svg
-										style={{
-											width: "1.3em",
-											height: "1.3em",
-										}}
+										style={{ width: "1.3em", height: "1.3em" }}
 									/>
 									<span>{user.country.name}</span>
 								</div>
@@ -175,30 +140,9 @@ export default function ProfilePage() {
 				</div>
 			</section>
 
-			{/* SECCIÓN INFERIOR */}
-			<section className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-				{/* MI CUENTA */}
-				<div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-md flex flex-col gap-5">
-					<h3 className="text-xl font-bold text-[var(--color-primary)] mb-2">
-						Mi cuenta
-					</h3>
-
-					<ProfileItem icon={faHeart} label="Favoritos" />
-					<ProfileItem icon={faStar} label="Mis reseñas" />
-					<ProfileItem
-						icon={faCalendar}
-						label="Historial de servicios"
-					/>
-					<ProfileItem icon={faBell} label="Notificaciones" />
-					<ProfileItem icon={faGear} label="Configuración" />
-				</div>
-
-				{/* DERECHA */}
-				<div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-md flex flex-col items-center justify-center text-center text-gray-500">
-					<p className="text-lg">
-						Aquí podrás ver tus próximas reservas y actividad.
-					</p>
-				</div>
+			{/* DIRECCIONES DEL USUARIO */}
+			<section className="mt-10">
+				<AddressList />
 			</section>
 
 			{/* MODAL EDITAR PERFIL */}
@@ -227,13 +171,10 @@ export default function ProfilePage() {
 							<EditUserForm
 								onSuccess={() => {
 									setShowEdit(false);
-									toast.success(
-										"Perfil actualizado correctamente",
-										{
-											position: "top-center",
-											autoClose: 2000,
-										}
-									);
+									toast.success("Perfil actualizado correctamente", {
+										position: "top-center",
+										autoClose: 2000,
+									});
 								}}
 							/>
 						</motion.div>
@@ -267,13 +208,10 @@ export default function ProfilePage() {
 							<UploadProfilePicture
 								onSuccess={() => {
 									setShowUpload(false);
-									toast.success(
-										"Foto actualizada correctamente",
-										{
-											position: "top-center",
-											autoClose: 2000,
-										}
-									);
+									toast.success("Foto actualizada correctamente", {
+										position: "top-center",
+										autoClose: 2000,
+									});
 								}}
 							/>
 						</motion.div>
