@@ -11,3 +11,26 @@ export const getProviderServices = async (providerId: string) => {
     return data;
     };
 
+export const updateService = async (id: string, serviceData: any) => {
+    const { data } = await apiClient.patch(`services/update/${id}`, serviceData);
+    return data;
+};
+
+export const getOneService = async (id: string) => {
+    const { data } = await apiClient.get(`services/find/${id}`);
+    return data;
+};
+
+export const setStatusActive = async (id: string) => {
+    const { data } = await apiClient.patch(`activate/${id}`);
+    return data;
+};
+export const setStatusInactive = async (id: string) => {
+    const { data } = await apiClient.patch(`deactivate/${id}`);
+    return data;
+};
+
+export const changeServiceStatus = async (id: string, status: "ACTIVE" | "INACTIVE") => {
+    const { data } = await apiClient.patch(`services/status/${id}`, { status });
+    return data;
+};

@@ -52,7 +52,7 @@ export default function PageServices() {
 		fetchServices();
 	}, [user, role]);
 
-	if (loading) return <p>Cargando servicios...</p>;
+	if (loading) return <div className="flex justify-center items-center h-screen text-[var(--color-primary)] text-xl font-bold">Cargando servicio...</div>
 	return (
 		<main className="flex flex-col justify-start bg--background overflow-x-hidden overflow-y-hidden min-h-screen px-2 pb-20 md:pb-4 max-w-[1300px] mx-auto">
 			<h1 className="font-bold text-[var(--color-primary)] text-[48px] mt-10 text-center md:text-left">
@@ -64,19 +64,22 @@ export default function PageServices() {
 				<h4 className="mx-4 text-white text-[36px] font-semiBold text-center md:text-left">
 					Administra tus servicios
 				</h4>
-				<SearchBar/>
-				<Link href={"/provider/serviceRegister"}>
-					<button className="py-1 px-3 bg-green-400 rounded-xl mt-2 ml-4 hover:bg-green-200"> Registar un <strong>Nuevo Servicio</strong></button>
-				</Link>
+				<span className="mx-4 text-[20px] font-medium text-white text-center md:text-left">
+					En su detalle podes: Modificar, Dar de Alta o Baja tu Servicio 
+				</span>
+				{/* <SearchBar/> */}
 			</div>
 			{/* Filtros */}
-			<span className="text-[#949492] mt-5">
-				Filtra por:
+			<span className="text-[#949492] mt-2">
+				<Link href={"/provider/serviceRegister"}>
+					<button className="py-1 px-3 bg-green-400 rounded-xl mt-2 hover:bg-green-200"> Registar un <strong>Nuevo Servicio</strong></button>
+				</Link>
+				{/* Filtra por:
 				<ul className="flex flex-col lg:flex-row text-black font-semibold gap-2 rounded-lg mb-4">
 					<FilterTag icon={faDollarSign} label="Menor Precio" />
 					<FilterTag icon={faStar} label="Mejores Valorados" />
 					<FilterTag icon={faClock} label="Menor Duracion" />
-				</ul>
+				</ul> */}
 			</span>
 
 			{/* Cards */}

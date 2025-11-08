@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/app/store/auth.store";
 
 const apiClient = axios.create({
-    baseURL: "https://serviyapp-backend-betl.onrender.com/",
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
     });
 
     apiClient.interceptors.request.use((config) => {

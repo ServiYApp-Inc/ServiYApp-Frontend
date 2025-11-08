@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { Api } from "@/app/services/api";
 import IService from "@/app/interfaces/IService";
 import { motion } from "framer-motion";
+import { changeServiceStatus, setStatusActive, setStatusInactive } from "../../serviceRegister/service.service";
 
 export default function ServiceDetailPage() {
     const { id } = useParams();
@@ -38,12 +39,21 @@ export default function ServiceDetailPage() {
 
     if (loading)
         return (
-            <div className="flex justify-center items-center h-screen text-gray-500 text-lg">
+            <div className="flex justify-center items-center h-screen text-[var(--color-primary)] text-xl font-bold">
                 Cargando servicio...
             </div>
         );
 
     if (!service) return notFound();
+
+    console.log(service.status);
+    
+
+    const handleStatus = async () => {
+        const newStatus = service.status === "active" ? "INACTIVE" : "ACTIVE";
+        await changeServiceStatus(id as string, newStatus);
+        setService({ ...service, status: newStatus.toLowerCase() });
+    };
 
     return (
         <main className="min-h-screen flex flex-col items-center font-nunito bg-gray-50 pb-10">
@@ -149,17 +159,28 @@ export default function ServiceDetailPage() {
                     <motion.button
                         whileTap={{ scale: 0.97 }}
                         className="flex items-center justify-center gap-2 sm:gap-3 bg-[var(--color-primary)] text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-[var(--color-primary-dark,#1A2340)] shadow-md hover:shadow-lg transition-all"
+                        onClick={() => router.push(`/provider/services/${id}/updateService`)}
                     >
-                        Modificar Servicio
+                        Modificar
                     </motion.button>
-                    <motion.button
+                    {service.status === "active" ?<motion.button
                         whileTap={{ scale: 0.97 }}
                         className="flex items-center justify-center gap-2 sm:gap-3 bg-red-500 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-red-450 shadow-md hover:shadow-lg transition-all"
+                        onClick={handleStatus}
                     >
-                        Dar de Baja Servicio
+                        Dar de Baja
                     </motion.button>
+                    :
+                    <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        className="flex items-center justify-center gap-2 sm:gap-3 bg-green-500 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-green-450 shadow-md hover:shadow-lg transition-all"
+                        onClick={handleStatus}
+                    >
+                        Dar de Alta
+                    </motion.button>}
                 </div>
             </motion.section>
+            <button onClick={() => router.back()} className=" py-1 px-3 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">⬅ Volver a Servicios</button>
         </main>
     );
 }
