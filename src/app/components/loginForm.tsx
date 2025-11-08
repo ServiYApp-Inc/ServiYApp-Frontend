@@ -9,6 +9,7 @@ import {
 	faLock,
 	faEye,
 	faEyeSlash,
+	faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { ErrorMessage, Field, Form, Formik } from "formik";
@@ -36,6 +37,11 @@ export default function LoginForm({ role }: LoginFormProps) {
 	const setAuth = useAuthStore((s) => s.setAuth);
 	const [showPassword, setShowPassword] = useState(false);
 
+	// 🟣 Estado del modal "Olvidaste tu contraseña"
+	const [showForgotModal, setShowForgotModal] = useState(false);
+	const [forgotEmail, setForgotEmail] = useState("");
+	const [isSending, setIsSending] = useState(false);
+
 	const handleSubmit = async (values: {
 		email: string;
 		password: string;
@@ -50,7 +56,7 @@ export default function LoginForm({ role }: LoginFormProps) {
 
 			setAuth({
 				token: data.access_token,
-				role,
+				role: data.user?.role || "provider",
 				user: data.provider || data.user,
 			});
 
@@ -61,7 +67,6 @@ export default function LoginForm({ role }: LoginFormProps) {
 					router.push("/provider/dashboard");
 					return;
 				}
-
 				if (role === "user") {
 					const userRole = data.user?.role?.toLowerCase();
 					if (userRole === "admin") router.push("/admin/dashboard");
@@ -78,10 +83,50 @@ export default function LoginForm({ role }: LoginFormProps) {
 		}
 	};
 
+	const handleForgotPassword = async () => {
+		if (!forgotEmail) {
+			toast.error("Por favor, ingresa tu correo electrónico.");
+			return;
+		}
+
+		try {
+			setIsSending(true);
+
+			// ✅ Usa plural porque así está en tu backend
+			const endpoint =
+				role === "provider"
+					? "/auth/providers/forgot-password"
+					: "/auth/users/forgot-password";
+
+			console.log(
+				"📨 Enviando solicitud a:",
+				endpoint,
+				"con email:",
+				forgotEmail
+			);
+
+			const { data } = await Api.post(endpoint, { email: forgotEmail });
+
+			console.log("✅ Respuesta del servidor:", data);
+			toast.success("Correo de recuperación enviado con éxito.");
+			setForgotEmail("");
+			setShowForgotModal(false);
+		} catch (error: any) {
+			console.error("❌ Error en forgot password:", error);
+
+			const msg =
+				error?.response?.data?.message ||
+				`No se pudo enviar el correo de recuperación.`;
+			toast.error(msg);
+		} finally {
+			setIsSending(false);
+		}
+	};
+
 	const handleGoogle = () => {
-		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/";
 		const endpoint =
-			role === "provider" ? "/auth/google/provider" : "/auth/google/user";
+			role === "provider" ? "auth/google/provider" : "auth/google/user";
 		window.location.href = `${base}${endpoint}`;
 	};
 
@@ -92,6 +137,65 @@ export default function LoginForm({ role }: LoginFormProps) {
 		>
 			<ToastContainer position="top-right" />
 
+			{/* Modal Olvidaste tu contraseña */}
+			{showForgotModal && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+					<div
+						className="bg-white rounded-2xl p-6 w-full max-w-sm relative"
+						style={{
+							backgroundColor: "var(--color-bg-light)",
+							color: "var(--color-foreground)",
+						}}
+					>
+						<button
+							onClick={() => setShowForgotModal(false)}
+							className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+						>
+							<FontAwesomeIcon icon={faTimes} />
+						</button>
+
+						<h2
+							className="text-lg font-semibold mb-2 text-center"
+							style={{ color: "var(--color-primary)" }}
+						>
+							¿Olvidaste tu contraseña?
+						</h2>
+						<p className="text-sm text-center mb-4">
+							Ingresa tu correo electrónico y te enviaremos un
+							enlace para restablecerla.
+						</p>
+
+						<div className="relative mb-4">
+							<FontAwesomeIcon
+								icon={faEnvelope}
+								className="absolute left-3 top-3 text-gray-400"
+								style={{ width: "14px", height: "14px" }}
+							/>
+							<input
+								type="email"
+								placeholder="Correo electrónico"
+								value={forgotEmail}
+								onChange={(e) => setForgotEmail(e.target.value)}
+								className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none"
+							/>
+						</div>
+
+						<button
+							onClick={handleForgotPassword}
+							disabled={isSending}
+							className="w-full py-2 rounded-lg font-semibold"
+							style={{
+								backgroundColor: "var(--color-primary)",
+								color: "var(--color-bg-light)",
+							}}
+						>
+							{isSending ? "Enviando..." : "Enviar correo"}
+						</button>
+					</div>
+				</div>
+			)}
+
+			{/* FORM LOGIN */}
 			<div
 				className="w-full max-w-md rounded-2xl shadow-sm p-8 border"
 				style={{
@@ -178,13 +282,15 @@ export default function LoginForm({ role }: LoginFormProps) {
 								/>
 							</div>
 
-							<a
-								href="/forgot-password"
+							{/* Botón abrir modal */}
+							<button
+								type="button"
+								onClick={() => setShowForgotModal(true)}
 								className="block text-right text-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded"
 								style={{ color: "var(--color-primary)" }}
 							>
 								¿Olvidaste tu contraseña?
-							</a>
+							</button>
 
 							{/* Botón principal */}
 							<button

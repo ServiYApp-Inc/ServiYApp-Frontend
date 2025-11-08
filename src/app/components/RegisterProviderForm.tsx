@@ -535,7 +535,7 @@ export default function RegisterProviderForm() {
 									color: "var(--color-primary)",
 								}}
 								onClick={() => {
-									window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/provider`;
+									window.location.href = `${process.env.NEXT_PUBLIC_API_URL}auth/google/provider`;
 								}}
 							>
 								<FontAwesomeIcon icon={faGoogle} />
