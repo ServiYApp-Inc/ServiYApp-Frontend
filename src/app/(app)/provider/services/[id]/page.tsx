@@ -45,14 +45,19 @@ export default function ServiceDetailPage() {
         );
 
     if (!service) return notFound();
-
-    console.log(service.status);
     
-
     const handleStatus = async () => {
-        const newStatus = service.status === "active" ? "INACTIVE" : "ACTIVE";
-        await changeServiceStatus(id as string, newStatus);
-        setService({ ...service, status: newStatus.toLowerCase() });
+        try {
+            if (service.status === "active") {
+            await setStatusInactive(id as string);
+            setService({ ...service, status: "inactive" });
+            } else {
+            await setStatusActive(id as string);
+            setService({ ...service, status: "active" });
+            }
+        } catch (error) {
+            console.error("Error cambiando el estado:", error);
+        }
     };
 
     return (

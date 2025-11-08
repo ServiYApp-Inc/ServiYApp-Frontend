@@ -33,12 +33,8 @@ export default function PageServices() {
 			notFound();
 			return;
 			}
-
 			let data;
-
 			data = await getProviderServices(user.id);
-			
-
 			setServices(data);
 			if (data.length === 0) notFound();
 		} catch (error) {
@@ -48,17 +44,16 @@ export default function PageServices() {
 			setLoading(false);
 		}
 		};
-
 		fetchServices();
 	}, [user, role]);
 
 	if (loading) return <div className="flex justify-center items-center h-screen text-[var(--color-primary)] text-xl font-bold">Cargando servicio...</div>
+
 	return (
 		<main className="flex flex-col justify-start bg--background overflow-x-hidden overflow-y-hidden min-h-screen px-2 pb-20 md:pb-4 max-w-[1300px] mx-auto">
 			<h1 className="font-bold text-[var(--color-primary)] text-[48px] mt-10 text-center md:text-left">
 				Mis Servicios
 			</h1>
-
 			{/* Barra superior */}
 			<div className="w-full bg-[var(--color-primary)] rounded-2xl py-4 mt-6 flex flex-col items-start">
 				<h4 className="mx-4 text-white text-[36px] font-semiBold text-center md:text-left">

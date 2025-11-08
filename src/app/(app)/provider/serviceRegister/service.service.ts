@@ -22,11 +22,11 @@ export const getOneService = async (id: string) => {
 };
 
 export const setStatusActive = async (id: string) => {
-    const { data } = await apiClient.patch(`activate/${id}`);
+    const { data } = await apiClient.patch(`services/activate/${id}`);
     return data;
 };
 export const setStatusInactive = async (id: string) => {
-    const { data } = await apiClient.patch(`deactivate/${id}`);
+    const { data } = await apiClient.patch(`services/deactivate/${id}`);
     return data;
 };
 

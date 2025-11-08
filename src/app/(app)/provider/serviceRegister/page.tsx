@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { getCategories } from "@/app/services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
 import { createService } from "./service.service";
+import { useRouter } from "next/navigation";
 
 // Esquema de validación con Yup
 const ServiceSchema = Yup.object().shape({
@@ -25,7 +26,7 @@ const ServiceSchema = Yup.object().shape({
 });
 
 export default function ServiceForm() {
-
+    const router = useRouter();
     const { user } = useAuthStore();
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
@@ -78,6 +79,7 @@ export default function ServiceForm() {
             console.log("✅ Servicio creado:", createdService);
             alert("Servicio registrado exitosamente");
             resetForm();
+            router.back();
         } catch (error: any) {
             const msg = error.response?.data?.message || error.message;
             console.error("❌ Error al crear servicio:", msg);
