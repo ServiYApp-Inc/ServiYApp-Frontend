@@ -231,25 +231,7 @@ export default function ProviderProfilePage() {
 				</div>
 			</section>
 
-			{/* SECCIÓN INFERIOR */}
-			<section className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-				<div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-md flex flex-col gap-5">
-					<h3 className="text-xl font-bold text-[var(--color-primary)] mb-2">
-						Mi cuenta
-					</h3>
-					<ProfileItem icon={faCalendar} label="Turnos programados" />
-					<ProfileItem icon={faStar} label="Mis reseñas" />
-					<ProfileItem icon={faBell} label="Notificaciones" />
-					<ProfileItem icon={faGear} label="Configuración" />
-				</div>
-
-				<div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-md flex flex-col items-center justify-center text-center text-gray-500">
-					<p className="text-lg">
-						Aquí podrás ver tus próximos turnos, estadísticas y configurar tu
-						perfil profesional.
-					</p>
-				</div>
-			</section>
+			
 
 			{/* MODAL DE EDITAR PERFIL */}
 			<AnimatePresence>
