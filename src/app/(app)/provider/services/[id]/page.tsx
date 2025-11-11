@@ -7,6 +7,13 @@ import {
     faClock,
     faUser,
     faTag,
+    faBookBookmark,
+    faPenToSquare,
+    faXmark,
+    faXmarkCircle,
+    faCheckCircle,
+    faArrowRotateBack,
+    faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -51,9 +58,12 @@ export default function ServiceDetailPage() {
             if (service.status === "active") {
             await setStatusInactive(id as string);
             setService({ ...service, status: "inactive" });
-            } else {
+            console.log(service.status);
+            
+        } else {
             await setStatusActive(id as string);
             setService({ ...service, status: "active" });
+            console.log(service.status);
             }
         } catch (error) {
             console.error("Error cambiando el estado:", error);
@@ -83,6 +93,15 @@ export default function ServiceDetailPage() {
                     <FontAwesomeIcon icon={faStar} />
                     <span>{service.rating?.toFixed(1) || "5.0"}</span>
                 </div>
+                {service.status === "active" ?<div className="absolute top-3 sm:top-5 left-4 sm:left-8 flex items-center gap-2 bg-white/90 backdrop-blur-sm text-green-500 font-semibold rounded-full px-3 sm:px-4 py-1 text-sm sm:text-base shadow-md">
+                    <FontAwesomeIcon icon={faBookBookmark} />
+                    <span>{service.status}</span>
+                </div>
+                :
+                <div className="absolute top-3 sm:top-5 left-4 sm:left-8 flex items-center gap-2 bg-white/90 backdrop-blur-sm text-red-500 font-semibold rounded-full px-3 sm:px-4 py-1 text-sm sm:text-base shadow-md">
+                    <FontAwesomeIcon icon={faBookBookmark} />
+                    <span>{service.status}</span>
+                </div>}
 
                 {/* Nombre dentro de la imagen */}
                 <div className="absolute bottom-20 sm:bottom-24 left-4 sm:left-8 text-white drop-shadow-xl">
@@ -166,6 +185,11 @@ export default function ServiceDetailPage() {
                         className="flex items-center justify-center gap-2 sm:gap-3 bg-[var(--color-primary)] text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-[var(--color-primary-dark,#1A2340)] shadow-md hover:shadow-lg transition-all"
                         onClick={() => router.push(`/provider/services/${id}/updateService`)}
                     >
+                        <FontAwesomeIcon
+                            icon={faPenToSquare}
+                            className="text-sm md:text-base"
+                            style={{ width: "1rem", height: "1rem" }}
+                        />
                         Modificar
                     </motion.button>
                     {service.status === "active" ?<motion.button
@@ -173,6 +197,11 @@ export default function ServiceDetailPage() {
                         className="flex items-center justify-center gap-2 sm:gap-3 bg-red-500 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-red-450 shadow-md hover:shadow-lg transition-all"
                         onClick={handleStatus}
                     >
+                        <FontAwesomeIcon
+                            icon={faXmarkCircle}
+                            className="text-sm md:text-base"
+                            style={{ width: "1rem", height: "1rem" }}
+                        />
                         Dar de Baja
                     </motion.button>
                     :
@@ -181,11 +210,23 @@ export default function ServiceDetailPage() {
                         className="flex items-center justify-center gap-2 sm:gap-3 bg-green-500 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-green-450 shadow-md hover:shadow-lg transition-all"
                         onClick={handleStatus}
                     >
+                        <FontAwesomeIcon
+                            icon={faCheckCircle}
+                            className="text-sm md:text-base"
+                            style={{ width: "1rem", height: "1rem" }}
+                        />
                         Dar de Alta
                     </motion.button>}
                 </div>
             </motion.section>
-            <button onClick={() => router.back()} className=" py-1 px-3 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">⬅ Volver a Servicios</button>
+            <button onClick={() => router.back()} className=" py-1 px-3 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">
+                <FontAwesomeIcon
+					icon={faArrowLeft}
+					className="text-sm md:text-base mr-1"
+					style={{ width: "1rem", height: "1rem" }}
+				/>
+                Volver a Servicios
+            </button>
         </main>
     );
 }

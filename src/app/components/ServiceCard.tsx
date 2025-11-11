@@ -1,8 +1,10 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faClock, faTag } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faClock, faTag, faCartPlus } from "@fortawesome/free-solid-svg-icons";
 import FavBtn from "./FavBtn";
 import SeeMoreBtn from "./SeeMoreBtn";
 import IService from "../interfaces/IService";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "../store/auth.store";
 
 export default function ServiceCard({
 	id,
@@ -18,6 +20,13 @@ export default function ServiceCard({
 	category,
 }: IService) {
 	const providerName = `${provider.names} ${provider.surnames}`;
+	const { role } = useAuthStore();
+
+	const router = useRouter()
+
+	const handleAddToCart = () => {
+		router.push(`/user/order/confirm?id=${id}`);
+	};
 
 	return (
 		<div className="flex flex-col w-full max-w-[330px] h-[440px] border border-[#949492] rounded-lg hover:scale-105 transition-transform hover:shadow-lg bg-white">
@@ -64,11 +73,19 @@ export default function ServiceCard({
 				</p>
 			</span>
 
-			<span className="flex flex-row justify-between px-4 mt-2">
+			<span className="flex flex-row justify-between items-center px-4 mt-2">
 				<p className="text-md text-[var(--color-primary)] font-bold">
 					${price} mxn
 				</p>
+				<div className="flex items-center gap-2"> 
 				<SeeMoreBtn id={id} />
+				{role === "provider" || role === "admin" ? null : <FontAwesomeIcon
+					icon={faCartPlus}
+					className="bg-[var(--color-primary)] p-1 rounded-lg text-white hover:scale-[1.05] hover:bg-[var(--color-primary-hover)] transition"
+					style={{ width: "1.4rem", height: "1.4rem"}}
+					onClick={handleAddToCart}
+					/>}
+				</div>
 			</span>
 		</div>
 	);
