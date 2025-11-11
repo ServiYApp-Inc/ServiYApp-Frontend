@@ -33,34 +33,27 @@ export default function ResetPasswordPage() {
 		setRole(r);
 	}, [searchParams]);
 	console.log(role);
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		if (!password || !confirmPassword) {
-			toast.error("Por favor, completa ambos campos.");
-			return;
+			return toast.error("Por favor, completa ambos campos.");
 		}
 		if (password !== confirmPassword) {
-			toast.error("Las contraseñas no coinciden.");
-			return;
+			return toast.error("Las contraseñas no coinciden.");
 		}
-		if (!id || !role) {
-			toast.error("Faltan datos para procesar la solicitud.");
-			return;
+		if (!token) {
+			return toast.error("Token inválido o faltante.");
 		}
 
 		try {
 			setIsSubmitting(true);
 
-			// 🔹 Endpoint dinámico según el rol
-			let endpoint = "";
-			if (role === "provider") endpoint = `providers/${id}`;
-			else endpoint = `users/${id}`;
-
-			console.log("📡 Enviando PATCH a:", endpoint);
+			console.log("📡 PATCH => /auth/reset-password");
 
 			await Api.patch(
-				endpoint,
+				`auth/reset-password?token=${token}`,
 				{ password },
 				{
 					headers: {
@@ -69,17 +62,20 @@ export default function ResetPasswordPage() {
 				}
 			);
 
+			
+
 			toast.success("Contraseña actualizada correctamente.");
 			setTimeout(() => {
-				if (role === "provider") router.push("/loginProvider");
-				else router.push("/loginUser");
+				router.push(
+					role === "provider" ? "/loginProvider" : "/loginUser"
+				);
 			}, 2000);
 		} catch (error: any) {
 			console.error("❌ Error en reset:", error);
-			const msg =
+			toast.error(
 				error?.response?.data?.message ||
-				"Error al actualizar la contraseña.";
-			toast.error(msg);
+					"Error al actualizar la contraseña."
+			);
 		} finally {
 			setIsSubmitting(false);
 		}

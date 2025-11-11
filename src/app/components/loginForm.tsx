@@ -11,7 +11,6 @@ import {
 	faEyeSlash,
 	faTimes,
 } from "@fortawesome/free-solid-svg-icons";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -37,15 +36,12 @@ export default function LoginForm({ role }: LoginFormProps) {
 	const setAuth = useAuthStore((s) => s.setAuth);
 	const [showPassword, setShowPassword] = useState(false);
 
-	// 🟣 Estado del modal "Olvidaste tu contraseña"
+	// Modal forgot password
 	const [showForgotModal, setShowForgotModal] = useState(false);
 	const [forgotEmail, setForgotEmail] = useState("");
 	const [isSending, setIsSending] = useState(false);
 
-	const handleSubmit = async (values: {
-		email: string;
-		password: string;
-	}) => {
+	const handleSubmit = async (values: { email: string; password: string }) => {
 		try {
 			const endpoint =
 				role === "provider"
@@ -54,13 +50,14 @@ export default function LoginForm({ role }: LoginFormProps) {
 
 			const { data } = await Api.post(endpoint, values);
 
+			// ✅ Solo guardar auth si el login fue exitoso
 			setAuth({
 				token: data.access_token,
 				role: data.user?.role || "provider",
 				user: data.provider || data.user,
 			});
 
-			toast.success("Inicio de sesión exitoso", { autoClose: 2000 });
+			toast.success("Inicio de sesión exitoso");
 
 			setTimeout(() => {
 				if (role === "provider") {
@@ -68,18 +65,18 @@ export default function LoginForm({ role }: LoginFormProps) {
 					return;
 				}
 				if (role === "user") {
-					const userRole = data.user?.role?.toLowerCase();
-					if (userRole === "admin") router.push("/admin/dashboard");
-					else router.push("/user/services");
+					router.push("/user/services");
 					return;
 				}
-			}, 2000);
+			}, 1200);
 		} catch (error: any) {
 			console.error(error);
-			const msg =
+			toast.error(
 				error?.response?.data?.message ||
-				"Credenciales incorrectas o error en el servidor.";
-			toast.error(msg, { autoClose: 2500 });
+					"Credenciales incorrectas o error en el servidor."
+			);
+
+			// ✅ Si falla, NO redirigir y NO sobreescribir el rol
 		}
 	};
 
@@ -92,32 +89,20 @@ export default function LoginForm({ role }: LoginFormProps) {
 		try {
 			setIsSending(true);
 
-			// ✅ Usa plural porque así está en tu backend
 			const endpoint =
 				role === "provider"
 					? "auth/providers/forgot-password"
 					: "auth/users/forgot-password";
 
-			console.log(
-				"📨 Enviando solicitud a:",
-				endpoint,
-				"con email:",
-				forgotEmail
-			);
+			await Api.post(endpoint, { email: forgotEmail });
 
-			const { data } = await Api.post(endpoint, { email: forgotEmail });
-
-			console.log("✅ Respuesta del servidor:", data);
-			toast.success("Correo de recuperación enviado con éxito.");
+			toast.success("Correo enviado correctamente");
 			setForgotEmail("");
 			setShowForgotModal(false);
 		} catch (error: any) {
-			console.error("❌ Error en forgot password:", error);
-
-			const msg =
-				error?.response?.data?.message ||
-				`No se pudo enviar el correo de recuperación.`;
-			toast.error(msg);
+			toast.error(
+				error?.response?.data?.message || "No se pudo enviar el correo."
+			);
 		} finally {
 			setIsSending(false);
 		}
@@ -161,8 +146,7 @@ export default function LoginForm({ role }: LoginFormProps) {
 							¿Olvidaste tu contraseña?
 						</h2>
 						<p className="text-sm text-center mb-4">
-							Ingresa tu correo electrónico y te enviaremos un
-							enlace para restablecerla.
+							Ingresa tu correo y te enviaremos un enlace para restablecerla.
 						</p>
 
 						<div className="relative mb-4">
@@ -210,13 +194,10 @@ export default function LoginForm({ role }: LoginFormProps) {
 					Inicio de Sesión
 				</h1>
 
-				<p
-					className="text-center mb-6 text-sm"
-					style={{ color: "var(--color-foreground)" }}
-				>
+				<p className="text-center mb-6 text-sm text-gray-600">
 					{role === "provider"
-						? "Inicia sesión como prestador para gestionar tus servicios"
-						: "Inicia sesión para reservar servicios de belleza a domicilio"}
+						? "Accede para administrar tus servicios"
+						: "Accede para reservar servicios a domicilio"}
 				</p>
 
 				<Formik
@@ -246,7 +227,7 @@ export default function LoginForm({ role }: LoginFormProps) {
 								/>
 							</div>
 
-							{/* Contraseña con toggle */}
+							{/* Contraseña */}
 							<div className="relative">
 								<FontAwesomeIcon
 									icon={faLock}
@@ -261,18 +242,12 @@ export default function LoginForm({ role }: LoginFormProps) {
 								/>
 								<button
 									type="button"
-									onClick={() =>
-										setShowPassword(!showPassword)
-									}
+									onClick={() => setShowPassword(!showPassword)}
 									className="absolute right-3 top-3 text-gray-400"
 								>
 									<FontAwesomeIcon
 										icon={showPassword ? faEyeSlash : faEye}
-										className="fa-icon"
-										style={{
-											width: "14px",
-											height: "14px",
-										}}
+										style={{ width: "14px", height: "14px" }}
 									/>
 								</button>
 								<ErrorMessage
@@ -282,17 +257,17 @@ export default function LoginForm({ role }: LoginFormProps) {
 								/>
 							</div>
 
-							{/* Botón abrir modal */}
+							{/* Forgot password */}
 							<button
 								type="button"
 								onClick={() => setShowForgotModal(true)}
-								className="block text-right text-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded"
+								className="block text-right text-sm font-medium hover:underline"
 								style={{ color: "var(--color-primary)" }}
 							>
 								¿Olvidaste tu contraseña?
 							</button>
 
-							{/* Botón principal */}
+							{/* Submit */}
 							<button
 								type="submit"
 								disabled={!isValid || isSubmitting}
@@ -302,17 +277,8 @@ export default function LoginForm({ role }: LoginFormProps) {
 									color: "var(--color-bg-light)",
 								}}
 							>
-								{isSubmitting
-									? "Cargando..."
-									: "Iniciar Sesión"}
+								{isSubmitting ? "Cargando..." : "Iniciar Sesión"}
 							</button>
-
-							{/* Divider */}
-							<div className="flex items-center justify-center gap-2 text-sm text-gray-500 mt-2">
-								<span className="w-1/4 border-b border-gray-300"></span>
-								<span>O intenta</span>
-								<span className="w-1/4 border-b border-gray-300"></span>
-							</div>
 
 							{/* Google */}
 							<button
@@ -321,23 +287,21 @@ export default function LoginForm({ role }: LoginFormProps) {
 								className="w-full flex items-center justify-center gap-2 font-medium py-2 rounded-lg border transition-colors"
 								style={{
 									borderColor: "var(--color-primary)",
-									backgroundColor: "var(--color-bg-light)",
 									color: "var(--color-primary)",
 								}}
 							>
-								<FontAwesomeIcon
-									icon={faGoogle}
-									className="fa-icon"
-									style={{ width: "14px", height: "14px" }}
-								/>
 								Iniciar Sesión con Google
 							</button>
 
-							{/* Enlace a registro */}
+							{/* Link registro */}
 							<p className="text-center text-sm mt-4 text-gray-600">
 								¿No tienes cuenta?{" "}
 								<a
-									href="/registerUser"
+									href={
+										role === "provider"
+											? "/registerProvider"
+											: "/registerUser"
+									}
 									className="font-semibold hover:underline"
 									style={{ color: "var(--color-primary)" }}
 								>
