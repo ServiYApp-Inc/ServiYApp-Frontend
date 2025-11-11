@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPowerOff } from "@fortawesome/free-solid-svg-icons";
-import { useAuthStore } from "@/app/store/auth.store";
+import { useCartStore } from "../store/useCartStore";
+import { useAuthStore } from "../store/auth.store";
 
 interface LogoutButtonProps {
 	isCollapsed?: boolean;
@@ -11,10 +12,13 @@ interface LogoutButtonProps {
 
 export default function LogoutButton({ isCollapsed }: LogoutButtonProps) {
 	const router = useRouter();
+	const { clearCart } = useCartStore();
 	const { clearAuth } = useAuthStore();
 
 	const handleLogout = () => {
+		clearCart();
 		clearAuth();
+
 		router.push("/");
 	};
 
