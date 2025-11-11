@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface FilterTagsProviderProps {
-	icon: any;
+	icon?: any;
 	label: string;
 	onClick?: () => void;
 	active?: boolean;
