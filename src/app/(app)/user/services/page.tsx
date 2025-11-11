@@ -128,7 +128,7 @@ const handleSearchResults = (data: IService[]) => {
 		</div>
 
 		{/* 🔹 Paginador */}
-		{totalPages > 1 && services.length >= limit &&( <div className="flex justify-center items-center gap-3 mt-10">
+		{totalPages > 1 && ( <div className="flex justify-center items-center gap-3 mt-10">
 			<button
 			onClick={() => handlePageChange(page - 1)}
 			disabled={page === 1}
