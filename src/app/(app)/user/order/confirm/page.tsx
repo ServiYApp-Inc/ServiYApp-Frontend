@@ -9,6 +9,7 @@ import {
 	faPlus,
 	faPenToSquare,
 	faChevronDown,
+	faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { Api } from "@/app/services/api";
 import Link from "next/link";
@@ -304,8 +305,9 @@ export default function ConfirmOrderPage() {
 						className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition"
 						style={{ backgroundColor: "var(--color-primary)" }}
 					>
-						<FontAwesomeIcon icon={faShoppingCart} />
-						Confirmar pedido
+						
+						Continuar 
+						<FontAwesomeIcon icon={faArrowRight} />
 					</button>
 				</div>
 			</motion.section>

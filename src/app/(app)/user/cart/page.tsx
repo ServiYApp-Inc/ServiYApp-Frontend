@@ -10,6 +10,7 @@ import {
 	faPlus,
 	faArrowRight,
 	faMapMarkerAlt,
+	faShoppingCart,
 } from "@fortawesome/free-solid-svg-icons";
 import { useCartStore } from "@/app/store/useCartStore";
 import { getAddressById } from "@/app/services/provider.service";
@@ -197,8 +198,8 @@ export default function CartPage() {
 									onClick={handleContinue}
 									className="flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white px-8 py-3 rounded-2xl text-lg font-semibold hover:opacity-90 shadow-md hover:shadow-lg transition-all"
 								>
-									Continuar
-									<FontAwesomeIcon icon={faArrowRight} />
+									Pagar
+									<FontAwesomeIcon icon={faShoppingCart} />
 								</motion.button>
 							</div>
 						</div>
