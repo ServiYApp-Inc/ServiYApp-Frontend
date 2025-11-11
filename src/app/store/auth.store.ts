@@ -42,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
 
 				localStorage.removeItem("serviyapp-auth");
 				localStorage.removeItem("access_token");
+				localStorage.removeItem("serviyapp-cart");
 			},
 		}),
 		{
