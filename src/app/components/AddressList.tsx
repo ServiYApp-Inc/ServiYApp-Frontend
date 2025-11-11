@@ -65,7 +65,7 @@ export default function AddressList() {
 						setSelectedAddress(null);
 						setIsModalOpen(true);
 					}}
-					className="px-5 py-2 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:bg-[var(--color-hover)] transition-all"
+					className="px-5 py-2 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:bg-[var(--color-primary-hover)] transition-all"
 				>
 					Agregar nueva
 				</button>

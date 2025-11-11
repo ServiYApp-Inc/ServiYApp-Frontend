@@ -314,7 +314,7 @@ export default function AddressFormModal({
 										<button
 											type="submit"
 											disabled={isSubmitting}
-											className="px-5 py-2 bg-[var(--color-primary)] text-white font-semibold rounded-lg hover:bg-[var(--color-hover)] transition-all"
+											className="px-5 py-2 bg-[var(--color-primary)] text-white font-semibold rounded-lg hover:bg-[var(--color-primary-hover)] transition-all"
 										>
 											{isSubmitting
 												? "Guardando..."
