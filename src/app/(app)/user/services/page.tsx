@@ -44,6 +44,7 @@ export default function PageServices() {
 	useEffect(() => {
 		fetchServices(undefined, page);
 	}, [page]);
+	
 
 	const handleFilter = async (param: string) => {
 		const newFilter = activeFilter === param ? "" : param;
