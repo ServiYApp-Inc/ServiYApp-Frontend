@@ -111,25 +111,7 @@ export default function Sidebar({
 		if (result.isConfirmed) {
 			clearAuth();
 			router.push("/");
-			await MySwal.fire({
-				title: "Sesión cerrada",
-				html: `<p style="font-size:14px; color:#555; margin-top:6px;">
-				Has cerrado sesión correctamente.
-			</p>`,
-				icon: "success",
-				iconColor: "#1D2846",
-				width: 340,
-				padding: "1.2rem",
-				showConfirmButton: false,
-				timer: 1800,
-				background: "#fff",
-				color: "#1D2846",
-				customClass: {
-					popup: "rounded-2xl shadow-lg",
-					title: "text-base font-semibold",
-					icon: "scale-75",
-				},
-			});
+			
 		}
 	};
 

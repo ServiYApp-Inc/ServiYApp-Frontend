@@ -62,11 +62,22 @@ export default function LoginForm({ role }: LoginFormProps) {
 
 			toast.success("Inicio de sesión exitoso", { autoClose: 2000 });
 
+			// 🧠 Si hay una ruta previa guardada, redirige allí primero
 			setTimeout(() => {
+				const redirectPath = localStorage.getItem("redirectAfterLogin");
+
+				if (redirectPath) {
+					router.replace(redirectPath);
+					localStorage.removeItem("redirectAfterLogin");
+					return;
+				}
+
+				// 🚀 Si no había ruta guardada, usa los defaults
 				if (role === "provider") {
 					router.push("/provider/dashboard");
 					return;
 				}
+
 				if (role === "user") {
 					const userRole = data.user?.role?.toLowerCase();
 					if (userRole === "admin") router.push("/admin/dashboard");
@@ -124,7 +135,8 @@ export default function LoginForm({ role }: LoginFormProps) {
 	};
 
 	const handleGoogle = () => {
-		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/";
+		const base =
+			process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/";
 		const endpoint =
 			role === "provider" ? "auth/google/provider" : "auth/google/user";
 		window.location.href = `${base}${endpoint}`;
