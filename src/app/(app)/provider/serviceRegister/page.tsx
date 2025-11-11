@@ -7,6 +7,8 @@ import { getCategories } from "@/app/services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
 import { createService } from "./service.service";
 import { useRouter } from "next/navigation";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 // Esquema de validación con Yup
 const ServiceSchema = Yup.object().shape({
@@ -234,7 +236,13 @@ export default function ServiceForm() {
             )}
         </Formik>
         </div>
-            <button onClick={() => router.back()} className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">⬅ Volver a Servicios</button>
+            <button onClick={() => router.back()} className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">
+                <FontAwesomeIcon
+					icon={faArrowLeft}
+					className="text-sm md:text-base mr-1"
+					style={{ width: "1rem", height: "1rem" }}
+				/>
+                Volver a Servicios</button>
         </div>
     );
     }

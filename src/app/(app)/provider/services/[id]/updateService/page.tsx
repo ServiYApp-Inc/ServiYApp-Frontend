@@ -8,6 +8,9 @@ import { useAuthStore } from "@/app/store/auth.store";
 import { getOneService, updateService } from "../../../serviceRegister/service.service";
 import { notFound, useParams, useRouter } from "next/navigation";
 import IService from "@/app/interfaces/IService";
+import Swal from "sweetalert2";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 
 // Esquema de validación con Yup
 const ServiceSchema = Yup.object().shape({
@@ -95,12 +98,27 @@ export default function ServiceUpdateForm() {
                 return;
             }
 
-            console.log("Datos enviados:", serviceData);
-            const updatedService = await updateService(id as string, serviceData);
-            console.log("✅ Servicio actualizado:", updatedService);
-
-            alert("Servicio actualizado correctamente");
-            router.back();
+            Swal.fire({
+                title: "¿Estas Seguro?",
+                text: "Si aceptas, se modificara el servicio",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#1d2846",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, Modificar."
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log("Datos enviados:", serviceData);
+                    const updatedService = updateService(id as string, serviceData);
+                    console.log("✅ Servicio actualizado:", updatedService);
+                    router.back();
+                    Swal.fire({
+                    title: "Servicio Modificado",
+                    text: "Su servicio fue modificado con EXITO",
+                    icon: "success"
+                    });
+                }
+            });
         } catch (error: any) {
             const msg = error.response?.data?.message || error.message;
             console.error("❌ Error al actualizar servicio:", msg);
@@ -256,7 +274,13 @@ export default function ServiceUpdateForm() {
             )}
         </Formik>
         </div>
-            <button onClick={() => router.back()} className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">⬅ Volver a Servicios</button>
+            <button onClick={() => router.back()} className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">
+                <FontAwesomeIcon
+                    icon={faArrowLeft}
+                    className="text-sm md:text-base mr-1"
+                    style={{ width: "1rem", height: "1rem" }}
+                />
+                Volver a Servicios</button>
         </div>
     );
     }
