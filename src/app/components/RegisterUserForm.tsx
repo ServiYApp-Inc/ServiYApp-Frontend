@@ -17,12 +17,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { ErrorMessage, Field, Form, Formik } from "formik";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ReactCountryFlag from "react-country-flag";
 import { getCountries } from "../services/provider.service";
 import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
+import { toast } from "react-toastify";
 
 const registerSchema = Yup.object().shape({
 	names: Yup.string()
@@ -102,7 +102,7 @@ export default function RegisterUserForm() {
 					user: data.user,
 				});
 
-				toast.success("¡Registro exitoso! Bienvenida 💄", {
+				toast.success("¡Registro exitoso! Bienvenida", {
 					autoClose: 2000,
 				});
 				resetForm();
@@ -125,8 +125,8 @@ export default function RegisterUserForm() {
 	};
 
 	const handleGoogle = () => {
-		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-		window.location.href = `${base}/auth/google/user`;
+		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/";
+		window.location.href = `${base}auth/google/user`;
 	};
 
 	return (
@@ -134,7 +134,7 @@ export default function RegisterUserForm() {
 			className="flex flex-col items-center justify-center min-h-screen px-4"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			<ToastContainer position="top-right" />
+			
 			<div
 				className="w-full max-w-md rounded-2xl shadow-sm p-8 border"
 				style={{

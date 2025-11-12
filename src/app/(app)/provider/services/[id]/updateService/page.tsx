@@ -5,10 +5,12 @@ import * as Yup from "yup";
 import { useState, useEffect } from "react";
 import { getCategories } from "@/app/services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
-import { createService } from "./service.service";
-import { useRouter } from "next/navigation";
+import { getOneService, updateService } from "../../../serviceRegister/service.service";
+import { notFound, useParams, useRouter } from "next/navigation";
+import IService from "@/app/interfaces/IService";
+import Swal from "sweetalert2";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 
 // Esquema de validación con Yup
 const ServiceSchema = Yup.object().shape({
@@ -27,10 +29,12 @@ const ServiceSchema = Yup.object().shape({
     category: Yup.string().required("La categoría es obligatoria"),
 });
 
-export default function ServiceForm() {
+export default function ServiceUpdateForm() {
+    const { id } = useParams();
     const router = useRouter();
     const { user } = useAuthStore();
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+    const [service, setService] = useState<IService | null>(null);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -38,7 +42,6 @@ export default function ServiceForm() {
                 const data = await getCategories();
                 setCategories(data); // ← guardamos las categorías
                 console.log(data);
-                
             } catch (error) {
                 console.error("Error al obtener categorías:", error);
             }
@@ -46,45 +49,79 @@ export default function ServiceForm() {
         fetchCategories();
     }, []);
 
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!id) return;
+        const fetchService = async () => {
+            try {
+                const data  = await getOneService(id as string);
+                setService(data);
+            } catch (error) {
+                console.error("Error al cargar el servicio:", error);
+                notFound();
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchService();
+    }, [id]);
+
+    if (loading)
+        return (
+            <div className="flex justify-center items-center h-screen text-gray-500 text-lg">
+                Cargando servicio...
+            </div>
+        );
+
+    if (!service) return notFound();
+
     const handleSubmit = async (values: any, { resetForm }: any) => {
         if (!user) {
             console.error("Usuario no autenticado");
             return;
         }
 
-        // Armamos el payload
-        const serviceData: any = {
+        const serviceData = {
             name: values.name,
             description: values.description,
-            price: values.price,
+            price: Number(values.price),
             photo: values.photo,
             duration: Number(values.duration),
-            category: values.category,
-            status: 'inactive'
+            category: values.category, // 👈 importante: el backend espera categoryId
+            status: "active", // o el estado que corresponda
         };
-
-        // Si el usuario tiene rol de provider, agregamos el ID
-        if (user.role === "provider" && user.id) {
-            serviceData.provider = user.id;
-        }
 
         try {
             if (user.role !== "provider" && user.role !== "admin") {
-            alert("Solo los proveedores o administradores pueden registrar servicios");
-            return;
+                alert("Solo los proveedores o administradores pueden modificar servicios");
+                return;
             }
 
-            console.log("Datos que se envían al backend:", serviceData);
-
-            const createdService = await createService(serviceData);
-
-            console.log("✅ Servicio creado:", createdService);
-            alert("Servicio registrado exitosamente");
-            resetForm();
-            router.back();
+            Swal.fire({
+                title: "¿Estas Seguro?",
+                text: "Si aceptas, se modificara el servicio",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#1d2846",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sí, Modificar."
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log("Datos enviados:", serviceData);
+                    const updatedService = updateService(id as string, serviceData);
+                    console.log("✅ Servicio actualizado:", updatedService);
+                    router.back();
+                    Swal.fire({
+                    title: "Servicio Modificado",
+                    text: "Su servicio fue modificado con EXITO",
+                    icon: "success"
+                    });
+                }
+            });
         } catch (error: any) {
             const msg = error.response?.data?.message || error.message;
-            console.error("❌ Error al crear servicio:", msg);
+            console.error("❌ Error al actualizar servicio:", msg);
             alert(`Error: ${msg}`);
         }
     };
@@ -99,16 +136,17 @@ export default function ServiceForm() {
         </h2>
 
         <Formik
-            initialValues={{
-            name: "",
-            description: "",
-            price: "",
-            photo: "",
-            duration: "",
-            category: "",
-            }}
-            validationSchema={ServiceSchema}
-            onSubmit={handleSubmit}
+        enableReinitialize
+        initialValues={{
+            name: service.name || "",
+            description: service.description || "",
+            price: service.price?.toString() || "",
+            photo: service.photo || "",
+            duration: service.duration?.toString() || "",
+            category: service.category.id || "",
+        }}
+        validationSchema={ServiceSchema}
+        onSubmit={handleSubmit}
         >
             {({ isSubmitting }) => (
             <Form className="space-y-4">
@@ -230,7 +268,7 @@ export default function ServiceForm() {
                 disabled={isSubmitting}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium mt-4"
                 >
-                {isSubmitting ? "Enviando..." : "Registrar servicio"}
+                {isSubmitting ? "Modificando..." : "Modificar servicio"}
                 </button>
             </Form>
             )}
@@ -238,10 +276,10 @@ export default function ServiceForm() {
         </div>
             <button onClick={() => router.back()} className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">
                 <FontAwesomeIcon
-					icon={faArrowLeft}
-					className="text-sm md:text-base mr-1"
-					style={{ width: "1rem", height: "1rem" }}
-				/>
+                    icon={faArrowLeft}
+                    className="text-sm md:text-base mr-1"
+                    style={{ width: "1rem", height: "1rem" }}
+                />
                 Volver a Servicios</button>
         </div>
     );

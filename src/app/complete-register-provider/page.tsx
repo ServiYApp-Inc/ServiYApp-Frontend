@@ -20,8 +20,8 @@ import {
 import ReactCountryFlag from "react-country-flag";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 const completeSchema = Yup.object().shape({
 	userName: Yup.string()
@@ -88,7 +88,7 @@ export default function CompleteRegister() {
 		const fetchCountries = async () => {
 			try {
 				const res = await axios.get(
-					`${process.env.NEXT_PUBLIC_API_URL}/locations/countries`
+					`${process.env.NEXT_PUBLIC_API_URL}locations/countries`
 				);
 				setCountries(res.data);
 			} catch (error) {
@@ -107,7 +107,7 @@ export default function CompleteRegister() {
 			className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 md:px-8 py-6"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			<ToastContainer position="top-center" />
+			
 			<div
 				className="w-full max-w-md rounded-2xl shadow-sm p-6 sm:p-8 md:p-10 border"
 				style={{
@@ -171,7 +171,7 @@ export default function CompleteRegister() {
 							console.log(providerId);
 
 							await axios.patch(
-								`${process.env.NEXT_PUBLIC_API_URL}/providers/${providerId}`,
+								`${process.env.NEXT_PUBLIC_API_URL}providers/${providerId}`,
 								payload,
 								{
 									headers: {
@@ -341,7 +341,7 @@ export default function CompleteRegister() {
 										setFieldValue("region", "");
 										setFieldValue("city", "");
 										const res = await axios.get(
-											`${process.env.NEXT_PUBLIC_API_URL}/locations/${countryId}/regions`
+											`${process.env.NEXT_PUBLIC_API_URL}locations/${countryId}/regions`
 										);
 										setRegions(res.data);
 									}}
@@ -373,7 +373,7 @@ export default function CompleteRegister() {
 										setFieldValue("region", regionId);
 										setFieldValue("city", "");
 										const res = await axios.get(
-											`${process.env.NEXT_PUBLIC_API_URL}/locations/regions/${regionId}/cities`
+											`${process.env.NEXT_PUBLIC_API_URL}locations/regions/${regionId}/cities`
 										);
 										setCities(res.data);
 									}}

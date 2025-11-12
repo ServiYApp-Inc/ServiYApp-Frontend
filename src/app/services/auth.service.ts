@@ -29,7 +29,7 @@ export const AuthService = {
 	},
 
 	startGoogle(role: Role) {
-		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-		window.location.href = `${base}/auth/google/start?role=${role}`;
+		const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/";
+		window.location.href = `${base}auth/google/start?role=${role}`;
 	},
 };

@@ -112,8 +112,7 @@ export default function EditProviderForm({ onSuccess }: EditProviderFormProps) {
 			);
 
 			setAuth({ token: token!, role: "provider", user: data });
-			toast.success("Perfil actualizado correctamente ✨");
-			onSuccess();
+						onSuccess();
 		} catch (error: any) {
 			console.error(error);
 			toast.error(
