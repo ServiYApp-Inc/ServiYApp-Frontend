@@ -130,7 +130,7 @@ export default function AddressFormModal({
 									onSuccess();
 									onClose();
 								} catch (err: any) {
-									console.error("❌ Error al guardar dirección:", err);
+									console.error("Error al guardar dirección:", err);
 									toast.error(
 										err.response?.data?.message ||
 											"Error al guardar la dirección"

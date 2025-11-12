@@ -43,7 +43,6 @@ export default function ProviderDashboard() {
 					null;
 
 				if (!accessToken || !providerId) {
-					toast.error("Inicia sesión para acceder a tu cuenta.");
 					return router.push("/loginProvider");
 				}
 

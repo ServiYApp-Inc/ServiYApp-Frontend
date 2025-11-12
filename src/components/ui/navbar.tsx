@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/app/store/auth.store";
+import { useRouter } from "next/navigation";
 
 export function Navbar() {
 	const [openClient, setOpenClient] = useState(false);
@@ -13,6 +15,10 @@ export function Navbar() {
 	const clientRef = useRef<HTMLDivElement>(null);
 	const providerRef = useRef<HTMLDivElement>(null);
 
+	const { isAuthenticated, role } = useAuthStore();
+	const router = useRouter();
+
+	// Cerrar dropdowns al hacer clic fuera
 	useEffect(() => {
 		function handleClickOutside(e: MouseEvent) {
 			const t = e.target as Node;
@@ -26,10 +32,12 @@ export function Navbar() {
 			document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
+	// Evitar scroll cuando el drawer está abierto
 	useEffect(() => {
 		document.body.style.overflow = drawerOpen ? "hidden" : "";
 	}, [drawerOpen]);
 
+	// Cerrar con ESC
 	useEffect(() => {
 		function onKey(e: KeyboardEvent) {
 			if (e.key === "Escape") {
@@ -41,6 +49,13 @@ export function Navbar() {
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
 	}, []);
+
+	// Redirección a dashboard según el rol
+	const handleGoToPanel = () => {
+		if (role === "user") router.push("/user/services");
+		else if (role === "provider") router.push("/provider/dashboard");
+		else if (role === "admin") router.push("/admin/dashboard");
+	};
 
 	return (
 		<nav className="fixed top-0 w-full bg-bg-light/95 backdrop-blur shadow-sm z-100">
@@ -60,85 +75,104 @@ export function Navbar() {
 
 				{/* DESKTOP NAV */}
 				<div className="hidden md:flex items-center gap-6">
-					{/* CLIENTE DROPDOWN */}
-					<div className="relative" ref={clientRef}>
+					{isAuthenticated ? (
 						<button
-							onClick={() => {
-								setOpenClient((v) => !v);
-								setOpenProvider(false);
-							}}
-							className="px-5 py-2 rounded-full font-semibold text-white transition hover:opacity-90 bg-primary"
+							onClick={handleGoToPanel}
+							className="px-6 py-2 rounded-full font-semibold text-white bg-primary hover:bg-primary-hover transition"
 						>
-							Soy Cliente
+							Ir a mi panel
 						</button>
-
-						<AnimatePresence>
-							{openClient && (
-								<motion.div
-									initial={{ opacity: 0, y: -6 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: -6 }}
-									transition={{ duration: 0.18 }}
-									className="absolute right-0 mt-2 bg-bg-light border rounded-xl shadow-lg overflow-hidden w-48 text-sm"
+					) : (
+						<>
+							{/* CLIENTE DROPDOWN */}
+							<div className="relative" ref={clientRef}>
+								<button
+									onClick={() => {
+										setOpenClient((v) => !v);
+										setOpenProvider(false);
+									}}
+									className="px-5 py-2 rounded-full font-semibold text-white transition hover:opacity-90 bg-primary"
 								>
-									<Link
-										href="/loginUser"
-										className="block px-4 py-2 hover:bg-bg-hover"
-										onClick={() => setOpenClient(false)}
-									>
-										Iniciar sesión
-									</Link>
-									<Link
-										href="/registerUser"
-										className="block px-4 py-2 hover:bg-bg-hover"
-										onClick={() => setOpenClient(false)}
-									>
-										Registrarme
-									</Link>
-								</motion.div>
-							)}
-						</AnimatePresence>
-					</div>
+									Soy Cliente
+								</button>
 
-					{/* PROVEEDOR DROPDOWN */}
-					<div className="relative" ref={providerRef}>
-						<button
-							onClick={() => {
-								setOpenProvider((v) => !v);
-								setOpenClient(false);
-							}}
-							className="px-5 py-2 rounded-full font-semibold text-white transition hover:opacity-90 bg-primary"
-						>
-							Soy Proveedor
-						</button>
+								<AnimatePresence>
+									{openClient && (
+										<motion.div
+											initial={{ opacity: 0, y: -6 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -6 }}
+											transition={{ duration: 0.18 }}
+											className="absolute right-0 mt-2 bg-bg-light border rounded-xl shadow-lg overflow-hidden w-48 text-sm"
+										>
+											<Link
+												href="/loginUser"
+												className="block px-4 py-2 hover:bg-bg-hover"
+												onClick={() =>
+													setOpenClient(false)
+												}
+											>
+												Iniciar sesión
+											</Link>
+											<Link
+												href="/registerUser"
+												className="block px-4 py-2 hover:bg-bg-hover"
+												onClick={() =>
+													setOpenClient(false)
+												}
+											>
+												Registrarme
+											</Link>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</div>
 
-						<AnimatePresence>
-							{openProvider && (
-								<motion.div
-									initial={{ opacity: 0, y: -6 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: -6 }}
-									transition={{ duration: 0.18 }}
-									className="absolute right-0 mt-2 bg-bg-light border rounded-xl shadow-lg overflow-hidden w-48 text-sm"
+							{/* PROVEEDOR DROPDOWN */}
+							<div className="relative" ref={providerRef}>
+								<button
+									onClick={() => {
+										setOpenProvider((v) => !v);
+										setOpenClient(false);
+									}}
+									className="px-5 py-2 rounded-full font-semibold text-white transition hover:opacity-90 bg-primary"
 								>
-									<Link
-										href="/loginProvider"
-										className="block px-4 py-2 hover:bg-bg-hover"
-										onClick={() => setOpenProvider(false)}
-									>
-										Iniciar sesión
-									</Link>
-									<Link
-										href="/registerProvider"
-										className="block px-4 py-2 hover:bg-bg-hover"
-										onClick={() => setOpenProvider(false)}
-									>
-										Registrarme
-									</Link>
-								</motion.div>
-							)}
-						</AnimatePresence>
-					</div>
+									Soy Proveedor
+								</button>
+
+								<AnimatePresence>
+									{openProvider && (
+										<motion.div
+											initial={{ opacity: 0, y: -6 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -6 }}
+											transition={{ duration: 0.18 }}
+											className="absolute right-0 mt-2 bg-bg-light border rounded-xl shadow-lg overflow-hidden w-48 text-sm"
+										>
+											<Link
+												href="/loginProvider"
+												className="block px-4 py-2 hover:bg-bg-hover"
+												onClick={() =>
+													setOpenProvider(false)
+												}
+											>
+												Iniciar sesión
+											</Link>
+											<Link
+												href="/registerProvider"
+												className="block px-4 py-2 hover:bg-bg-hover"
+												onClick={() =>
+													setOpenProvider(false)
+												}
+											>
+												Registrarme
+											</Link>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</div>
+						</>
+					)}
 				</div>
 
 				{/* MOBILE BUTTON */}
@@ -155,7 +189,6 @@ export function Navbar() {
 			<AnimatePresence>
 				{drawerOpen && (
 					<>
-						{/* Backdrop */}
 						<motion.div
 							className="fixed inset-0 bg-black/40 z-98"
 							initial={{ opacity: 0 }}
@@ -164,7 +197,6 @@ export function Navbar() {
 							onClick={() => setDrawerOpen(false)}
 						/>
 
-						{/* Sidebar */}
 						<motion.aside
 							className="fixed top-0 right-0 h-full w-[80%] max-w-xs bg-bg-light shadow-2xl flex flex-col z-999"
 							initial={{ x: "100%" }}
@@ -180,7 +212,6 @@ export function Navbar() {
 								<button
 									className="p-2 rounded-md text-primary hover:bg-bg-hover"
 									onClick={() => setDrawerOpen(false)}
-									aria-label="Cerrar"
 								>
 									<X className="w-6 h-6" />
 								</button>
@@ -188,49 +219,71 @@ export function Navbar() {
 
 							{/* Links */}
 							<div className="p-5 space-y-6 bg-white">
-								<div>
-									<p className="text-xs uppercase text-text-muted mb-2">
-										Cliente / Admin
-									</p>
-									<div className="flex flex-col gap-2">
-										<Link
-											href="/loginUser"
-											onClick={() => setDrawerOpen(false)}
-											className="text-[15px] font-medium hover:text-primary"
-										>
-											Iniciar sesión
-										</Link>
-										<Link
-											href="/registerUser"
-											onClick={() => setDrawerOpen(false)}
-											className="text-[15px] font-medium hover:text-primary"
-										>
-											Registrarme
-										</Link>
-									</div>
-								</div>
+								{isAuthenticated ? (
+									<button
+										onClick={() => {
+											handleGoToPanel();
+											setDrawerOpen(false);
+										}}
+										className="w-full text-center bg-primary text-white py-2 rounded-lg font-semibold hover:bg-primary-hover transition"
+									>
+										Ir a mi panel
+									</button>
+								) : (
+									<>
+										<div>
+											<p className="text-xs uppercase text-text-muted mb-2">
+												Cliente / Admin
+											</p>
+											<div className="flex flex-col gap-2">
+												<Link
+													href="/loginUser"
+													onClick={() =>
+														setDrawerOpen(false)
+													}
+													className="text-[15px] font-medium hover:text-primary"
+												>
+													Iniciar sesión
+												</Link>
+												<Link
+													href="/registerUser"
+													onClick={() =>
+														setDrawerOpen(false)
+													}
+													className="text-[15px] font-medium hover:text-primary"
+												>
+													Registrarme
+												</Link>
+											</div>
+										</div>
 
-								<div>
-									<p className="text-xs uppercase text-text-muted mb-2">
-										Proveedor
-									</p>
-									<div className="flex flex-col gap-2">
-										<Link
-											href="/loginProvider"
-											onClick={() => setDrawerOpen(false)}
-											className="text-[15px] font-medium hover:text-primary"
-										>
-											Iniciar sesión
-										</Link>
-										<Link
-											href="/registerProvider"
-											onClick={() => setDrawerOpen(false)}
-											className="text-[15px] font-medium hover:text-primary"
-										>
-											Registrarme
-										</Link>
-									</div>
-								</div>
+										<div>
+											<p className="text-xs uppercase text-text-muted mb-2">
+												Proveedor
+											</p>
+											<div className="flex flex-col gap-2">
+												<Link
+													href="/loginProvider"
+													onClick={() =>
+														setDrawerOpen(false)
+													}
+													className="text-[15px] font-medium hover:text-primary"
+												>
+													Iniciar sesión
+												</Link>
+												<Link
+													href="/registerProvider"
+													onClick={() =>
+														setDrawerOpen(false)
+													}
+													className="text-[15px] font-medium hover:text-primary"
+												>
+													Registrarme
+												</Link>
+											</div>
+										</div>
+									</>
+								)}
 							</div>
 						</motion.aside>
 					</>
