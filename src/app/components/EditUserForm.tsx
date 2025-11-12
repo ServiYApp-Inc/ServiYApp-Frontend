@@ -80,7 +80,6 @@ export default function EditUserForm({ onSuccess }: { onSuccess?: () => void }) 
 
 			setAuth({ token, role: freshUser.role, user: freshUser });
 
-			toast.success("Perfil actualizado correctamente ✨");
 			onSuccess?.(); // ✅ cerrar modal y refrescar vista
 		} catch (err) {
 			console.error("Error al actualizar usuario:", err);

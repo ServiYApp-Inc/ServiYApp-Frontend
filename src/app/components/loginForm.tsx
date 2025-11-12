@@ -13,11 +13,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { ErrorMessage, Field, Form, Formik } from "formik";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
+import { toast } from "react-toastify";
 
 type Role = "provider" | "user";
 
@@ -118,12 +118,11 @@ export default function LoginForm({ role }: LoginFormProps) {
 
 			const { data } = await Api.post(endpoint, { email: forgotEmail });
 
-			console.log("✅ Respuesta del servidor:", data);
 			toast.success("Correo de recuperación enviado con éxito.");
 			setForgotEmail("");
 			setShowForgotModal(false);
 		} catch (error: any) {
-			console.error("❌ Error en forgot password:", error);
+			console.error("Error en forgot password:", error);
 
 			const msg =
 				error?.response?.data?.message ||
@@ -147,7 +146,7 @@ export default function LoginForm({ role }: LoginFormProps) {
 			className="flex flex-col items-center justify-center min-h-screen px-4"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			<ToastContainer position="top-right" />
+			
 
 			{/* Modal Olvidaste tu contraseña */}
 			{showForgotModal && (

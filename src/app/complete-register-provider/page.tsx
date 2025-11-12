@@ -20,8 +20,8 @@ import {
 import ReactCountryFlag from "react-country-flag";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 const completeSchema = Yup.object().shape({
 	userName: Yup.string()
@@ -107,7 +107,7 @@ export default function CompleteRegister() {
 			className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 md:px-8 py-6"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			<ToastContainer position="top-center" />
+			
 			<div
 				className="w-full max-w-md rounded-2xl shadow-sm p-6 sm:p-8 md:p-10 border"
 				style={{

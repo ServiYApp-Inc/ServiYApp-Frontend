@@ -2,6 +2,7 @@ import AuthGuard from "@/components/AuthGuard";
 import "./globals.css";
 import { Nunito } from "next/font/google";
 import React from "react";
+import { ToastContainer } from "react-toastify";
 
 const nunito = Nunito({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
@@ -19,6 +20,16 @@ export default function RootLayout({
 		<html lang="es">
 			<body className={nunito.className}>
 				<AuthGuard>{children}</AuthGuard>
+				<ToastContainer
+					position="top-right"
+					autoClose={2000}
+					hideProgressBar={false}
+					newestOnTop={true}
+					closeOnClick
+					pauseOnHover
+					draggable
+					theme="light"
+				/>
 			</body>
 		</html>
 	);
