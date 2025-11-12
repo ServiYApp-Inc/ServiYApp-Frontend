@@ -7,11 +7,14 @@ export default function SeeMoreBtn({ id }: { id: string }) {
 	const { role } = useAuthStore();
 
 	const roleLabel =
-		role === "provider"
+		role === "admin"
+			? "Administrador"
+			: role === "provider"
 			? "Proveedor"
 			: "Usuario";
 
 	const getBasePath = () => {
+		if (role === "admin") return "/admin";
 		if (role === "provider") return "/provider";
 		return "/user";
 	};

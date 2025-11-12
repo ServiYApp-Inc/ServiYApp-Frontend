@@ -11,8 +11,10 @@ import {
 import FilterTag from "@/app/components/FilterTag";
 import IService from "@/app/interfaces/IService";
 import ServiceCard from "@/app/components/ServiceCard";
+import { useAuthStore } from "@/app/store/auth.store";
 
 export default function PageServices() {
+	const { token } = useAuthStore();
 	const [services, setServices] = useState<IService[]>([]);
 	const [activeFilter, setActiveFilter] = useState<string>("");
 	const [page, setPage] = useState<number>(1);
@@ -28,7 +30,11 @@ export default function PageServices() {
 			? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}`
 			: `${baseUrl}/find-all-paged?page=${page}&limit=${limit}`;
 
-		const res = await axios.get(endpoint);
+		const res = await axios.get(endpoint, {
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		});
 		setServices(res.data);
 
 		if (res.data.length < limit) {
