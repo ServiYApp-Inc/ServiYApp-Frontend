@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { Search } from "lucide-react";
 
 const users = [
@@ -47,27 +48,33 @@ const users = [
 export default function MessagesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-[#fff5f5] p-6">
-      
-      <div className="flex items-center justify-between mb-8">
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 className="text-3xl font-semibold text-[#d93c5c]">Mensajes</h1>
-        <div className="relative">
+
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
           <input
             type="text"
             placeholder="Buscar..."
-            className="pl-10 pr-4 py-2 rounded-full border border-[#f0d7db] text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#d93c5c]/30 bg-white/70 backdrop-blur-sm"
+            className="w-full pl-10 pr-4 py-2 rounded-full border border-[#f0d7db] text-sm text-gray-600 
+                       focus:outline-none focus:ring-2 focus:ring-[#d93c5c]/30 bg-white/70 backdrop-blur-sm"
           />
-          <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
         </div>
       </div>
 
-      {/* Tarjetas de conversación */}
+      {/* Lista de conversaciones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {users.map((user) => (
-          <div
+          <Link
             key={user.id}
-            className="relative flex items-center p-4 rounded-2xl shadow-md bg-white/70 backdrop-blur-sm border border-[#f0d7db] transition-transform hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+            href={`/user/messages/${user.id}`}
+            className="relative flex items-center p-4 rounded-2xl shadow-md bg-white/70 backdrop-blur-sm 
+                       border border-[#f0d7db] transition-transform hover:scale-[1.02] 
+                       hover:shadow-lg cursor-pointer"
           >
-            <div className="relative">
+            {/* Avatar */}
+            <div className="relative shrink-0">
               <Image
                 src={user.avatar}
                 alt={user.name}
@@ -80,20 +87,25 @@ export default function MessagesPage() {
               )}
             </div>
 
-            <div className="ml-4 flex-1">
-              <h2 className="text-lg font-medium text-gray-800">{user.name}</h2>
+            {/* Nombre y mensaje */}
+            <div className="ml-4 flex-1 overflow-hidden">
+              <h2 className="text-lg font-medium text-gray-800 truncate">{user.name}</h2>
               <p className="text-gray-500 text-sm truncate">{user.message}</p>
             </div>
 
-            <div className="text-right">
+            {/* Hora y mensajes no leídos */}
+            <div className="flex flex-col items-end ml-3">
               <p className="text-xs text-gray-400">{user.time}</p>
               {user.unread && (
-                <span className="inline-flex items-center justify-center bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 ml-2">
+                <span
+                  className="mt-1 inline-flex items-center justify-center bg-blue-500 text-white 
+                             text-xs font-bold rounded-full w-5 h-5"
+                >
                   {user.unread}
                 </span>
               )}
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
