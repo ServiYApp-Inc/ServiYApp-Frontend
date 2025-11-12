@@ -49,7 +49,7 @@ export default function SearchBar({ onResults }: { onResults?: (data: any[]) => 
 		};
 
 		fetchRegions();
-	}, []);
+	}, [user?.country?.id]);
 
 	// useEffect: actualiza ciudades según la provincia
 	useEffect(() => {
