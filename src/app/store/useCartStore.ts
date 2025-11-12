@@ -3,64 +3,49 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface CartItem {
-	id: string; // usa string para coincidir con tus IDs de servicios
+export interface CartItem {
+	id: string; // ID del servicio
 	name: string;
 	price: number;
 	image?: string;
-	quantity: number;
 	addressId: string;
+	providerId: string;
 }
 
 interface CartState {
-	items: CartItem[];
+	item: CartItem | null;
 	addToCart: (item: CartItem) => void;
-	removeFromCart: (id: string) => void;
+	removeFromCart: () => void;
 	clearCart: () => void;
 	getTotal: () => number;
+	isInCart: (id: string) => boolean;
 }
 
 export const useCartStore = create<CartState>()(
 	persist(
 		(set, get) => ({
-			items: [],
+			item: null,
 
-			addToCart: (item) =>
-				set((state) => {
-					const existingItem = state.items.find(
-						(i) => i.id === item.id
-					);
-					if (existingItem) {
-						return {
-							items: state.items.map((i) =>
-								i.id === item.id
-									? {
-											...i,
-											quantity:
-												i.quantity + item.quantity,
-									  }
-									: i
-							),
-						};
-					}
-					return { items: [...state.items, item] };
-				}),
+			// 🛒 Agregar un solo servicio al carrito
+			addToCart: (item) => set({ item }),
 
-			removeFromCart: (id) =>
-				set((state) => ({
-					items: state.items.filter((i) => i.id !== id),
-				})),
+			// ❌ Quitar el servicio actual
+			removeFromCart: () => set({ item: null }),
 
-			clearCart: () => set({ items: [] }),
+			// 🧹 Vaciar carrito (y limpiar persistencia)
+			clearCart: () => {
+				set({ item: null });
+				localStorage.removeItem("serviyapp-cart");
+			},
 
-			getTotal: () =>
-				get().items.reduce(
-					(acc, item) => acc + item.price * item.quantity,
-					0
-				),
+			// 💰 Total del carrito
+			getTotal: () => get().item?.price || 0,
+
+			// ✅ Verifica si ya está agregado
+			isInCart: (id) => get().item?.id === id,
 		}),
 		{
-			name: "serviyapp-cart", // 🧠 clave única en localStorage
+			name: "serviyapp-cart", // 🧠 persistencia en localStorage
 		}
 	)
 );
