@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPowerOff } from "@fortawesome/free-solid-svg-icons";
 import { useCartStore } from "../store/useCartStore";
 import { useAuthStore } from "../store/auth.store";
+import { toast } from "react-toastify";
 
 interface LogoutButtonProps {
 	isCollapsed?: boolean;
@@ -18,6 +19,7 @@ export default function LogoutButton({ isCollapsed }: LogoutButtonProps) {
 	const handleLogout = () => {
 		clearCart();
 		clearAuth();
+		toast.dismiss();
 
 		router.push("/");
 	};

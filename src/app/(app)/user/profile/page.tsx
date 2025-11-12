@@ -50,7 +50,10 @@ export default function ProfilePage() {
 							className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow-md hover:bg-gray-100 transition-all"
 							title="Editar foto de perfil"
 						>
-							<FontAwesomeIcon icon={faPenToSquare} className="w-4 h-4" />
+							<FontAwesomeIcon
+								icon={faPenToSquare}
+								className="w-4 h-4"
+							/>
 						</button>
 					</div>
 
@@ -86,7 +89,9 @@ export default function ProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">Nombre completo</span>
+							<span className="text-gray-500 block text-sm">
+								Nombre completo
+							</span>
 							{user?.names} {user?.surnames}
 						</p>
 					</div>
@@ -98,7 +103,9 @@ export default function ProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">Correo electrónico</span>
+							<span className="text-gray-500 block text-sm">
+								Correo electrónico
+							</span>
 							{user?.email}
 						</p>
 					</div>
@@ -110,7 +117,9 @@ export default function ProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">Teléfono</span>
+							<span className="text-gray-500 block text-sm">
+								Teléfono
+							</span>
 							{user?.phone || "No registrado"}
 						</p>
 					</div>
@@ -122,13 +131,18 @@ export default function ProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<div className="font-medium flex items-center gap-2">
-							<span className="text-gray-500 block text-sm">País</span>
+							<span className="text-gray-500 block text-sm">
+								País
+							</span>
 							{user?.country ? (
 								<div className="flex items-center gap-2">
 									<ReactCountryFlag
 										countryCode={user.country.code}
 										svg
-										style={{ width: "1.3em", height: "1.3em" }}
+										style={{
+											width: "1.3em",
+											height: "1.3em",
+										}}
 									/>
 									<span>{user.country.name}</span>
 								</div>
@@ -171,10 +185,9 @@ export default function ProfilePage() {
 							<EditUserForm
 								onSuccess={() => {
 									setShowEdit(false);
-									toast.success("Perfil actualizado correctamente", {
-										position: "top-center",
-										autoClose: 2000,
-									});
+									toast.success(
+										"Perfil actualizado correctamente"
+									);
 								}}
 							/>
 						</motion.div>
@@ -208,10 +221,9 @@ export default function ProfilePage() {
 							<UploadProfilePicture
 								onSuccess={() => {
 									setShowUpload(false);
-									toast.success("Foto actualizada correctamente", {
-										position: "top-center",
-										autoClose: 2000,
-									});
+									toast.success(
+										"Foto actualizada correctamente"
+									);
 								}}
 							/>
 						</motion.div>
