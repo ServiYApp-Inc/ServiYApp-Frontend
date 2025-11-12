@@ -20,7 +20,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import ReactCountryFlag from "react-country-flag";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
 	getCitiesByRegion,
@@ -30,6 +29,7 @@ import {
 } from "../services/provider.service";
 import Swal from "sweetalert2";
 import { useAuthStore } from "../store/auth.store";
+import { toast } from "react-toastify";
 
 const registerSchema = Yup.object().shape({
 	names: Yup.string()
@@ -106,7 +106,7 @@ export default function RegisterProviderForm() {
 			className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 md:px-8 py-6"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			<ToastContainer position="top-center" autoClose={3000} />
+			
 
 			<div
 				className="w-full max-w-md rounded-2xl shadow-sm p-6 sm:p-8 md:p-10 border"
@@ -168,7 +168,7 @@ export default function RegisterProviderForm() {
 								});
 
 								toast.success(
-									"¡Registro exitoso! Bienvenida a ServiYApp 💇‍♀️"
+									"¡Registro exitoso! Bienvenida a ServiYApp"
 								);
 								setTimeout(
 									() => router.push("/provider/dashboard"),
@@ -188,7 +188,7 @@ export default function RegisterProviderForm() {
 							}
 						} catch (error: any) {
 							console.error(
-								"❌ Error en el registro:",
+								"Error en el registro:",
 								error.response?.data
 							);
 							if (error.response?.status === 409) {

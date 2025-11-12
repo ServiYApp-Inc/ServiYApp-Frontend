@@ -260,10 +260,7 @@ export default function ProviderProfilePage() {
 								onSuccess={async () => {
 									await refreshProvider();
 									setShowEdit(false);
-									toast.success("Perfil actualizado correctamente", {
-										position: "top-center",
-										autoClose: 2000,
-									});
+									toast.success("Perfil actualizado correctamente");
 								}}
 							/>
 						</motion.div>
@@ -301,10 +298,7 @@ export default function ProviderProfilePage() {
 								onSuccess={async () => {
 									await refreshProvider();
 									setShowUpload(false);
-									toast.success("Foto actualizada correctamente", {
-										position: "top-center",
-										autoClose: 2000,
-									});
+									toast.success("Foto actualizada correctamente");
 								}}
 							/>
 						</motion.div>

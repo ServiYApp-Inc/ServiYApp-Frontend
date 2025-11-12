@@ -44,7 +44,7 @@ export default function AddressList() {
 			toast.success("Dirección eliminada correctamente");
 			fetchAddresses();
 		} catch (err: any) {
-			console.error("❌ Error al eliminar dirección:", err);
+			console.error("Error al eliminar dirección:", err);
 			toast.error(err.response?.data?.message || "Error al eliminar dirección");
 		}
 	};

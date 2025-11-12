@@ -87,12 +87,11 @@ export default function UploadProfilePicture({
 				},
 			});
 
-			toast.success("Foto de perfil actualizada ✅");
 			setPreview(null);
 			setSelectedFile(null);
 			onSuccess?.();
 		} catch (error: any) {
-			console.error("🚨 Error:", error.response?.data || error);
+			console.error("Error:", error.response?.data || error);
 			toast.error(
 				error.response?.data?.message || "Error al subir la foto."
 			);

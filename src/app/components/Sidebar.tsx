@@ -15,6 +15,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuthStore } from "@/app/store/auth.store";
 import { useCartStore } from "../store/useCartStore";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+const MySwal = withReactContent(Swal);
 
 interface MenuItem {
 	icon: any;
@@ -76,9 +80,39 @@ export default function Sidebar({
 		});
 	}
 
-	const handleLogout = () => {
-		clearAuth();
-		router.push("/");
+	const handleLogout = async () => {
+		const result = await MySwal.fire({
+			title: "¿Cerrar sesión?",
+			html: `<p style="font-size:14px; color:#555; margin-top:6px;">
+			Se cerrará tu sesión actual y volverás al inicio.
+		</p>`,
+			icon: "warning",
+			iconColor: "#1D2846",
+			width: 360,
+			padding: "1.2rem",
+			showCancelButton: true,
+			focusCancel: true,
+			reverseButtons: true,
+			background: "#fff",
+			color: "#1D2846",
+			confirmButtonText: "Sí, cerrar",
+			cancelButtonText: "Cancelar",
+			confirmButtonColor: "#1D2846",
+			cancelButtonColor: "#d33",
+			customClass: {
+				popup: "rounded-2xl shadow-lg",
+				title: "text-base font-semibold",
+				confirmButton: "px-4 py-2 rounded-lg text-sm font-medium",
+				cancelButton: "px-4 py-2 rounded-lg text-sm font-medium",
+				icon: "scale-75",
+			},
+		});
+
+		if (result.isConfirmed) {
+			clearAuth();
+			router.push("/");
+			
+		}
 	};
 
 	const userHasPhoto = user?.profilePicture && user.profilePicture !== "";
@@ -104,7 +138,9 @@ export default function Sidebar({
 						</div>
 						<span
 							className={`text-lg text-white font-semibold tracking-wide whitespace-nowrap overflow-hidden transition-all duration-400 ${
-								isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+								isCollapsed
+									? "opacity-0 w-0"
+									: "opacity-100 w-auto"
 							}`}
 						>
 							serviYApp
@@ -125,7 +161,8 @@ export default function Sidebar({
 								"var(--color-primary-hover)")
 						}
 						onMouseLeave={(e) =>
-							(e.currentTarget.style.backgroundColor = "transparent")
+							(e.currentTarget.style.backgroundColor =
+								"transparent")
 						}
 					>
 						{/* Tooltip navy */}
@@ -148,7 +185,8 @@ export default function Sidebar({
 								<div
 									className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
 									style={{
-										backgroundColor: "rgba(255,255,255,0.1)",
+										backgroundColor:
+											"rgba(255,255,255,0.1)",
 									}}
 								>
 									<FontAwesomeIcon
@@ -165,7 +203,9 @@ export default function Sidebar({
 
 						<div
 							className={`flex flex-col transition-all duration-300 ${
-								isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+								isCollapsed
+									? "opacity-0 w-0"
+									: "opacity-100 w-auto"
 							}`}
 						>
 							{isAuthenticated ? (
@@ -195,7 +235,10 @@ export default function Sidebar({
 						const active = pathname === item.href;
 						const isCart = item.label === "Carrito";
 						return (
-							<div key={item.label} className="relative group w-full">
+							<div
+								key={item.label}
+								className="relative group w-full"
+							>
 								{/* Tooltip navy */}
 								{isCollapsed && (
 									<span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] text-white bg-[#1D2846] px-2 py-1 rounded-lg shadow-md z-[9999] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -247,7 +290,9 @@ export default function Sidebar({
 									</div>
 									<span
 										className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ${
-											isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+											isCollapsed
+												? "opacity-0 w-0"
+												: "opacity-100 w-auto"
 										}`}
 									>
 										{item.label}
@@ -263,7 +308,9 @@ export default function Sidebar({
 					{isAuthenticated && (
 						<div
 							className="relative group border-t"
-							style={{ borderColor: "var(--color-primary-hover)" }}
+							style={{
+								borderColor: "var(--color-primary-hover)",
+							}}
 						>
 							{isCollapsed && (
 								<span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] text-white bg-[#1D2846] px-2 py-1 rounded-lg shadow-md z-[9999] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -275,10 +322,12 @@ export default function Sidebar({
 								onClick={handleLogout}
 								className="flex items-center w-full gap-2 px-6 py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors duration-200"
 								onMouseEnter={(e) =>
-									(e.currentTarget.style.backgroundColor = "#dc2626")
+									(e.currentTarget.style.backgroundColor =
+										"#dc2626")
 								}
 								onMouseLeave={(e) =>
-									(e.currentTarget.style.backgroundColor = "transparent")
+									(e.currentTarget.style.backgroundColor =
+										"transparent")
 								}
 							>
 								<div className="w-6 flex justify-center">
@@ -293,7 +342,9 @@ export default function Sidebar({
 								</div>
 								<span
 									className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ${
-										isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+										isCollapsed
+											? "opacity-0 w-0"
+											: "opacity-100 w-auto"
 									}`}
 								>
 									Cerrar sesión
@@ -313,14 +364,16 @@ export default function Sidebar({
 						<div
 							className="flex items-center justify-between px-6 py-3 transition-all duration-300"
 							style={{
-								borderTop: "1px solid var(--color-primary-hover)",
+								borderTop:
+									"1px solid var(--color-primary-hover)",
 							}}
 							onMouseEnter={(e) =>
 								(e.currentTarget.style.backgroundColor =
 									"var(--color-primary-hover)")
 							}
 							onMouseLeave={(e) =>
-								(e.currentTarget.style.backgroundColor = "transparent")
+								(e.currentTarget.style.backgroundColor =
+									"transparent")
 							}
 						>
 							<button
@@ -368,7 +421,16 @@ export default function Sidebar({
 
 			{/* 📱 MOBILE NAVBAR */}
 			<nav className="fixed bottom-0 left-0 right-0 bg-bg-light border-t border-bg-hover flex justify-around items-center py-2 shadow-sm md:hidden z-40">
-				{[...menuItems, { icon: faUser, label: "Perfil", href: isAuthenticated ? `${basePath}/profile` : "/loginUser" }].map((item) => {
+				{[
+					...menuItems,
+					{
+						icon: faUser,
+						label: "Perfil",
+						href: isAuthenticated
+							? `${basePath}/profile`
+							: "/loginUser",
+					},
+				].map((item) => {
 					const active = pathname === item.href;
 					const isCart = item.label === "Carrito";
 					return (
