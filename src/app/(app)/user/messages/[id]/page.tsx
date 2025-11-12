@@ -25,7 +25,7 @@ export default function ChatDetailPage({ params }: { params: { id: string } }) {
   const [newMessage, setNewMessage] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
 
-  // ID temporal hasta tener el user logueado
+  // ID temporal (hasta tener login real)
   const userId = "e9a30b6e-cfd7-4544-8289-02464b0a4e8d";
   const receiverId = params.id;
 
@@ -40,7 +40,6 @@ export default function ChatDetailPage({ params }: { params: { id: string } }) {
     fetchMessages();
 
     listenMessages((msg) => {
-      // solo mostrar si es parte del chat actual
       if (
         (msg.senderId === userId && msg.receiverId === receiverId) ||
         (msg.senderId === receiverId && msg.receiverId === userId)

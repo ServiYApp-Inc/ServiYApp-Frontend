@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 
 const users = [
   {
-    id: 1,
+    id: "1",
     name: "Carla Gómez",
     message: "Hola! ¿Podrías venir mañana para retoque de uñas?",
     time: "09:45",
@@ -13,7 +13,7 @@ const users = [
     status: "online",
   },
   {
-    id: 2,
+    id: "2",
     name: "Sofía Morales",
     message: "Gracias por el maquillaje del sábado, ¡me encantó!",
     time: "08:20",
@@ -21,14 +21,14 @@ const users = [
     unread: 2,
   },
   {
-    id: 3,
+    id: "3",
     name: "Luciana Pérez",
     message: "Confirmo el turno para el viernes a las 18:00.",
     time: "Ayer",
     avatar: "https://randomuser.me/api/portraits/women/33.jpg",
   },
   {
-    id: 4,
+    id: "4",
     name: "Camila Torres",
     message: "Hola! ¿Podrías mandarme tus horarios para la semana?",
     time: "Lun",
@@ -36,7 +36,7 @@ const users = [
     unread: 1,
   },
   {
-    id: 5,
+    id: "5",
     name: "Valentina Ruiz",
     message: "Perfecto, nos vemos mañana 💅",
     time: "Dom",
@@ -68,12 +68,11 @@ export default function MessagesPage() {
         {users.map((user) => (
           <Link
             key={user.id}
-            href={`/user/messages/${user.id}`}
+            href={`/user/${user.id}`}
             className="relative flex items-center p-4 rounded-2xl shadow-md bg-white/70 backdrop-blur-sm 
                        border border-[#f0d7db] transition-transform hover:scale-[1.02] 
                        hover:shadow-lg cursor-pointer"
           >
-            {/* Avatar */}
             <div className="relative shrink-0">
               <Image
                 src={user.avatar}
@@ -87,13 +86,13 @@ export default function MessagesPage() {
               )}
             </div>
 
-            {/* Nombre y mensaje */}
             <div className="ml-4 flex-1 overflow-hidden">
-              <h2 className="text-lg font-medium text-gray-800 truncate">{user.name}</h2>
+              <h2 className="text-lg font-medium text-gray-800 truncate">
+                {user.name}
+              </h2>
               <p className="text-gray-500 text-sm truncate">{user.message}</p>
             </div>
 
-            {/* Hora y mensajes no leídos */}
             <div className="flex flex-col items-end ml-3">
               <p className="text-xs text-gray-400">{user.time}</p>
               {user.unread && (
