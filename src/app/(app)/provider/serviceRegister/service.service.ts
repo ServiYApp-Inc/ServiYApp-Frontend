@@ -15,6 +15,10 @@ export const getAllServices = async (page: number, limit = 9) => {
     const { data } = await apiClient.get(`services/find-all?page=${page}&limit=${limit}`);
     return data;
 };
+export const getAllAdminServices = async () => {
+    const { data } = await apiClient.get(`services/admin/all`);
+    return data;
+};
 
 export const updateService = async (id: string, serviceData: any) => {
     const { data } = await apiClient.patch(`services/update/${id}`, serviceData);

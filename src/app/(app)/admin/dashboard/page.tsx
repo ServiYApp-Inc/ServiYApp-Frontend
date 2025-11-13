@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProfileItem from "@/app/components/ProfileItem";
 
@@ -8,10 +8,14 @@ import { faBell, faCalendar, faHeart, faStar, faUser } from "@fortawesome/free-r
 import { faBook, faGear, faUsersGear } from "@fortawesome/free-solid-svg-icons";
 import { useAuthStore } from "@/app/store/auth.store";
 import Swal from "sweetalert2";
+import IService from "@/app/interfaces/IService";
+import { getAllAdminServices } from "../../provider/serviceRegister/service.service";
 
 export default function AdminDashboard() {
 	const router = useRouter();
 	const {user, clearAuth} = useAuthStore();
+
+	const [services, setServices] = useState<IService[]>([]);
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -23,7 +27,22 @@ export default function AdminDashboard() {
 	}, []);
 
 
-	
+	const fetchServices = async () => {
+		try {
+			const data = await getAllAdminServices();
+			setServices(data);
+		} catch (error) {
+			console.error("Error al obtener servicios:", error);
+		}
+	}
+
+	useEffect(() => {
+		fetchServices();
+	}, [])
+
+	const servicesActives = services.filter((s)=> s.status === "active")
+	const servicesPendings = services.filter((s)=> s.status === "pending")
+	const servicesDesactives = services.filter((s)=> s.status === "inactive")
 
 		// 🔴 Logout con confirmación
 	const handleLogout = async () => {
@@ -78,11 +97,15 @@ export default function AdminDashboard() {
 				</div>
 				<span className="flex flex-col md:flex-row justify-around">
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-[36px] font-regular">Endpoint services actives</p>
+						<p className="text-[36px] font-regular">{servicesActives.length}</p>
 						<h5 className="text-[24px] font-regular">Servicios Activos</h5>
 					</div>
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-[36px] font-regular">Endpoint services pending</p>
+						<p className="text-[36px] font-regular">{servicesDesactives.length}</p>
+						<h5 className="text-[24px] font-regular">Servicios Desactivados</h5>
+					</div>
+					<div className="flex flex-col items-center gap-1">
+						<p className="text-[36px] font-regular">{servicesPendings.length}</p>
 						<h5 className="text-[24px] font-regular">En Espera</h5>
 					</div>
 				</span>
