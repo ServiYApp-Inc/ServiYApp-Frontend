@@ -35,6 +35,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 			"/registerProvider",
 			"/complete-register-provider",
 			"/complete-register-user",
+			"/user/dashboard", // ← AGREGA ESTO
+			"/provider/dashboard", // ← Y ESTO
 		];
 
 		const isSpecialDashboard =
