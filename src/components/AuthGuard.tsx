@@ -12,7 +12,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	const [rehydrated, setRehydrated] = useState(false);
 	const [allowRender, setAllowRender] = useState(false);
 
-	// Espera a que Zustand cargue el estado persistido
+	// Esperar la hidratación de Zustand
 	useEffect(() => {
 		const unsub = useAuthStore.persist.onFinishHydration(() =>
 			setRehydrated(true)
@@ -24,6 +24,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (!rehydrated) return;
 
+		// Rutas públicas
 		const publicPaths = [
 			"/",
 			"/contact",
@@ -32,14 +33,32 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 			"/loginProvider",
 			"/registerUser",
 			"/registerProvider",
+			"/complete-register-provider",
+			"/complete-register-user",
+			"/user/dashboard", // ← AGREGA ESTO
+			"/provider/dashboard", // ← Y ESTO
 		];
 
-		const isAuthPage =
-			pathname.startsWith("/login") || pathname.startsWith("/register");
+		const isSpecialDashboard =
+			pathname === "/user/dashboard" ||
+			pathname === "/provider/dashboard";
 
-		// 🟢 Libre si no requiere autenticación
+		// 🟦 1) PERMITIR DASHBOARD TEMPORALMENTE
+		if (
+			isSpecialDashboard &&
+			!isAuthenticated &&
+			typeof window !== "undefined"
+		) {
+			setAllowRender(true);
+			return;
+		}
+
+		// 🟢 2) Permitir rutas públicas
 		if (publicPaths.includes(pathname)) {
-			// 🚫 Si ya está logueado → redirigir a su dashboard
+			const isAuthPage =
+				pathname.startsWith("/login") ||
+				pathname.startsWith("/register");
+
 			if (isAuthenticated && isAuthPage) {
 				if (role === "user") router.replace("/user/services");
 				else if (role === "provider")
@@ -47,17 +66,18 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 				else router.replace("/admin/dashboard");
 				return;
 			}
+
 			setAllowRender(true);
 			return;
 		}
 
-		// 🔴 No autenticado → redirigir al home
+		// 🔴 3) Si no está autenticado → mandarlo al home
 		if (!isAuthenticated) {
 			router.replace("/");
 			return;
 		}
 
-		// 🚫 Rol incorrecto → redirigir a su dashboard
+		// 🚫 4) Rol incorrecto
 		if (
 			(role === "user" &&
 				(pathname.startsWith("/provider") ||
