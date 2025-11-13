@@ -11,10 +11,10 @@ export const getProviderServices = async (providerId: string) => {
     return data;
     };
 
-export const getAllServices = async () => {
-    const { data } = await apiClient.get(`services/find-all`);
+export const getAllServices = async (page: number, limit = 9) => {
+    const { data } = await apiClient.get(`services/find-all?page=${page}&limit=${limit}`);
     return data;
-    };
+};
 
 export const updateService = async (id: string, serviceData: any) => {
     const { data } = await apiClient.patch(`services/update/${id}`, serviceData);
