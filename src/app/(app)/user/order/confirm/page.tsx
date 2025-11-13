@@ -86,8 +86,8 @@ export default function ConfirmOrderPage() {
 			id: service.id,
 			name: service.name,
 			price: service.price,
+			providerId: service.provider.id,
 			image: service?.photos?.[0],
-			providerId: service.provider.id, // ✅ ahora se envía bien
 			addressId: selectedAddressId,
 		});
 
