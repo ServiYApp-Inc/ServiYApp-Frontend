@@ -1,141 +1,322 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Api } from "@/app/services/api";
 import { toast } from "react-toastify";
-import { motion } from "framer-motion";
+import { useAuthStore } from "../store/auth.store";
 
-export default function ProviderDocumentsUpload() {
-	const params = useSearchParams();
-	const router = useRouter();
+export default function UploadProviderDocuments() {
+	const { user, token } = useAuthStore();
 
-	const providerId = params.get("id");
-	const token = params.get("token");
+	const providerId = user?.id;
 
-	const [file, setFile] = useState<File | null>(null);
-	const [photoVerification, setPhotoVerification] = useState<File | null>(null);
-	const [accountFile, setAccountFile] = useState<File | null>(null);
+	if (!providerId || !token) {
+		return (
+			<div className="p-6 text-center">
+				<h2>No se encontró tu sesión o tu ID de proveedor.</h2>
+				<p>Inicia sesión nuevamente.</p>
+			</div>
+		);
+	}
 
-	const [loading, setLoading] = useState(false);
+	/* -------------------- ESTADOS -------------------- */
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
+	// Documento de identidad
+	const [idFile, setIdFile] = useState<File | null>(null);
+	const [idPhoto, setIdPhoto] = useState<File | null>(null);
+	const [idData, setIdData] = useState({
+		documentType: "",
+		documentNumber: "",
+		description: "",
+	});
 
-		if (!providerId || !token) {
-			return toast.error("No se encontraron los datos necesarios.");
+	// Documento bancario
+	const [bankFile, setBankFile] = useState<File | null>(null);
+	const [bankData, setBankData] = useState({
+		bank: "",
+		accountType: "",
+		accountNumber: "",
+	});
+
+	const [loadingIdentity, setLoadingIdentity] = useState(false);
+	const [loadingBank, setLoadingBank] = useState(false);
+
+	/* -------------------- VALIDACIONES -------------------- */
+
+	const validateIdentity = () => {
+		if (!idFile || idFile.type !== "application/pdf") {
+			toast.error("El documento de identidad debe ser un PDF.");
+			return false;
 		}
 
+		if (!idPhoto || !idPhoto.type.startsWith("image/")) {
+			toast.error("La foto de verificación debe ser una imagen.");
+			return false;
+		}
+
+		if (!idData.documentType || !idData.documentNumber) {
+			toast.error("Completa todos los datos de identidad.");
+			return false;
+		}
+
+		return true;
+	};
+
+	const validateBank = () => {
+		if (!bankFile || bankFile.type !== "application/pdf") {
+			toast.error("El documento bancario debe ser un PDF.");
+			return false;
+		}
+
+		if (
+			!bankData.bank ||
+			!bankData.accountType ||
+			!bankData.accountNumber
+		) {
+			toast.error("Completa todos los datos bancarios.");
+			return false;
+		}
+
+		return true;
+	};
+
+	/* -------------------- SUBMIT IDENTIDAD -------------------- */
+
+	const submitIdentity = async () => {
+		if (!providerId || !token) return toast.error("Faltan parámetros.");
+		if (!validateIdentity()) return;
+
 		const formData = new FormData();
-		if (file) formData.append("file", file);
-		if (photoVerification) formData.append("photoVerification", photoVerification);
-		if (accountFile) formData.append("accountFile", accountFile);
+		formData.append("documentType", idData.documentType);
+		formData.append("documentNumber", idData.documentNumber);
+		formData.append("description", idData.description);
+
+		// Archivos reales
+		if (idFile) formData.append("file", idFile);
+		if (idPhoto) formData.append("photoVerification", idPhoto);
 
 		try {
-			setLoading(true);
+			setLoadingIdentity(true);
+			await Api.patch(
+				`providers/${providerId}provider-documents/`,
+				formData,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "multipart/form-data",
+					},
+				}
+			);
 
-			await Api.post(`/provider-documents/${providerId}`, formData, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "multipart/form-data",
-				},
-			});
-
-			toast.success("Documentos enviados correctamente.");
-			router.push("/dashboard/provider");
-		} catch (error) {
-			console.error(error);
-			toast.error("No se pudo enviar los documentos.");
+			toast.success("Documento de identidad enviado.");
+		} catch (error: any) {
+			toast.error(
+				error?.response?.data?.message || "Error al subir documento."
+			);
 		} finally {
-			setLoading(false);
+			setLoadingIdentity(false);
+		}
+	};
+
+	/* -------------------- SUBMIT BANCO -------------------- */
+
+	const submitBank = async () => {
+		if (!providerId || !token) return toast.error("Faltan parámetros.");
+		if (!validateBank()) return;
+
+		const formData = new FormData();
+		formData.append("bank", bankData.bank);
+		formData.append("accountType", bankData.accountType);
+		formData.append("accountNumber", bankData.accountNumber);
+
+		if (bankFile) formData.append("accountFile", bankFile);
+
+		try {
+			setLoadingBank(true);
+			await Api.patch(
+				`providers/${providerId}provider-documents/`,
+				formData,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "multipart/form-data",
+					},
+				}
+			);
+
+			toast.success("Documento bancario enviado.");
+		} catch (error: any) {
+			toast.error(
+				error?.response?.data?.message || "Error al subir documento."
+			);
+		} finally {
+			setLoadingBank(false);
 		}
 	};
 
 	return (
-		<div
-			className="flex items-center justify-center min-h-screen p-4"
-			style={{ backgroundColor: "var(--background)" }}
-		>
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.4 }}
-				className="w-full max-w-lg shadow-lg rounded-2xl p-8"
-				style={{
-					backgroundColor: "var(--color-bg-light)",
-					border: "1px solid var(--color-card-border)",
-				}}
+		<div className="max-w-xl mx-auto p-6 space-y-12">
+			{/* -------------------- DOCUMENTO DE IDENTIDAD -------------------- */}
+			<section
+				className="p-5 rounded-xl border"
+				style={{ backgroundColor: "var(--color-bg-light)" }}
 			>
-				<h1
-					className="text-2xl font-semibold mb-6 text-center"
+				<h2
+					className="text-lg font-semibold mb-3"
 					style={{ color: "var(--color-primary)" }}
 				>
-					Subir documentos del proveedor
-				</h1>
+					Documento de identidad
+				</h2>
 
-				<form onSubmit={handleSubmit} className="flex flex-col gap-5">
+				<div className="space-y-4">
+					<input
+						type="text"
+						placeholder="Tipo de documento (INE, Pasaporte...)"
+						className="border p-2 rounded w-full"
+						value={idData.documentType}
+						onChange={(e) =>
+							setIdData({
+								...idData,
+								documentType: e.target.value,
+							})
+						}
+					/>
 
-					<div>
-						<label className="block text-sm font-medium mb-1">
-							Identificación oficial
-						</label>
-						<input
-							type="file"
-							accept="image/*,application/pdf"
-							onChange={(e) => setFile(e.target.files?.[0] || null)}
-							className="w-full border p-2 rounded-lg text-sm"
-							style={{
-								borderColor: "var(--color-card-border)",
-								backgroundColor: "var(--color-bg-light)",
-							}}
-						/>
-					</div>
+					<input
+						type="text"
+						placeholder="Número de documento"
+						className="border p-2 rounded w-full"
+						value={idData.documentNumber}
+						onChange={(e) =>
+							setIdData({
+								...idData,
+								documentNumber: e.target.value,
+							})
+						}
+					/>
 
-					<div>
-						<label className="block text-sm font-medium mb-1">
-							Foto de verificación
-						</label>
-						<input
-							type="file"
-							accept="image/*"
-							onChange={(e) => setPhotoVerification(e.target.files?.[0] || null)}
-							className="w-full border p-2 rounded-lg text-sm"
-							style={{
-								borderColor: "var(--color-card-border)",
-								backgroundColor: "var(--color-bg-light)",
-							}}
-						/>
-					</div>
+					<textarea
+						placeholder="Descripción (opcional)"
+						className="border p-2 rounded w-full"
+						value={idData.description}
+						onChange={(e) =>
+							setIdData({
+								...idData,
+								description: e.target.value,
+							})
+						}
+					/>
 
-					<div>
-						<label className="block text-sm font-medium mb-1">
-							Comprobante bancario
-						</label>
-						<input
-							type="file"
-							accept="image/*,application/pdf"
-							onChange={(e) => setAccountFile(e.target.files?.[0] || null)}
-							className="w-full border p-2 rounded-lg text-sm"
-							style={{
-								borderColor: "var(--color-card-border)",
-								backgroundColor: "var(--color-bg-light)",
-							}}
-						/>
-					</div>
+					<label className="block">Documento (PDF)</label>
+					<input
+						type="file"
+						accept="application/pdf"
+						onChange={(e) => setIdFile(e.target.files?.[0] || null)}
+						className="border p-2 rounded w-full"
+					/>
+
+					<label className="block">
+						Foto de verificación (imagen)
+					</label>
+					<input
+						type="file"
+						accept="image/*"
+						onChange={(e) =>
+							setIdPhoto(e.target.files?.[0] || null)
+						}
+						className="border p-2 rounded w-full"
+					/>
 
 					<button
-						type="submit"
-						disabled={loading}
-						className="w-full py-2 mt-2 font-medium rounded-lg text-white"
+						onClick={submitIdentity}
+						disabled={loadingIdentity}
+						className="w-full py-2 text-white font-semibold rounded"
 						style={{
 							backgroundColor: "var(--color-primary)",
-							opacity: loading ? 0.7 : 1,
+							opacity: loadingIdentity ? 0.7 : 1,
 						}}
 					>
-						{loading ? "Enviando..." : "Enviar documentos"}
+						{loadingIdentity
+							? "Enviando..."
+							: "Enviar documento de identidad"}
 					</button>
-				</form>
-			</motion.div>
+				</div>
+			</section>
+
+			{/* -------------------- DOCUMENTO BANCARIO -------------------- */}
+			<section
+				className="p-5 rounded-xl border"
+				style={{ backgroundColor: "var(--color-bg-light)" }}
+			>
+				<h2
+					className="text-lg font-semibold mb-3"
+					style={{ color: "var(--color-primary)" }}
+				>
+					Documento bancario
+				</h2>
+
+				<div className="space-y-4">
+					<input
+						type="text"
+						placeholder="Banco"
+						className="border p-2 rounded w-full"
+						value={bankData.bank}
+						onChange={(e) =>
+							setBankData({ ...bankData, bank: e.target.value })
+						}
+					/>
+
+					<input
+						type="text"
+						placeholder="Tipo de cuenta"
+						className="border p-2 rounded w-full"
+						value={bankData.accountType}
+						onChange={(e) =>
+							setBankData({
+								...bankData,
+								accountType: e.target.value,
+							})
+						}
+					/>
+
+					<input
+						type="text"
+						placeholder="Número de cuenta"
+						className="border p-2 rounded w-full"
+						value={bankData.accountNumber}
+						onChange={(e) =>
+							setBankData({
+								...bankData,
+								accountNumber: e.target.value,
+							})
+						}
+					/>
+
+					<label className="block">Comprobante bancario (PDF)</label>
+					<input
+						type="file"
+						accept="application/pdf"
+						onChange={(e) =>
+							setBankFile(e.target.files?.[0] || null)
+						}
+						className="border p-2 rounded w-full"
+					/>
+
+					<button
+						onClick={submitBank}
+						disabled={loadingBank}
+						className="w-full py-2 text-white font-semibold rounded"
+						style={{
+							backgroundColor: "var(--color-primary)",
+							opacity: loadingBank ? 0.7 : 1,
+						}}
+					>
+						{loadingBank
+							? "Enviando..."
+							: "Enviar documento bancario"}
+					</button>
+				</div>
+			</section>
 		</div>
 	);
 }

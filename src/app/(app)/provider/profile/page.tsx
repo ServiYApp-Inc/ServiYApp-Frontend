@@ -23,6 +23,7 @@ import EditProviderForm from "@/app/components/EditProviderForm";
 import UploadProfilePicture from "@/app/components/UploadProfilePicture";
 import { Api } from "@/app/services/api";
 import IProvider from "@/app/interfaces/IProvider";
+import ProviderDocumentsUpload from "@/app/components/ProviderDocumentsUpload";
 
 const ProfileItem = dynamic(() => import("@/app/components/ProfileItem"), {
 	ssr: false,
@@ -31,7 +32,9 @@ const ProfileItem = dynamic(() => import("@/app/components/ProfileItem"), {
 export default function ProviderProfilePage() {
 	const { user, token, setAuth } = useAuthStore();
 	const provider = user as IProvider;
-	const [currentProvider, setCurrentProvider] = useState<IProvider | null>(provider);
+	const [currentProvider, setCurrentProvider] = useState<IProvider | null>(
+		provider
+	);
 	const [showEdit, setShowEdit] = useState(false);
 	const [showUpload, setShowUpload] = useState(false);
 
@@ -85,16 +88,24 @@ export default function ProviderProfilePage() {
 								className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow-md hover:bg-gray-100 transition-all opacity-90 hover:opacity-100"
 								title="Editar foto de perfil"
 							>
-								<FontAwesomeIcon icon={faPenToSquare} className="w-4 h-4" />
+								<FontAwesomeIcon
+									icon={faPenToSquare}
+									className="w-4 h-4"
+								/>
 							</button>
 						</div>
+
+						
 
 						{/* Info del proveedor */}
 						<div className="text-center md:text-left">
 							<h2 className="text-4xl font-bold tracking-tight capitalize">
-								{currentProvider?.names} {currentProvider?.surnames}
+								{currentProvider?.names}{" "}
+								{currentProvider?.surnames}
 							</h2>
-							<p className="text-lg opacity-90">{currentProvider?.email}</p>
+							<p className="text-lg opacity-90">
+								{currentProvider?.email}
+							</p>
 
 							<button
 								onClick={() => setShowEdit(true)}
@@ -107,23 +118,9 @@ export default function ProviderProfilePage() {
 					</div>
 				</div>
 
-				{/* Estadísticas rápidas */}
-				<div className="flex justify-center md:justify-end gap-10">
-					<div className="text-center">
-						<p className="text-4xl font-bold">0</p>
-						<p className="text-lg opacity-80">Servicios</p>
-					</div>
-					<div className="text-center">
-						<p className="text-4xl font-bold">0</p>
-						<p className="text-lg opacity-80">Turnos</p>
-					</div>
-					<div className="text-center">
-						<p className="text-4xl font-bold">0</p>
-						<p className="text-lg opacity-80">Reseñas</p>
-					</div>
-				</div>
+				
 			</section>
-
+			<ProviderDocumentsUpload />					
 			{/* INFORMACIÓN PERSONAL */}
 			<section className="mt-10 bg-white border border-gray-200 rounded-3xl shadow-md p-8">
 				<h3 className="text-2xl font-bold text-[var(--color-primary)] mb-6">
@@ -180,13 +177,20 @@ export default function ProviderProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<div className="font-medium flex items-center gap-2">
-							<span className="text-gray-500 block text-sm">País</span>
+							<span className="text-gray-500 block text-sm">
+								País
+							</span>
 							{currentProvider?.country ? (
 								<div className="flex items-center gap-2">
 									<ReactCountryFlag
-										countryCode={currentProvider.country.code}
+										countryCode={
+											currentProvider.country.code
+										}
 										svg
-										style={{ width: "1.3em", height: "1.3em" }}
+										style={{
+											width: "1.3em",
+											height: "1.3em",
+										}}
 									/>
 									<span>{currentProvider.country.name}</span>
 								</div>
@@ -203,17 +207,17 @@ export default function ProviderProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">Ciudad / Región</span>
+							<span className="text-gray-500 block text-sm">
+								Ciudad / Región
+							</span>
 							{currentProvider?.region?.name ||
-							currentProvider?.city?.name ? (
-								`${currentProvider.region?.name || ""}${
-									currentProvider.city
-										? `, ${currentProvider.city.name}`
-										: ""
-								}`
-							) : (
-								"No especificada"
-							)}
+							currentProvider?.city?.name
+								? `${currentProvider.region?.name || ""}${
+										currentProvider.city
+											? `, ${currentProvider.city.name}`
+											: ""
+								  }`
+								: "No especificada"}
 						</p>
 					</div>
 
@@ -224,14 +228,14 @@ export default function ProviderProfilePage() {
 							className="text-[var(--color-primary)] w-5 h-5"
 						/>
 						<p className="font-medium">
-							<span className="text-gray-500 block text-sm">Usuario</span>
+							<span className="text-gray-500 block text-sm">
+								Usuario
+							</span>
 							{currentProvider?.userName || "No definido"}
 						</p>
 					</div>
 				</div>
 			</section>
-
-			
 
 			{/* MODAL DE EDITAR PERFIL */}
 			<AnimatePresence>
@@ -260,7 +264,9 @@ export default function ProviderProfilePage() {
 								onSuccess={async () => {
 									await refreshProvider();
 									setShowEdit(false);
-									toast.success("Perfil actualizado correctamente");
+									toast.success(
+										"Perfil actualizado correctamente"
+									);
 								}}
 							/>
 						</motion.div>
@@ -298,7 +304,9 @@ export default function ProviderProfilePage() {
 								onSuccess={async () => {
 									await refreshProvider();
 									setShowUpload(false);
-									toast.success("Foto actualizada correctamente");
+									toast.success(
+										"Foto actualizada correctamente"
+									);
 								}}
 							/>
 						</motion.div>
