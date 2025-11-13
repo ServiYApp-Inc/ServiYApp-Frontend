@@ -117,7 +117,7 @@ export default function ServiceDetailPage() {
             {/* Imagen principal con detalles */}
             <section className="relative w-full max-w-4xl overflow-hidden rounded-t-2xl shadow-md">
                 <img
-                    src={service.photo}
+                    src={service?.photos?.[0]}
                     alt={service.name}
                     className="w-full h-[220px] sm:h-[260px] md:h-[300px] object-cover"
                 />

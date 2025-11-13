@@ -18,17 +18,9 @@ import { useRouter } from "next/navigation";
 import { getAddresses } from "@/app/services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
 import AddressFormModal from "@/app/components/AddressFormModal";
+import IService from "@/app/interfaces/IService";
 
-interface IService {
-	id: string;
-	name: string;
-	description?: string;
-	price: number;
-	photo?: string;
-	duration?: number;
-	provider?: { names?: string; surnames?: string };
-	category?: { name?: string };
-}
+
 
 export default function ConfirmOrderPage() {
 	const router = useRouter();
@@ -99,7 +91,7 @@ export default function ConfirmOrderPage() {
 			id: service.id,
 			name: service.name,
 			price: service.price,
-			image: service.photo,
+			image: service?.photos?.[0],
 			quantity: 1,
 			addressId: selectedAddressId,
 		});
@@ -158,7 +150,7 @@ export default function ConfirmOrderPage() {
 				{/* Información del servicio */}
 				<div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
 					<img
-						src={service.photo || "/placeholder.jpg"}
+						src={service?.photos?.[0] || "/placeholder.jpg"}
 						alt={service.name}
 						className="w-36 h-36 rounded-2xl object-cover shadow-md"
 					/>
