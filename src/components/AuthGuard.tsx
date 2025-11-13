@@ -12,9 +12,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	const [rehydrated, setRehydrated] = useState(false);
 	const [allowRender, setAllowRender] = useState(false);
 
-	/* ------------------------------------------
-	    🟦 1. Esperar a que ZUSTAND se hidrate
-	------------------------------------------- */
+	// Esperar la hidratación de Zustand
 	useEffect(() => {
 		const unsub = useAuthStore.persist.onFinishHydration(() =>
 			setRehydrated(true)
@@ -26,9 +24,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (!rehydrated) return;
 
-		/* ------------------------------------------
-		     🟩 2. RUTAS PÚBLICAS
-		------------------------------------------- */
+		// Rutas públicas
 		const publicPaths = [
 			"/",
 			"/contact",
@@ -41,11 +37,26 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 			"/complete-register-user",
 		];
 
-		const isAuthPage =
-			pathname.startsWith("/login") ||
-			pathname.startsWith("/register");
+		const isSpecialDashboard =
+			pathname === "/user/dashboard" ||
+			pathname === "/provider/dashboard";
 
+		// 🟦 1) PERMITIR DASHBOARD TEMPORALMENTE
+		if (
+			isSpecialDashboard &&
+			!isAuthenticated &&
+			typeof window !== "undefined"
+		) {
+			setAllowRender(true);
+			return;
+		}
+
+		// 🟢 2) Permitir rutas públicas
 		if (publicPaths.includes(pathname)) {
+			const isAuthPage =
+				pathname.startsWith("/login") ||
+				pathname.startsWith("/register");
+
 			if (isAuthenticated && isAuthPage) {
 				if (role === "user") router.replace("/user/services");
 				else if (role === "provider")
@@ -53,44 +64,18 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 				else router.replace("/admin/dashboard");
 				return;
 			}
+
 			setAllowRender(true);
 			return;
 		}
 
-		/* --------------------------------------------------------
-		    🟦 3. RUTAS ESPECIALES PARA LOGIN CON GOOGLE
-		       Permitir render temporal mientras procesan el token
-		   ------------------------------------------------------- */
-
-		// USER Google Dashboard
-		if (pathname.startsWith("/user/dashboard")) {
-			const params = new URLSearchParams(window.location.search);
-			if (params.get("token") && params.get("id")) {
-				setAllowRender(true);
-				return;
-			}
-		}
-
-		// PROVIDER Google Dashboard
-		if (pathname.startsWith("/provider/dashboard")) {
-			const params = new URLSearchParams(window.location.search);
-			if (params.get("token") && params.get("id")) {
-				setAllowRender(true);
-				return;
-			}
-		}
-
-		/* ------------------------------------------
-		     🟥 4. RUTA PROTEGIDA SIN AUTENTICACIÓN
-		------------------------------------------- */
+		// 🔴 3) Si no está autenticado → mandarlo al home
 		if (!isAuthenticated) {
 			router.replace("/");
 			return;
 		}
 
-		/* ------------------------------------------
-		     🟨 5. RESTRICCIÓN POR ROL
-		------------------------------------------- */
+		// 🚫 4) Rol incorrecto
 		if (
 			(role === "user" &&
 				(pathname.startsWith("/provider") ||
@@ -103,21 +88,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 					pathname.startsWith("/provider")))
 		) {
 			if (role === "user") router.replace("/user/services");
-			else if (role === "provider")
-				router.replace("/provider/dashboard");
+			else if (role === "provider") router.replace("/provider/dashboard");
 			else router.replace("/admin/dashboard");
 			return;
 		}
 
-		/* ------------------------------------------
-		     🟢 6. PERMITIR RENDER
-		------------------------------------------- */
 		setAllowRender(true);
 	}, [rehydrated, isAuthenticated, role, pathname, router]);
 
-	/* ------------------------------------------
-	    ⏳ Loading mientras hydration ocurre
-	------------------------------------------- */
 	if (!rehydrated || !allowRender) {
 		return (
 			<div className="h-screen flex flex-col items-center justify-center">
