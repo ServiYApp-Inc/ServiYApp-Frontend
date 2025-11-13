@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
 import { toast } from "react-toastify";
+import Link from "next/link";
 
 export default function UserDashboard() {
 	const router = useRouter();
@@ -69,26 +70,34 @@ export default function UserDashboard() {
 		);
 
 	return (
-		<main className="flex flex-col justify-start bg--background overflow-x-hidden overflow-y-hidden min-h-screen px-2 pb-20 md:pb-4 max-w-[1300px] mx-auto">
-			<h1 className="font-bold text-[var(--color-primary)] text-[48px] mt-10 text-center md:text-left">
-				Bienvenida {user?.names || ""} 💅
-			</h1>
+	<main className="flex flex-col justify-start bg--background overflow-x-hidden overflow-y-hidden min-h-screen px-2 pb-20 md:pb-4 max-w-[1300px] mx-auto">
+		<h1 className="font-bold text-[var(--color-primary)] text-[48px] mt-10 text-center md:text-left">
+			Bienvenida/o {user?.names || ""}
+		</h1>
 
-			<div className="w-full bg-[var(--color-primary)] rounded-2xl py-4 mt-6 flex flex-col items-start">
-				<h4 className="mx-4 text-white text-[36px] font-semiBold text-center md:text-left">
-					Este es tu panel personal
-				</h4>
-				<span className="mx-4 text-[20px] font-medium text-white text-center md:text-left">
-					Aquí podrás ver tus citas, historial y más
-				</span>
-			</div>
+		<div className="relative w-full rounded-2xl overflow-hidden shadow-lg mt-10">
+			{/* Imagen de fondo */}
+			<img
+				src="https://www.gammabross.com/Gallery/salonimg-frkqkj-181.webp"
+				alt="Salón de belleza festivo"
+				className="w-full h-[350px] object-cover brightness-75"
+			/>
 
-			<section className="mt-8">
-				<p className="text-gray-600 text-lg">
-					📅 Próximamente verás aquí tu resumen de actividad, tus
-					reservas y servicios favoritos.
+			{/* Pie de foto con mensaje */}
+			<div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4 bg-black/40">
+				<h3 className="text-3xl bg-white/10 rounded-xl md:text-4xl font-bold mb-3 drop-shadow-lg">
+				¡Se acercan las Fiestas!
+				</h3>
+				<p className="text-lg bg-white/10 rounded-xl md:text-xl font-medium max-w-[700px] mb-4">
+				Regalá momentos únicos a tus seres queridos con servicios de belleza.  
+				Una cita, un cambio, una sonrisa — el mejor regalo sos vos.
 				</p>
-			</section>
-		</main>
-	);
+				<button onClick={() => {router.push(`/user/services`)}} className="bg-[var(--color-primary)] text-white font-semibold px-6 py-2 rounded-lg hover:bg-white hover:text-[var(--color-primary)] transition-all">
+					Descubrí servicios para regalar
+				</button>
+			</div>
+		</div>
+	</main>
+);
+
 }

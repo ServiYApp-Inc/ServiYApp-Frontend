@@ -13,11 +13,10 @@ export default interface IProvider {
 	country?: ICountry;
 	region?: IRegion;
 	city?: ICity;
-	address?:string;
+	address?: string;
 	profilePicture?: string;
-	role?:string;
-	status?: string;
-	isComplete?: string;
-	registrationDate?:string;
-
+	role: "provider"; // ✅ más tipado y coherente con tu AuthStore
+	status?: string; // activo/inactivo
+	isComplete?: boolean; // ✅ mejor tipo (antes era string)
+	registrationDate?: string;
 }

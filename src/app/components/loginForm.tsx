@@ -61,6 +61,21 @@ export default function LoginForm({ role }: LoginFormProps) {
 			});
 
 			toast.success("Inicio de sesión exitoso", { autoClose: 2000 });
+			// Si es provider y no ha completado su registro (documentos)
+			if (role === "provider") {
+				const providerData = data.provider;
+
+				if (providerData && providerData.isCompleted === false) {
+					toast.info(
+						"Tu cuenta aún no está verificada. Completa tu identificación."
+					);
+
+					// Redirección inmediata a la subida de documentos
+					return router.push(
+						`/provider/documents?id=${providerData.id}&token=${data.access_token}`
+					);
+				}
+			}
 
 			// 🧠 Si hay una ruta previa guardada, redirige allí primero
 			setTimeout(() => {
@@ -146,8 +161,6 @@ export default function LoginForm({ role }: LoginFormProps) {
 			className="flex flex-col items-center justify-center min-h-screen px-4"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			
-
 			{/* Modal Olvidaste tu contraseña */}
 			{showForgotModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

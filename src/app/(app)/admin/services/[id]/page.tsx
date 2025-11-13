@@ -20,7 +20,8 @@ import { useEffect, useState } from "react";
 import { Api } from "@/app/services/api";
 import IService from "@/app/interfaces/IService";
 import { motion } from "framer-motion";
-import { changeServiceStatus, setStatusActive, setStatusInactive } from "../../serviceRegister/service.service";
+import { deleteService, setStatusActive, setStatusInactive } from "@/app/(app)/provider/serviceRegister/service.service";
+import Swal from "sweetalert2";
 
 export default function ServiceDetailPage() {
     const { id } = useParams();
@@ -52,6 +53,40 @@ export default function ServiceDetailPage() {
         );
 
     if (!service) return notFound();
+
+    const handleDelete = async () => {
+        try {
+            const result = await Swal.fire({
+            title: "¿Estás seguro?",
+            text: "Si aceptas, se eliminará el servicio para siempre",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#1d2846",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Sí, eliminar",
+            });
+
+            if (result.isConfirmed) {
+            const res = await deleteService(id as string);
+
+            await Swal.fire({
+                title: "Servicio eliminado",
+                text: res.message || "El servicio fue eliminado con éxito.",
+                icon: "success",
+            });
+
+            router.back(); // 🔹 Recién acá redirigís
+            }
+        } catch (error) {
+            console.error("Error al eliminar servicio:", error);
+            Swal.fire({
+            title: "Error",
+            text: "No se pudo eliminar el servicio. Verifica tu rol o inténtalo nuevamente.",
+            icon: "error",
+            });
+        }
+        };
+
     
     const handleStatus = async () => {
         try {
@@ -182,15 +217,15 @@ export default function ServiceDetailPage() {
 
                     <motion.button
                         whileTap={{ scale: 0.97 }}
-                        className="flex items-center justify-center gap-2 sm:gap-3 bg-[var(--color-primary)] text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-[var(--color-primary-dark,#1A2340)] shadow-md hover:shadow-lg transition-all"
-                        onClick={() => router.push(`/provider/services/${id}/updateService`)}
+                        className="flex items-center justify-center gap-2 sm:gap-3 bg-red-600 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-red-700 shadow-md hover:shadow-lg transition-all"
+                        onClick={handleDelete}
                     >
                         <FontAwesomeIcon
-                            icon={faPenToSquare}
+                            icon={faXmark}
                             className="text-sm md:text-base"
                             style={{ width: "1rem", height: "1rem" }}
                         />
-                        Modificar
+                        Eliminar Servicio
                     </motion.button>
                     {service.status === "active" ?<motion.button
                         whileTap={{ scale: 0.97 }}
@@ -221,10 +256,10 @@ export default function ServiceDetailPage() {
             </motion.section>
             <button onClick={() => router.back()} className=" py-1 px-3 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">
                 <FontAwesomeIcon
-					icon={faArrowLeft}
-					className="text-sm md:text-base mr-1"
-					style={{ width: "1rem", height: "1rem" }}
-				/>
+                    icon={faArrowLeft}
+                    className="text-sm md:text-base mr-1"
+                    style={{ width: "1rem", height: "1rem" }}
+                />
                 Volver a Servicios
             </button>
         </main>

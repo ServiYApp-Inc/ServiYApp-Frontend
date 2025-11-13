@@ -7,6 +7,7 @@ import {
 	faClock,
 	faUser,
 	faTag,
+	faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -62,7 +63,7 @@ export default function ServiceDetailPage() {
 			{/* Imagen principal con detalles */}
 			<section className="relative w-full max-w-4xl overflow-hidden rounded-t-2xl shadow-md">
 				<img
-					src={service.photo}
+					src={service?.photos?.[0]}
 					alt={service.name}
 					className="w-full h-[220px] sm:h-[260px] md:h-[300px] object-cover"
 				/>
@@ -161,6 +162,14 @@ export default function ServiceDetailPage() {
 					</motion.button>
 				</div>
 			</motion.section>
+			<button onClick={() => router.back()} className=" py-1 px-3 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition">
+				<FontAwesomeIcon
+					icon={faArrowLeft}
+					className="text-sm md:text-base mr-1"
+					style={{ width: "1rem", height: "1rem" }}
+				/>
+				Volver a Servicios
+			</button>
 		</main>
 	);
 }
