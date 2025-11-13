@@ -5,48 +5,80 @@ import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-	faCheck,
 	faSpinner,
-	faCalendarDays,
-	faTimes,
 	faEye,
+	faCheck,
+	faTimes,
 	faXmark,
+	faSearch,
+	faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ServiceOrder {
 	id: string;
-	service: { name: string };
-	user: { names: string; surnames: string; email: string };
-	date: string;
-	startTime: string;
-	endTime: string;
-	address: any;
-	price: number;
 	status: string;
+	createdAt: string;
+
+	user: {
+		names: string;
+		surnames: string;
+		email: string;
+		phone: string;
+	};
+
+	service: {
+		name: string;
+		photos?: string[];
+		price?: number;
+	};
+
+	address: {
+		address: string;
+		neighborhood?: string;
+		city?: { name: string };
+		region?: { name: string };
+	};
+
+	payments: {
+		amount: string;
+		status: string;
+	}[];
 }
 
 export default function ProviderAppointmentsPage() {
 	const { user, token } = useAuthStore();
+
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [processingId, setProcessingId] = useState<string | null>(null);
-	const [activeTab, setActiveTab] = useState<
-		"upcoming" | "cancelled" | "completed"
-	>("upcoming");
 	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
 		null
 	);
 
-	// Obtener citas
+	// Tabs
+	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
+		"upcoming"
+	);
+
+	// Search
+	const [search, setSearch] = useState("");
+
+	// Show only paid
+	const [showOnlyPaid, setShowOnlyPaid] = useState(true);
+
+	// ---------------------------------------------------------
+	// FETCH ORDERS
+	// ---------------------------------------------------------
 	const fetchOrders = async () => {
 		try {
-			if (!user?.id || !token) return;
 			setLoading(true);
 			const { data } = await Api.get(
-				`/service-orders/provider/${user.id}`,
-				{ headers: { Authorization: `Bearer ${token}` } }
+				`service-orders/provider/${user?.id}`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				}
 			);
 			setOrders(data);
 		} catch {
@@ -56,335 +88,407 @@ export default function ProviderAppointmentsPage() {
 		}
 	};
 
-	// Confirmar cita
-	const handleConfirm = async (id: string) => {
-		setProcessingId(id);
-		try {
-			await Api.patch(`service-orders/${id}/confirm`, null, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			toast.success("Cita confirmada ✅");
-			await fetchOrders();
-			setSelectedOrder(null);
-		} catch {
-			toast.error("No se pudo confirmar la cita");
-		} finally {
-			setProcessingId(null);
-		}
-	};
-
-	// Cancelar cita
-	const handleCancel = async (id: string) => {
-		setProcessingId(id);
-		try {
-			await Api.patch(`service-orders/${id}/cancel`, null, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			toast.info("Cita cancelada");
-			await fetchOrders();
-			setSelectedOrder(null);
-		} catch {
-			toast.error("No se pudo cancelar la cita");
-		} finally {
-			setProcessingId(null);
-		}
-	};
-
-	const filteredOrders = orders.filter((order) => {
-		if (activeTab === "upcoming")
-			return order.status === "pending" || order.status === "accepted";
-		if (activeTab === "cancelled") return order.status === "cancelled";
-		if (activeTab === "completed") return order.status === "completed";
-		return true;
-	});
-
 	useEffect(() => {
-		if (user && token) fetchOrders();
-	}, [user, token]);
+		if (user?.id) fetchOrders();
+	}, [user]);
 
+	// ---------------------------------------------------------
+	// HELPERS
+	// ---------------------------------------------------------
+	const getCompactAddress = (a: any) => {
+		return [a?.address, a?.neighborhood, a?.city?.name, a?.region?.name]
+			.filter(Boolean)
+			.join(", ");
+	};
+
+	const getPrice = (o: ServiceOrder) => o.payments?.[0]?.amount || "0.00";
+
+	const getPaidStatusBadge = (o: ServiceOrder) => {
+		const isPaid = o.payments?.[0]?.status === "approved";
+		return (
+			<span
+				className={`text-[10px] px-2 py-0.5 rounded-md ${
+					isPaid
+						? "bg-green-100 text-green-700"
+						: "bg-red-100 text-red-700"
+				}`}
+			>
+				{isPaid ? "Pagada" : "No pagada"}
+			</span>
+		);
+	};
+
+	const getStatusText = {
+		paid: "Pendiente de aceptar",
+		accepted: "Aceptada",
+		pending: "Pendiente de pago",
+		cancelled: "Cancelada",
+		completed: "Finalizada",
+	} as any;
+
+	const getStatusBadge = (status: string) => {
+		const colors: any = {
+			paid: "bg-blue-100 text-blue-700",
+			accepted: "bg-green-100 text-green-700",
+			pending: "bg-yellow-100 text-yellow-700",
+			cancelled: "bg-red-100 text-red-700",
+			completed: "bg-gray-200 text-gray-700",
+		};
+
+		return (
+			<span
+				className={`text-[10px] px-2 py-0.5 rounded-md ${colors[status]}`}
+			>
+				{getStatusText[status] ?? status}
+			</span>
+		);
+	};
+
+	const canAccept = (s: string) => s === "paid";
+	const canCancel = (s: string) => s === "paid" || s === "accepted";
+
+	// ---------------------------------------------------------
+	// ACTIONS
+	// ---------------------------------------------------------
+	const handleConfirm = async (id: string) => {
+		if (!confirm("¿Aceptar esta cita?")) return;
+		try {
+			setProcessingId(id);
+			await Api.patch(
+				`service-orders/${id}/confirm`,
+				{},
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
+			toast.success("Cita aceptada");
+			fetchOrders();
+		} finally {
+			setProcessingId(null);
+		}
+	};
+
+	const handleCancel = async (id: string) => {
+		if (!confirm("¿Cancelar esta cita?")) return;
+		try {
+			setProcessingId(id);
+			await Api.patch(
+				`service-orders/${id}/cancel`,
+				{},
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
+			toast.info("Cita cancelada");
+			fetchOrders();
+		} finally {
+			setProcessingId(null);
+		}
+	};
+
+	// ---------------------------------------------------------
+	// FILTERING
+	// ---------------------------------------------------------
+	const filteredOrders = orders
+		.filter((o) => {
+			if (tab === "upcoming")
+				return o.status === "paid" || o.status === "accepted";
+			if (tab === "completed") return o.status === "completed";
+			if (tab === "cancelled") return o.status === "cancelled";
+			return true;
+		})
+		.filter((o) =>
+			search.trim()
+				? o.id.toLowerCase().includes(search.toLowerCase())
+				: true
+		)
+		.filter((o) =>
+			showOnlyPaid ? o.payments?.[0]?.status === "approved" : true
+		);
+
+	// ---------------------------------------------------------
+	// RENDER
+	// ---------------------------------------------------------
 	return (
-		<main className="max-w-6xl mx-auto mt-10 px-4 font-nunito">
-			{/* Título */}
-			<h1 className="font-bold text-[var(--color-primary)] text-[48px] mt-10 text-center md:text-left">
-				Mis Citas
+		<main className="max-w-7xl mx-auto mt-10 px-4 font-nunito">
+			<h1 className="text-3xl font-bold text-[var(--color-primary)] mb-6">
+				Citas Recibidas
 			</h1>
 
-			{/* Tabs */}
-			<div className="flex gap-3 mb-8">
-				{[
-					{ key: "upcoming", label: "Próximas" },
-					{ key: "cancelled", label: "Canceladas" },
-					{ key: "completed", label: "Finalizadas" },
-				].map((tab) => {
-					const active = activeTab === tab.key;
-					return (
-						<motion.button
-							key={tab.key}
-							whileTap={{ scale: 0.97 }}
-							onClick={() => setActiveTab(tab.key as any)}
-							className={`px-6 py-2 rounded-full font-semibold text-sm transition-all duration-200 ${
-								active
-									? "bg-[var(--color-primary)] text-white shadow-md"
-									: "border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
-							}`}
-						>
-							{tab.label}
-						</motion.button>
-					);
-				})}
+			{/* SEARCH */}
+			<div className="relative mb-6 max-w-md">
+				<FontAwesomeIcon
+					icon={faSearch}
+					className="absolute left-3 top-3 text-gray-400 text-sm"
+				/>
+				<input
+					type="text"
+					placeholder="Buscar por ID..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary)]"
+				/>
 			</div>
 
-			{/* Tabla */}
-			<section>
-				{loading ? (
-					<div className="flex items-center justify-center text-gray-500">
-						<FontAwesomeIcon
-							icon={faSpinner}
-							spin
-							className="mr-2"
-						/>
-						Cargando citas...
-					</div>
-				) : filteredOrders.length === 0 ? (
-					<p className="text-center text-gray-500 py-10">
-						No hay citas en esta categoría.
-					</p>
-				) : (
-					<table className="min-w-full text-sm border-collapse">
-						<thead>
-							<tr className="border-b text-left bg-gray-200">
-								<th className="py-3 px-4 font-semibold">
-									Servicio
-								</th>
-								<th className="py-3 px-4 font-semibold">
-									Cliente
-								</th>
-								<th className="py-3 px-4 font-semibold">
-									Dirección
-								</th>
-								<th className="py-3 px-4 font-semibold">
-									Pago
-								</th>
-								<th className="py-3 px-4 font-semibold">
-									Estado
-								</th>
-								<th className="py-3 px-4 font-semibold text-center">
-									Acciones
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{filteredOrders.map((order) => {
-								const addressText =
-									typeof order.address === "object"
-										? [
-												order.address?.address,
-												order.address?.neighborhood,
-												order.address?.city?.name,
-												order.address?.region?.name,
-										  ]
-												.filter(Boolean)
-												.join(", ")
-										: order.address || "Sin dirección";
+			{/* TOGGLE PAGADAS */}
+			<div className="flex items-center gap-2 mb-6">
+				<input
+					type="checkbox"
+					checked={!showOnlyPaid}
+					onChange={() => setShowOnlyPaid(!showOnlyPaid)}
+					className="h-4 w-4"
+				/>
+				<label className="text-sm text-gray-700">
+					Mostrar NO pagadas
+				</label>
+			</div>
 
-								return (
-									<motion.tr
-										key={order.id}
-										initial={{ opacity: 0, y: 10 }}
-										animate={{ opacity: 1, y: 0 }}
-										className="border-b hover:bg-gray-50 transition-all"
-									>
-										<td className="py-3 px-4">
-											{order.service?.name}
-										</td>
-										<td className="py-3 px-4 capitalize">
-											{order.user?.names}{" "}
-											{order.user?.surnames}
-										</td>
-										<td className="py-3 px-4 truncate max-w-[220px]">
-											{addressText}
-										</td>
-										<td className="py-3 px-4">
-											${order.price}
-										</td>
-										<td
-											className={`py-3 px-4 font-semibold ${
-												order.status === "accepted"
-													? "text-green-600"
-													: order.status === "pending"
-													? "text-yellow-600"
-													: order.status ===
-													  "cancelled"
-													? "text-red-500"
-													: "text-gray-500"
-											}`}
-										>
-											{order.status === "accepted"
-												? "Confirmada"
-												: order.status === "pending"
-												? "Pendiente"
-												: order.status === "cancelled"
-												? "Cancelada"
-												: "Finalizada"}
-										</td>
+			{/* TABS */}
+			<div className="flex gap-3 mb-8 flex-wrap">
+				{[
+					{ key: "upcoming", label: "Próximas" },
+					{ key: "completed", label: "Finalizadas" },
+					{ key: "cancelled", label: "Canceladas" },
+				].map((t) => (
+					<motion.button
+						key={t.key}
+						whileTap={{ scale: 0.97 }}
+						onClick={() => setTab(t.key as any)}
+						className={`px-6 py-2 rounded-full font-semibold text-sm transition-all ${
+							tab === t.key
+								? "bg-[var(--color-primary)] text-white shadow"
+								: "border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
+						}`}
+					>
+						{t.label}
+					</motion.button>
+				))}
+			</div>
 
-										{/* Acciones */}
-										<td className="py-3 px-4 text-center">
-											<div className="flex justify-center gap-3">
-												{/* Ver detalles */}
+			{/* TABLE */}
+			{loading ? (
+				<div className="text-center text-gray-500 py-5">
+					<FontAwesomeIcon icon={faSpinner} spin /> Cargando...
+				</div>
+			) : filteredOrders.length === 0 ? (
+				<p className="text-center text-gray-500 py-8">
+					No hay citas en esta categoría
+				</p>
+			) : (
+				<table className="w-full text-[13px] border-collapse">
+					<thead>
+						<tr className="border-b bg-gray-200">
+							<th className="py-3 px-4">ID</th>
+							<th className="py-3 px-4">Servicio</th>
+							<th className="py-3 px-4">Cliente</th>
+							<th className="py-3 px-4">Dirección</th>
+							<th className="py-3 px-4">Pago</th>
+							<th className="py-3 px-4">Estado</th>
+							<th className="py-3 px-4 text-center">Acciones</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						{filteredOrders.map((o) => {
+							const price = getPrice(o);
+							const address = getCompactAddress(o.address);
+
+							return (
+								<tr
+									key={o.id}
+									className="border-b hover:bg-gray-50"
+								>
+									{/* ID */}
+									<td className="py-3 px-4 max-w-[120px] ">
+										<div className="flex flex-col gap-1">
+											<span className="text-[11px] break-all">
+												{o.id}
+											</span>
+											<button
+												onClick={() =>
+													navigator.clipboard.writeText(
+														o.id
+													)
+												}
+												className="text-[var(--color-primary)] text-xs"
+											>
+												<FontAwesomeIcon
+													icon={faCopy}
+													size="sm"
+												/>
+											</button>
+										</div>
+									</td>
+
+									<td className="py-3 px-4">
+										{o.service?.name}
+									</td>
+
+									<td className="py-3 px-4 capitalize">
+										{o.user.names} {o.user.surnames}
+									</td>
+
+									<td className="py-3 px-4 max-w-[230px] truncate">
+										{address}
+									</td>
+
+									{/* Pago */}
+									<td className="py-3 px-4">
+										<div className="flex flex-col gap-1">
+											<span className="font-semibold text-[12px]">
+												${price}
+											</span>
+											{getPaidStatusBadge(o)}
+										</div>
+									</td>
+
+									{/* Estado */}
+									<td className="py-3 px-4">
+										{getStatusBadge(o.status)}
+									</td>
+
+									{/* Acciones */}
+									<td className="py-3 px-4">
+										<div className="flex justify-center gap-3">
+											{/* Ver */}
+											<button
+												onClick={() =>
+													setSelectedOrder(o)
+												}
+												className="text-[var(--color-primary)]"
+											>
+												<FontAwesomeIcon icon={faEye} />
+											</button>
+
+											{/* Aceptar */}
+											{o.status === "paid" && (
 												<button
 													onClick={() =>
-														setSelectedOrder(order)
+														handleConfirm(o.id)
 													}
-													className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
-													title="Ver detalles"
+													className="text-green-600"
 												>
-													<FontAwesomeIcon
-														icon={faEye}
-													/>
+													{processingId === o.id ? (
+														<FontAwesomeIcon
+															icon={faSpinner}
+															spin
+														/>
+													) : (
+														<FontAwesomeIcon
+															icon={faCheck}
+														/>
+													)}
 												</button>
+											)}
 
-												{/* Aceptar */}
-												{order.status === "pending" && (
-													<button
-														onClick={() =>
-															handleConfirm(
-																order.id
-															)
-														}
-														disabled={
-															processingId ===
-															order.id
-														}
-														className="text-green-600 hover:text-green-700"
-														title="Aceptar cita"
-													>
-														{processingId ===
-														order.id ? (
-															<FontAwesomeIcon
-																icon={faSpinner}
-																spin
-															/>
-														) : (
-															<FontAwesomeIcon
-																icon={faCheck}
-															/>
-														)}
-													</button>
-												)}
-
-												{/* Rechazar */}
-												{order.status === "pending" && (
-													<button
-														onClick={() =>
-															handleCancel(
-																order.id
-															)
-														}
-														disabled={
-															processingId ===
-															order.id
-														}
-														className="text-red-500 hover:text-red-600"
-														title="Rechazar cita"
-													>
+											{/* Cancelar */}
+											{(o.status === "paid" ||
+												o.status === "accepted") && (
+												<button
+													onClick={() =>
+														handleCancel(o.id)
+													}
+													className="text-red-600"
+												>
+													{processingId === o.id ? (
+														<FontAwesomeIcon
+															icon={faSpinner}
+															spin
+														/>
+													) : (
 														<FontAwesomeIcon
 															icon={faTimes}
 														/>
-													</button>
-												)}
-											</div>
-										</td>
-									</motion.tr>
-								);
-							})}
-						</tbody>
-					</table>
-				)}
-			</section>
+													)}
+												</button>
+											)}
+										</div>
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+			)}
 
-			{/* MODAL DE DETALLES */}
+			{/* MODAL */}
 			<AnimatePresence>
 				{selectedOrder && (
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
-						className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+						className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
 					>
 						<motion.div
 							initial={{ scale: 0.9, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.9, opacity: 0 }}
-							className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative"
+							className="bg-white p-6 w-full max-w-lg rounded-2xl shadow-xl relative"
 						>
 							<button
 								onClick={() => setSelectedOrder(null)}
-								className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
+								className="absolute top-4 right-4 text-gray-500"
 							>
 								<FontAwesomeIcon icon={faXmark} />
 							</button>
 
-							<h2 className="text-2xl font-bold text-[var(--color-primary)] mb-6">
+							<h2 className="text-xl font-bold text-[var(--color-primary)] mb-4">
 								Detalles de la cita
 							</h2>
 
-							<div className="space-y-3 text-gray-700">
-								<p>
-									<strong>Cliente:</strong>{" "}
-									{selectedOrder.user.names}{" "}
-									{selectedOrder.user.surnames}
-								</p>
-								<p>
-									<strong>Servicio:</strong>{" "}
-									{selectedOrder.service.name}
-								</p>
-								<p>
-									<strong>Fecha:</strong> {selectedOrder.date}
-								</p>
-								<p>
-									<strong>Horario:</strong>{" "}
-									{selectedOrder.startTime} -{" "}
-									{selectedOrder.endTime}
-								</p>
-								<p>
-									<strong>Precio:</strong> $
-									{selectedOrder.price}
-								</p>
-								<p>
-									<strong>Dirección:</strong>{" "}
-									{selectedOrder.address?.address ||
-										"No disponible"}
-								</p>
-								<p>
-									<strong>Estado:</strong>{" "}
-									<span className="capitalize">
-										{selectedOrder.status}
-									</span>
-								</p>
-							</div>
+							<p className="text-sm">
+								<strong>ID:</strong> {selectedOrder.id}
+							</p>
 
-							{/* Botones dentro del modal */}
-							{selectedOrder.status === "pending" && (
-								<div className="flex justify-end gap-3 mt-8">
+							<p className="mt-2 text-sm">
+								<strong>Cliente:</strong>{" "}
+								{selectedOrder.user.names}{" "}
+								{selectedOrder.user.surnames}
+							</p>
+
+							<p className="text-sm">
+								<strong>Servicio:</strong>{" "}
+								{selectedOrder.service?.name}
+							</p>
+
+							<p className="text-sm">
+								<strong>Precio:</strong> $
+								{getPrice(selectedOrder)}
+							</p>
+
+							<p className="mt-2 text-sm">
+								<strong>Dirección:</strong>{" "}
+								{getCompactAddress(selectedOrder.address)}
+							</p>
+
+							<p className="mt-2 text-sm">
+								<strong>Fecha:</strong>{" "}
+								{new Date(
+									selectedOrder.createdAt
+								).toLocaleString("es-MX")}
+							</p>
+
+							{/* Actions */}
+							<div className="flex justify-end gap-3 mt-6">
+								{canCancel(selectedOrder.status) && (
 									<button
 										onClick={() =>
 											handleCancel(selectedOrder.id)
 										}
-										className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-all"
+										className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm"
 									>
-										Rechazar
+										Cancelar
 									</button>
+								)}
+
+								{canAccept(selectedOrder.status) && (
 									<button
 										onClick={() =>
 											handleConfirm(selectedOrder.id)
 										}
-										className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:opacity-90 transition-all"
+										className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm"
 									>
 										Aceptar
 									</button>
-								</div>
-							)}
+								)}
+							</div>
 						</motion.div>
 					</motion.div>
 				)}
