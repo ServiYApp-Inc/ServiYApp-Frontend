@@ -69,7 +69,7 @@ export const getMessagesBetween = async (
 	const { token } = useAuthStore.getState();
 
 	try {
-		const response = await axios.get(`${API_URL}/messages`, {
+		const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}messages-between`, {
 			params: { senderId, receiverId },
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -86,18 +86,19 @@ export const getMessagesBetween = async (
 };
 
 // 📋 Obtener lista de conversaciones de un usuario
-export const getConversations = async (userId: string) => {
-	const { token } = useAuthStore.getState();
+export const getConversations = async (userId: string, token: string) => {
+    try {
+        const response = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}chat-control/chat-list`,
+            {
+                params: { userId },
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
 
-	try {
-		const response = await axios.get(`${API_URL}/conversations`, {
-			params: { userId },
-			headers: { Authorization: `Bearer ${token}` },
-		});
-
-		return response.data;
-	} catch (error: any) {
-		console.error("❌ Error al obtener conversaciones:", error);
-		return [];
-	}
+        return response.data;
+    } catch (error) {
+        console.error("Error getConversations:", error);
+        throw error;
+    }
 };
