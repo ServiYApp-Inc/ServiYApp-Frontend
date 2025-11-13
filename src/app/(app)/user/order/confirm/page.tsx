@@ -18,19 +18,9 @@ import { useRouter } from "next/navigation";
 import { getAddresses } from "@/app/services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
 import AddressFormModal from "@/app/components/AddressFormModal";
-import IProvider from "@/app/interfaces/IProvider";
+import IService from "@/app/interfaces/IService";
 
-// ✅ Interfaz de servicio tipada correctamente
-interface IService {
-	id: string;
-	name: string;
-	description?: string;
-	price: number;
-	photo?: string;
-	duration?: number;
-	provider: IProvider; // 👈 ya tiene id, names, email, etc.
-	category?: { name?: string };
-}
+
 
 export default function ConfirmOrderPage() {
 	const router = useRouter();
@@ -96,8 +86,8 @@ export default function ConfirmOrderPage() {
 			id: service.id,
 			name: service.name,
 			price: service.price,
-			image: service.photo,
-			providerId: service.provider.id, // ✅ ahora se envía bien
+			providerId: service.provider.id,
+			image: service?.photos?.[0],
 			addressId: selectedAddressId,
 		});
 
@@ -157,7 +147,7 @@ export default function ConfirmOrderPage() {
 				{/* Información del servicio */}
 				<div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
 					<img
-						src={service.photo || "/placeholder.jpg"}
+						src={service?.photos?.[0] || "/placeholder.jpg"}
 						alt={service.name}
 						className="w-36 h-36 rounded-2xl object-cover shadow-md"
 					/>
