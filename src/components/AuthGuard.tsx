@@ -12,7 +12,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	const [rehydrated, setRehydrated] = useState(false);
 	const [allowRender, setAllowRender] = useState(false);
 
-	// Espera a que Zustand cargue el estado persistido
+	/* ------------------------------------------
+	    🟦 1. Esperar a que ZUSTAND se hidrate
+	------------------------------------------- */
 	useEffect(() => {
 		const unsub = useAuthStore.persist.onFinishHydration(() =>
 			setRehydrated(true)
@@ -24,6 +26,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (!rehydrated) return;
 
+		/* ------------------------------------------
+		     🟩 2. RUTAS PÚBLICAS
+		------------------------------------------- */
 		const publicPaths = [
 			"/",
 			"/contact",
@@ -37,11 +42,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 		];
 
 		const isAuthPage =
-			pathname.startsWith("/login") || pathname.startsWith("/register");
+			pathname.startsWith("/login") ||
+			pathname.startsWith("/register");
 
-		// 🟢 Libre si no requiere autenticación
 		if (publicPaths.includes(pathname)) {
-			// 🚫 Si ya está logueado → redirigir a su dashboard
 			if (isAuthenticated && isAuthPage) {
 				if (role === "user") router.replace("/user/services");
 				else if (role === "provider")
@@ -53,13 +57,40 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 			return;
 		}
 
-		// 🔴 No autenticado → redirigir al home
+		/* --------------------------------------------------------
+		    🟦 3. RUTAS ESPECIALES PARA LOGIN CON GOOGLE
+		       Permitir render temporal mientras procesan el token
+		   ------------------------------------------------------- */
+
+		// USER Google Dashboard
+		if (pathname.startsWith("/user/dashboard")) {
+			const params = new URLSearchParams(window.location.search);
+			if (params.get("token") && params.get("id")) {
+				setAllowRender(true);
+				return;
+			}
+		}
+
+		// PROVIDER Google Dashboard
+		if (pathname.startsWith("/provider/dashboard")) {
+			const params = new URLSearchParams(window.location.search);
+			if (params.get("token") && params.get("id")) {
+				setAllowRender(true);
+				return;
+			}
+		}
+
+		/* ------------------------------------------
+		     🟥 4. RUTA PROTEGIDA SIN AUTENTICACIÓN
+		------------------------------------------- */
 		if (!isAuthenticated) {
 			router.replace("/");
 			return;
 		}
 
-		// 🚫 Rol incorrecto → redirigir a su dashboard
+		/* ------------------------------------------
+		     🟨 5. RESTRICCIÓN POR ROL
+		------------------------------------------- */
 		if (
 			(role === "user" &&
 				(pathname.startsWith("/provider") ||
@@ -72,14 +103,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 					pathname.startsWith("/provider")))
 		) {
 			if (role === "user") router.replace("/user/services");
-			else if (role === "provider") router.replace("/provider/dashboard");
+			else if (role === "provider")
+				router.replace("/provider/dashboard");
 			else router.replace("/admin/dashboard");
 			return;
 		}
 
+		/* ------------------------------------------
+		     🟢 6. PERMITIR RENDER
+		------------------------------------------- */
 		setAllowRender(true);
 	}, [rehydrated, isAuthenticated, role, pathname, router]);
 
+	/* ------------------------------------------
+	    ⏳ Loading mientras hydration ocurre
+	------------------------------------------- */
 	if (!rehydrated || !allowRender) {
 		return (
 			<div className="h-screen flex flex-col items-center justify-center">
