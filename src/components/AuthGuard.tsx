@@ -32,6 +32,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 			"/loginProvider",
 			"/registerUser",
 			"/registerProvider",
+			"/complete-register-provider",
+			"/complete-register-user",
 		];
 
 		const isAuthPage =
