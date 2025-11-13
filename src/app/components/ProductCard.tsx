@@ -8,6 +8,8 @@ interface ProductCardProps {
 	name: string;
 	price: number;
 	image?: string;
+	providerId: string;   // 📌 Necesario para el carrito real
+	addressId: string;    // 📌 Necesario según tu estructura
 }
 
 export default function ProductCard({
@@ -15,17 +17,23 @@ export default function ProductCard({
 	name,
 	price,
 	image,
+	providerId,
+	addressId,
 }: ProductCardProps) {
 	const addToCart = useCartStore((state) => state.addToCart);
+	const isInCart = useCartStore((state) => state.isInCart);
 
 	const handleAddToCart = () => {
+		// Si ya está en carrito, no volver a agregarlo
+		if (isInCart(id)) return;
+
 		addToCart({
 			id,
 			name,
 			price,
 			image,
-			quantity: 1,
-			addressId: "",
+			providerId,
+			addressId,
 		});
 	};
 
@@ -39,7 +47,8 @@ export default function ProductCard({
 					height={200}
 					className="w-full h-48 object-cover"
 				/>
-			)}
+			 )}
+
 			<div className="p-4 flex flex-col justify-between">
 				<div>
 					<h3 className="text-lg font-semibold text-gray-800">
@@ -47,11 +56,17 @@ export default function ProductCard({
 					</h3>
 					<p className="text-gray-600 mt-1">${price.toFixed(2)}</p>
 				</div>
+
 				<button
 					onClick={handleAddToCart}
-					className="mt-4 bg-gradient-to-r from-red-500 to-rose-600 text-white py-2 px-4 rounded-xl hover:opacity-90 transition-all"
+					disabled={isInCart(id)}
+					className={`mt-4 text-white py-2 px-4 rounded-xl transition-all
+						${isInCart(id)
+							? "bg-gray-300 cursor-not-allowed"
+							: "bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90"}
+					`}
 				>
-					Agregar al carrito
+					{isInCart(id) ? "Ya está en el carrito" : "Agregar al carrito"}
 				</button>
 			</div>
 		</div>

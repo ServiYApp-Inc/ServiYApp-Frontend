@@ -18,7 +18,9 @@ import { useRouter } from "next/navigation";
 import { getAddresses } from "@/app/services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
 import AddressFormModal from "@/app/components/AddressFormModal";
+import IProvider from "@/app/interfaces/IProvider";
 
+// ✅ Interfaz de servicio tipada correctamente
 interface IService {
 	id: string;
 	name: string;
@@ -26,7 +28,7 @@ interface IService {
 	price: number;
 	photo?: string;
 	duration?: number;
-	provider?: { names?: string; surnames?: string };
+	provider: IProvider; // 👈 ya tiene id, names, email, etc.
 	category?: { name?: string };
 }
 
@@ -35,20 +37,15 @@ export default function ConfirmOrderPage() {
 	const { addToCart } = useCartStore();
 	const { token } = useAuthStore();
 
-	// Estados principales
 	const [service, setService] = useState<IService | null>(null);
 	const [addresses, setAddresses] = useState<any[]>([]);
 	const [selectedAddressId, setSelectedAddressId] = useState<string>("");
 	const [loading, setLoading] = useState(true);
-
-	// Dropdown state
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-	// Modal states
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [addressToEdit, setAddressToEdit] = useState<any>(null);
 
-	// Obtener servicio por query param
+	// ✅ Obtener servicio desde el query param
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 
@@ -69,7 +66,7 @@ export default function ConfirmOrderPage() {
 		})();
 	}, []);
 
-	// Obtener direcciones activas del usuario
+	// ✅ Obtener direcciones activas del usuario
 	const fetchAddresses = async () => {
 		try {
 			const data = await getAddresses(token!);
@@ -86,7 +83,7 @@ export default function ConfirmOrderPage() {
 		if (token) fetchAddresses();
 	}, [token]);
 
-	// Confirmar pedido
+	// ✅ Confirmar pedido y enviar al carrito
 	const handleConfirm = () => {
 		if (!service) return;
 
@@ -100,7 +97,7 @@ export default function ConfirmOrderPage() {
 			name: service.name,
 			price: service.price,
 			image: service.photo,
-			quantity: 1,
+			providerId: service.provider.id, // ✅ ahora se envía bien
 			addressId: selectedAddressId,
 		});
 
@@ -117,7 +114,9 @@ export default function ConfirmOrderPage() {
 	if (!service)
 		return (
 			<main className="min-h-screen flex flex-col items-center justify-center">
-				<p className="text-gray-600 mb-4">No se encontró el servicio.</p>
+				<p className="text-gray-600 mb-4">
+					No se encontró el servicio.
+				</p>
 				<Link
 					href="/user/services"
 					className="text-[var(--color-primary)] underline font-medium"
@@ -127,7 +126,6 @@ export default function ConfirmOrderPage() {
 			</main>
 		);
 
-	// Obtener la dirección seleccionada para mostrarla en el dropdown cerrado
 	const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
 	return (
@@ -151,7 +149,8 @@ export default function ConfirmOrderPage() {
 						Confirmación de pedido
 					</h1>
 					<p className="text-gray-600">
-						Revisa los detalles del servicio y selecciona una dirección.
+						Revisa los detalles del servicio y selecciona una
+						dirección.
 					</p>
 				</div>
 
@@ -168,16 +167,19 @@ export default function ConfirmOrderPage() {
 							{service.name}
 						</h2>
 						<p className="text-gray-600 text-sm mb-2">
-							{service.description || "Este servicio aún no tiene una descripción."}
+							{service.description ||
+								"Este servicio aún no tiene una descripción."}
 						</p>
 
 						<div className="text-gray-600 text-sm space-y-1">
 							<p>
-								<strong>Duración:</strong> {service.duration || "N/A"} min
+								<strong>Duración:</strong>{" "}
+								{service.duration || "N/A"} min
 							</p>
 							<p>
 								<strong>Profesional:</strong>{" "}
-								{service.provider?.names} {service.provider?.surnames}
+								{service.provider?.names}{" "}
+								{service.provider?.surnames}
 							</p>
 							<p>
 								<strong>Categoría:</strong>{" "}
@@ -187,11 +189,13 @@ export default function ConfirmOrderPage() {
 					</div>
 				</div>
 
-				{/* ✅ Dropdown de direcciones */}
+				{/* Dropdown de direcciones */}
 				<div className="mb-8">
-					<h3 className="text-lg font-semibold text-gray-700 mb-3">Dirección de envío</h3>
+					<h3 className="text-lg font-semibold text-gray-700 mb-3">
+						Dirección de envío
+					</h3>
 
-					{/* Trigger del dropdown */}
+					{/* Trigger */}
 					<div
 						className="border rounded-xl p-4 flex justify-between items-center cursor-pointer hover:border-gray-400 transition"
 						onClick={() => setIsDropdownOpen((v) => !v)}
@@ -202,13 +206,17 @@ export default function ConfirmOrderPage() {
 									{selectedAddress.name}
 								</p>
 								<p className="text-sm text-gray-600 truncate max-w-[240px]">
-									{selectedAddress.address}, {selectedAddress.neighborhood},{" "}
-									{selectedAddress.city?.name}, {selectedAddress.region?.name},{" "}
+									{selectedAddress.address},{" "}
+									{selectedAddress.neighborhood},{" "}
+									{selectedAddress.city?.name},{" "}
+									{selectedAddress.region?.name},{" "}
 									{selectedAddress.country?.name}
 								</p>
 							</div>
 						) : (
-							<p className="text-gray-500 text-sm">Selecciona una dirección</p>
+							<p className="text-gray-500 text-sm">
+								Selecciona una dirección
+							</p>
 						)}
 
 						<FontAwesomeIcon
@@ -219,7 +227,7 @@ export default function ConfirmOrderPage() {
 						/>
 					</div>
 
-					{/* Dropdown real */}
+					{/* Dropdown */}
 					<AnimatePresence>
 						{isDropdownOpen && (
 							<motion.div
@@ -247,8 +255,10 @@ export default function ConfirmOrderPage() {
 												{addr.name}
 											</p>
 											<p className="text-gray-600 text-xs">
-												{addr.address}, {addr.neighborhood},{" "}
-												{addr.city?.name}, {addr.region?.name},{" "}
+												{addr.address},{" "}
+												{addr.neighborhood},{" "}
+												{addr.city?.name},{" "}
+												{addr.region?.name},{" "}
 												{addr.country?.name}
 											</p>
 										</div>
@@ -262,12 +272,14 @@ export default function ConfirmOrderPage() {
 												setIsModalOpen(true);
 											}}
 										>
-											<FontAwesomeIcon icon={faPenToSquare} />
+											<FontAwesomeIcon
+												icon={faPenToSquare}
+											/>
 										</button>
 									</div>
 								))}
 
-								{/* + Agregar dirección */}
+								{/* + Agregar nueva */}
 								<button
 									className="w-full mt-2 flex items-center gap-2 text-[var(--color-primary)] font-semibold p-2 hover:bg-gray-100 rounded-lg"
 									onClick={() => {
@@ -285,7 +297,9 @@ export default function ConfirmOrderPage() {
 
 				{/* Total */}
 				<div className="flex justify-between items-center border-t pt-5 mt-4">
-					<span className="text-lg font-semibold text-gray-600">Total:</span>
+					<span className="text-lg font-semibold text-gray-600">
+						Total:
+					</span>
 					<span className="text-3xl font-extrabold text-[var(--color-primary)]">
 						${service.price}
 					</span>
@@ -305,14 +319,13 @@ export default function ConfirmOrderPage() {
 						className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition"
 						style={{ backgroundColor: "var(--color-primary)" }}
 					>
-						
-						Continuar 
+						Continuar
 						<FontAwesomeIcon icon={faArrowRight} />
 					</button>
 				</div>
 			</motion.section>
 
-			{/* ✅ Modal de nueva/editar dirección */}
+			{/* Modal dirección */}
 			<AddressFormModal
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
