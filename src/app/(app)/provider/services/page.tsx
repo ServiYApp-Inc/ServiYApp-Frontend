@@ -1,6 +1,6 @@
 "use client";
 
-import { faBookBookmark, faCheck, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBook, faBookBookmark, faCheck, faXmark } from "@fortawesome/free-solid-svg-icons";
 import FilterTagsProvider from "@/app/components/FilterTagsProvider";
 import { notFound } from "next/navigation";
 import IService from "@/app/interfaces/IService";
@@ -101,6 +101,7 @@ export default function PageServices() {
 						onClick={() => handleFilter("pending")}
 					/>
 					<FilterTagsProvider
+						icon={faBook}
 						label="Todos"
 						active={selectedFilter === "ALL"}
 						onClick={() => handleFilter("ALL")}
