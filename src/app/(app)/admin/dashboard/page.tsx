@@ -6,9 +6,12 @@ import ProfileItem from "@/app/components/ProfileItem";
 /*-- iconos --*/
 import { faBell, faCalendar, faHeart, faStar, faUser } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faGear, faUsersGear } from "@fortawesome/free-solid-svg-icons";
+import { useAuthStore } from "@/app/store/auth.store";
+import Swal from "sweetalert2";
 
 export default function AdminDashboard() {
 	const router = useRouter();
+	const {user, clearAuth} = useAuthStore();
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -19,6 +22,44 @@ export default function AdminDashboard() {
 		if (id) localStorage.setItem("provider_id", id);
 	}, []);
 
+
+	
+
+		// 🔴 Logout con confirmación
+	const handleLogout = async () => {
+		const result = await Swal.fire({
+			title: "¿Cerrar sesión?",
+			html: `<p style="font-size:14px; color:#555; margin-top:6px;">
+				Se cerrará tu sesión actual y volverás al inicio.
+			</p>`,
+			icon: "warning",
+			iconColor: "#1D2846",
+			width: 360,
+			padding: "1.2rem",
+			showCancelButton: true,
+			focusCancel: true,
+			reverseButtons: true,
+			background: "#fff",
+			color: "#1D2846",
+			confirmButtonText: "Sí, cerrar",
+			cancelButtonText: "Cancelar",
+			confirmButtonColor: "#1D2846",
+			cancelButtonColor: "#d33",
+			customClass: {
+				popup: "rounded-2xl shadow-lg",
+				title: "text-base font-semibold",
+				confirmButton: "px-4 py-2 rounded-lg text-sm font-medium",
+				cancelButton: "px-4 py-2 rounded-lg text-sm font-medium",
+				icon: "scale-75",
+			},
+		});
+
+		if (result.isConfirmed) {
+			clearAuth();
+			router.push("/");
+		}
+	};
+
 	return (
 		<main className="max-w-4xl  mt-8">
 			<h1 className="text-[48px] font-bold text-[var(--color-primary)] mb-6">Dashboard <strong>Adiministrador</strong></h1>
@@ -26,26 +67,22 @@ export default function AdminDashboard() {
 			<div className="bg-[var(--color-primary)] p-6 rounded-3xl text-white flex flex-col gap-8">
 				<div className="flex flex-col md:flex-row items-center gap-6">
 					<img
-						src="https://i.pravatar.cc/40?img=3"
-						alt="User profilePicture"
+						src={user?.profilePicture}
+						alt="Foto de Perfil"
 						className="w-[130px] h-[130px] rounded-full border border-2 border-white object-cover"
 					/>
 					<div>
-						<h3 className="font-bold text-[36px]">Juana Díaz</h3>
-						<h5 className="font-Medium text-[24px]">juanadiaz@gmail.com</h5>
+						<h3 className="font-bold text-[36px]">{user?.names}, {user?.surnames}</h3>
+						<h5 className="font-Medium text-[24px]">{user?.email}</h5>
 					</div>
 				</div>
 				<span className="flex flex-col md:flex-row justify-around">
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-[36px] font-regular">30</p>
+						<p className="text-[36px] font-regular">Endpoint services actives</p>
 						<h5 className="text-[24px] font-regular">Servicios Activos</h5>
 					</div>
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-[36px] font-regular">8</p>
-						<h5 className="text-[24px] font-regular">Servicios Eliminados</h5>
-					</div>
-					<div className="flex flex-col items-center gap-1">
-						<p className="text-[36px] font-regular">4</p>
+						<p className="text-[36px] font-regular">Endpoint services pending</p>
 						<h5 className="text-[24px] font-regular">En Espera</h5>
 					</div>
 				</span>
@@ -64,7 +101,7 @@ export default function AdminDashboard() {
 				</div>
 			</div>
 			{/* Este button probablemente sea un component "use client" */}
-			<button className="text-[20px] font-medium mt-4 px-4 py-1 bg-white rounded-lg border border-[#949492] hover:bg-[var(--color-background)]">Cerrar Sesión</button>
+			<button onClick={handleLogout} className="text-[20px] font-medium mt-4 px-4 py-1 bg-white rounded-lg border border-[#949492] hover:bg-[var(--color-background)]">Cerrar Sesión</button>
 		</main>
 	);
 }
