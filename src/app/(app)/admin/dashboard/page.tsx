@@ -40,9 +40,9 @@ export default function AdminDashboard() {
 		fetchServices();
 	}, [])
 
-	const servicesActives = services.filter((s)=> s.status === "active")
-	const servicesPendings = services.filter((s)=> s.status === "pending")
-	const servicesDesactives = services.filter((s)=> s.status === "inactive")
+	const servicesActives = services.filter((s)=> s.status === "active");
+	const servicesPendings = services.filter((s)=> s.status === "pending");
+	const servicesDesactives = services.filter((s)=> s.status === "inactive");
 
 		// 🔴 Logout con confirmación
 	const handleLogout = async () => {
