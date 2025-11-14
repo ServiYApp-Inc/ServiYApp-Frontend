@@ -18,9 +18,9 @@ interface Message {
   time: string;
 }
 
-export default function UserChatPage() {
+export default function ProviderChatPage() {
   const params = useParams();
-  const providerId = params.id as string;
+  const receiverId = params.id as string;
 
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,30 +30,30 @@ export default function UserChatPage() {
 
   if (!user) return <div>Cargando...</div>;
 
-  // conectar socket
+  // 🔵 conectar socket
   useEffect(() => {
     getSocket();
   }, []);
 
-  // historial inicial
+  // 🔵 cargar historial desde tu back (GET /chat/messages)
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const data = await getMessagesBetween(user.id, providerId);
+        const data = await getMessagesBetween(user.id, receiverId);
         setMessages(data);
       } catch (err) {
-        console.error("Error al cargar historial:", err);
+        console.error("Error cargando historial:", err);
       }
     };
     loadHistory();
-  }, [providerId, user.id]);
+  }, [receiverId, user.id]);
 
-  // escuchar mensajes nuevos
+  // 🔵 escuchar mensajes nuevos
   useEffect(() => {
     listenMessages((msg: Message) => {
       const isBetween =
-        (msg.senderId === user.id && msg.receiverId === providerId) ||
-        (msg.senderId === providerId && msg.receiverId === user.id);
+        (msg.senderId === user.id && msg.receiverId === receiverId) ||
+        (msg.senderId === receiverId && msg.receiverId === user.id);
 
       if (!isBetween) return;
 
@@ -62,9 +62,9 @@ export default function UserChatPage() {
         return [...prev, msg];
       });
     });
-  }, [providerId, user.id]);
+  }, [receiverId, user.id]);
 
-  // auto scroll
+  // 🔵 auto scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -72,7 +72,7 @@ export default function UserChatPage() {
   const handleSend = () => {
     if (!content.trim()) return;
 
-    sendMessage(user.id, providerId, content);
+    sendMessage(user.id, receiverId, content);
     setContent("");
   };
 
@@ -81,9 +81,9 @@ export default function UserChatPage() {
       {/* HEADER */}
       <div className="p-4 bg-white border-b shadow flex items-center gap-3">
         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">
-          {providerId[0]?.toUpperCase()}
+          {receiverId[0]?.toUpperCase()}
         </div>
-        <span className="font-semibold text-lg">Chat con tu proveedor</span>
+        <span className="font-semibold text-lg">Chat con el cliente</span>
       </div>
 
       {/* MENSAJES */}
@@ -100,6 +100,7 @@ export default function UserChatPage() {
             {msg.content}
           </div>
         ))}
+
         <div ref={bottomRef} />
       </div>
 

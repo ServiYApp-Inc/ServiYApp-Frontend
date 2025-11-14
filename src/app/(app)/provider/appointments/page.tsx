@@ -11,9 +11,11 @@ import {
 	faTimes,
 	faEye,
 	faXmark,
+	faSearch,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import StartConversation from "@/app/components/StartConversationButton";
 
 interface ServiceOrder {
 	id: string;
@@ -38,6 +40,8 @@ export default function ProviderAppointmentsPage() {
 	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
 		null
 	);
+	const [search, setSearch] = useState("");
+	const [showOnlyPaid, setShowOnlyPaid] = useState(true);
 
 	// Obtener citas
 	const fetchOrders = async () => {
@@ -109,8 +113,38 @@ export default function ProviderAppointmentsPage() {
 				Mis Citas
 			</h1>
 
-			{/* Tabs */}
-			<div className="flex gap-3 mb-8">
+			<StartConversation />
+
+			{/* SEARCH */}
+			<div className="relative mb-6 max-w-md">
+				<FontAwesomeIcon
+					icon={faSearch}
+					className="absolute left-3 top-3 text-gray-400 text-sm"
+				/>
+				<input
+					type="text"
+					placeholder="Buscar por ID..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary)]"
+				/>
+			</div>
+
+			{/* TOGGLE PAGADAS */}
+			<div className="flex items-center gap-2 mb-6">
+				<input
+					type="checkbox"
+					checked={!showOnlyPaid}
+					onChange={() => setShowOnlyPaid(!showOnlyPaid)}
+					className="h-4 w-4"
+				/>
+				<label className="text-sm text-gray-700">
+					Mostrar NO pagadas
+				</label>
+			</div>
+
+			{/* TABS */}
+			<div className="flex gap-3 mb-8 flex-wrap">
 				{[
 					{ key: "upcoming", label: "Próximas" },
 					{ key: "cancelled", label: "Canceladas" },
