@@ -220,7 +220,6 @@ export default function ProviderAppointmentsPage() {
 				Citas Recibidas
 			</h1>
 
-			{/* Chat button */}
 			<StartConversation />
 
 			{/* SEARCH */}
@@ -238,7 +237,7 @@ export default function ProviderAppointmentsPage() {
 				/>
 			</div>
 
-			{/* TOGGLE PAID */}
+			{/* TOGGLE PAGADAS */}
 			<div className="flex items-center gap-2 mb-6">
 				<input
 					type="checkbox"
