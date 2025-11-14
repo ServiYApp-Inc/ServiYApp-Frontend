@@ -1,4 +1,3 @@
-// components/FilterTag.tsx
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface FilterTagsProviderProps {
