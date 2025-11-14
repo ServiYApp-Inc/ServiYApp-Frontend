@@ -11,6 +11,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
+import StartChatButton from "@/app/components/StartChatButton";
+
+// 🚀 IMPORTAMOS EL MISMO BOTÓN DE CHAT
 
 interface ServiceOrder {
 	id: string;
@@ -49,9 +53,15 @@ export default function UserAppointmentsPage() {
 	const { user, token } = useAuthStore();
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
 	const [showUnpaid, setShowUnpaid] = useState(false);
-	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">("upcoming");
+	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
+		"upcoming"
+	);
 	const [loading, setLoading] = useState(false);
-	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
+		null
+	);
+
+	const router = useRouter();
 
 	useEffect(() => {
 		if (user?.id) fetchOrders();
@@ -75,9 +85,13 @@ export default function UserAppointmentsPage() {
 	// CANCELAR
 	const handleCancel = async (id: string) => {
 		try {
-			await Api.patch(`service-orders/${id}/cancel`, {}, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
+			await Api.patch(
+				`service-orders/${id}/cancel`,
+				{},
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				}
+			);
 			toast.success("Cita cancelada");
 			fetchOrders();
 			setSelectedOrder(null);
@@ -100,14 +114,17 @@ export default function UserAppointmentsPage() {
 	// ------------------------------------
 
 	const finalFiltered = filteredByPayment.filter((o) => {
-		if (tab === "upcoming") return o.status === "paid" || o.status === "accepted";
+		if (tab === "upcoming")
+			return o.status === "paid" || o.status === "accepted";
 		if (tab === "completed") return o.status === "completed";
 		if (tab === "cancelled") return o.status === "cancelled";
 		return true;
 	});
 
 	const upcomingPaid = finalFiltered.filter((o) => o.status === "paid");
-	const upcomingAccepted = finalFiltered.filter((o) => o.status === "accepted");
+	const upcomingAccepted = finalFiltered.filter(
+		(o) => o.status === "accepted"
+	);
 
 	// ------------------------------------
 	//  BADGES
@@ -115,21 +132,31 @@ export default function UserAppointmentsPage() {
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
-			case "paid": return "bg-blue-100 text-blue-700";
-			case "accepted": return "bg-green-100 text-green-700";
-			case "completed": return "bg-gray-100 text-gray-700";
-			case "cancelled": return "bg-red-100 text-red-700";
-			default: return "bg-gray-200 text-gray-600";
+			case "paid":
+				return "bg-blue-100 text-blue-700";
+			case "accepted":
+				return "bg-green-100 text-green-700";
+			case "completed":
+				return "bg-gray-100 text-gray-700";
+			case "cancelled":
+				return "bg-red-100 text-red-700";
+			default:
+				return "bg-gray-200 text-gray-600";
 		}
 	};
 
 	const getStatusText = (status: string) => {
 		switch (status) {
-			case "paid": return "Pagada (pendiente de aceptación)";
-			case "accepted": return "Aceptada";
-			case "completed": return "Completada";
-			case "cancelled": return "Cancelada";
-			default: return status;
+			case "paid":
+				return "Pagada (pendiente de aceptación)";
+			case "accepted":
+				return "Aceptada";
+			case "completed":
+				return "Completada";
+			case "cancelled":
+				return "Cancelada";
+			default:
+				return status;
 		}
 	};
 
@@ -138,7 +165,9 @@ export default function UserAppointmentsPage() {
 		return (
 			<span
 				className={`text-[10px] px-2 py-0.5 rounded-md ${
-					isPaid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+					isPaid
+						? "bg-green-100 text-green-700"
+						: "bg-red-100 text-red-700"
 				}`}
 			>
 				{isPaid ? "Pagada" : "No pagada"}
@@ -146,19 +175,18 @@ export default function UserAppointmentsPage() {
 		);
 	};
 
-	const getPrice = (o: ServiceOrder) =>
-		o.payments?.[0]?.amount || "0.00";
+	const getPrice = (o: ServiceOrder) => o.payments?.[0]?.amount || "0.00";
 
 	// ------------------------------------
 	//  COMPONENTE DE TARJETA
 	// ------------------------------------
-
 	const AppointmentCard = (order: ServiceOrder, showCancel = false) => (
 		<motion.div
 			key={order.id}
 			whileHover={{ scale: 1.02 }}
 			className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md hover:shadow-lg transition-all"
 		>
+			{/* 🖼 Imagen */}
 			<div className="relative w-full h-48">
 				<img
 					src={order.service?.photos?.[0] || "/default-service.jpg"}
@@ -173,8 +201,8 @@ export default function UserAppointmentsPage() {
 				</span>
 			</div>
 
+			{/* 📌 CONTENIDO */}
 			<div className="p-5 space-y-2">
-
 				{/* ID */}
 				<div className="flex items-center gap-2">
 					<span className="text-[10px] text-gray-500 break-all">
@@ -188,10 +216,12 @@ export default function UserAppointmentsPage() {
 					</button>
 				</div>
 
+				{/* Nombre del servicio */}
 				<h3 className="text-lg font-semibold text-[var(--color-primary)]">
 					{order.service?.name}
 				</h3>
 
+				{/* Nombre del proveedor */}
 				<p className="text-sm text-gray-500">
 					{order.provider.names} {order.provider.surnames}
 				</p>
@@ -199,18 +229,34 @@ export default function UserAppointmentsPage() {
 				{/* Dirección */}
 				{order.address && (
 					<p className="flex items-center gap-2 text-sm text-gray-700">
-						<FontAwesomeIcon icon={faMapMarkerAlt} className="text-gray-400 w-4 h-4" />
+						<FontAwesomeIcon
+							icon={faMapMarkerAlt}
+							className="text-gray-400 w-4 h-4"
+						/>
 						{order.address.name}, {order.address.address}
 					</p>
 				)}
 
 				{/* Pago */}
 				<div className="flex items-center gap-2 pt-2">
-					<span className="text-sm font-semibold">${getPrice(order)}</span>
+					<span className="text-sm font-semibold">
+						${getPrice(order)}
+					</span>
 					{getPaymentBadge(order.payments)}
 				</div>
 
+				{/* BOTONES */}
 				<div className="flex justify-between items-center pt-4">
+					{/* 🔵 Iniciar chat (usa tu StartChatButton) */}
+					{(order.status === "paid" ||
+						order.status === "accepted") && (
+						<StartChatButton
+							receiverId={order.provider.id}
+							role="user"
+						/>
+					)}
+
+					{/* 🟥 Cancelar */}
 					{showCancel && (
 						<button
 							onClick={() => handleCancel(order.id)}
@@ -219,6 +265,8 @@ export default function UserAppointmentsPage() {
 							Cancelar
 						</button>
 					)}
+
+					{/* 🟦 Ver detalles */}
 					<button
 						onClick={() => setSelectedOrder(order)}
 						className="px-4 py-1 text-sm rounded-lg text-white"
@@ -236,7 +284,10 @@ export default function UserAppointmentsPage() {
 	// ------------------------------------
 
 	return (
-		<main className="px-6 py-10 min-h-screen" style={{ backgroundColor: "var(--background)" }}>
+		<main
+			className="px-6 py-10 min-h-screen"
+			style={{ backgroundColor: "var(--background)" }}
+		>
 			<h1 className="text-3xl font-bold mb-8 text-[var(--color-primary)]">
 				Mis reservas
 			</h1>
@@ -286,7 +337,9 @@ export default function UserAppointmentsPage() {
 			{loading ? (
 				<p className="text-center text-gray-500 mt-10">Cargando...</p>
 			) : finalFiltered.length === 0 ? (
-				<p className="text-center text-gray-500 mt-10">No hay resultados.</p>
+				<p className="text-center text-gray-500 mt-10">
+					No hay resultados.
+				</p>
 			) : tab === "upcoming" ? (
 				<>
 					{upcomingPaid.length > 0 && (
@@ -295,7 +348,9 @@ export default function UserAppointmentsPage() {
 								💳 Pagadas
 							</h2>
 							<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-								{upcomingPaid.map((o) => AppointmentCard(o, true))}
+								{upcomingPaid.map((o) =>
+									AppointmentCard(o, true)
+								)}
 							</div>
 						</>
 					)}
@@ -306,7 +361,9 @@ export default function UserAppointmentsPage() {
 								📅 Aceptadas
 							</h2>
 							<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-								{upcomingAccepted.map((o) => AppointmentCard(o, true))}
+								{upcomingAccepted.map((o) =>
+									AppointmentCard(o, true)
+								)}
 							</div>
 						</>
 					)}
@@ -353,7 +410,9 @@ export default function UserAppointmentsPage() {
 									</span>
 									<button
 										onClick={() =>
-											navigator.clipboard.writeText(selectedOrder.id)
+											navigator.clipboard.writeText(
+												selectedOrder.id
+											)
 										}
 										className="text-xs text-[var(--color-primary)]"
 									>
@@ -366,32 +425,43 @@ export default function UserAppointmentsPage() {
 								</h2>
 
 								<p className="text-sm text-gray-500 mb-4">
-									{selectedOrder.provider.names} {selectedOrder.provider.surnames}
+									{selectedOrder.provider.names}{" "}
+									{selectedOrder.provider.surnames}
 								</p>
 
 								{/* Info */}
 								<div className="text-sm text-gray-700 space-y-2">
 									<p>
-										<strong>Correo:</strong> {selectedOrder.provider.email}
+										<strong>Correo:</strong>{" "}
+										{selectedOrder.provider.email}
 									</p>
 									<p>
-										<strong>Teléfono:</strong> {selectedOrder.provider.phone}
+										<strong>Teléfono:</strong>{" "}
+										{selectedOrder.provider.phone}
 									</p>
 									{selectedOrder.address && (
 										<p>
 											<strong>Dirección:</strong>{" "}
-											{selectedOrder.address.name}, {selectedOrder.address.address}
+											{selectedOrder.address.name},{" "}
+											{selectedOrder.address.address}
 										</p>
 									)}
 								</div>
 
 								{/* Cancelar */}
-								{["paid", "accepted"].includes(selectedOrder.status) && (
+								{["paid", "accepted"].includes(
+									selectedOrder.status
+								) && (
 									<div className="mt-6 flex justify-end">
 										<button
-											onClick={() => handleCancel(selectedOrder.id)}
+											onClick={() =>
+												handleCancel(selectedOrder.id)
+											}
 											className="px-5 py-2 text-white rounded-lg shadow-md"
-											style={{ backgroundColor: "var(--color-primary)" }}
+											style={{
+												backgroundColor:
+													"var(--color-primary)",
+											}}
 										>
 											Cancelar cita
 										</button>
