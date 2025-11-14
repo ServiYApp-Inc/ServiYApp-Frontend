@@ -15,7 +15,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import StartConversation from "@/app/components/StartConversationButton";
 
+// ---------------------------------------------------------
+// TYPES
+// ---------------------------------------------------------
 interface ServiceOrder {
 	id: string;
 	status: string;
@@ -47,22 +51,24 @@ interface ServiceOrder {
 	}[];
 }
 
+// ---------------------------------------------------------
+// COMPONENT
+// ---------------------------------------------------------
 export default function ProviderAppointmentsPage() {
 	const { user, token } = useAuthStore();
 
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [processingId, setProcessingId] = useState<string | null>(null);
-	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
-		null
-	);
 
-	// Tabs
+	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+
+	// Tab Selected
 	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
 		"upcoming"
 	);
 
-	// Search
+	// Search string
 	const [search, setSearch] = useState("");
 
 	// Show only paid
@@ -95,16 +101,16 @@ export default function ProviderAppointmentsPage() {
 	// ---------------------------------------------------------
 	// HELPERS
 	// ---------------------------------------------------------
-	const getCompactAddress = (a: any) => {
-		return [a?.address, a?.neighborhood, a?.city?.name, a?.region?.name]
+	const getCompactAddress = (a: any) =>
+		[a?.address, a?.neighborhood, a?.city?.name, a?.region?.name]
 			.filter(Boolean)
 			.join(", ");
-	};
 
 	const getPrice = (o: ServiceOrder) => o.payments?.[0]?.amount || "0.00";
 
 	const getPaidStatusBadge = (o: ServiceOrder) => {
 		const isPaid = o.payments?.[0]?.status === "approved";
+
 		return (
 			<span
 				className={`text-[10px] px-2 py-0.5 rounded-md ${
@@ -118,16 +124,16 @@ export default function ProviderAppointmentsPage() {
 		);
 	};
 
-	const getStatusText = {
+	const getStatusText: Record<string, string> = {
 		paid: "Pendiente de aceptar",
 		accepted: "Aceptada",
 		pending: "Pendiente de pago",
 		cancelled: "Cancelada",
 		completed: "Finalizada",
-	} as any;
+	};
 
 	const getStatusBadge = (status: string) => {
-		const colors: any = {
+		const colors: Record<string, string> = {
 			paid: "bg-blue-100 text-blue-700",
 			accepted: "bg-green-100 text-green-700",
 			pending: "bg-yellow-100 text-yellow-700",
@@ -144,14 +150,16 @@ export default function ProviderAppointmentsPage() {
 		);
 	};
 
-	const canAccept = (s: string) => s === "paid";
-	const canCancel = (s: string) => s === "paid" || s === "accepted";
+	const canAccept = (status: string) => status === "paid";
+	const canCancel = (status: string) =>
+		status === "paid" || status === "accepted";
 
 	// ---------------------------------------------------------
 	// ACTIONS
 	// ---------------------------------------------------------
 	const handleConfirm = async (id: string) => {
 		if (!confirm("¿Aceptar esta cita?")) return;
+
 		try {
 			setProcessingId(id);
 			await Api.patch(
@@ -168,6 +176,7 @@ export default function ProviderAppointmentsPage() {
 
 	const handleCancel = async (id: string) => {
 		if (!confirm("¿Cancelar esta cita?")) return;
+
 		try {
 			setProcessingId(id);
 			await Api.patch(
@@ -210,6 +219,8 @@ export default function ProviderAppointmentsPage() {
 			<h1 className="text-3xl font-bold text-[var(--color-primary)] mb-6">
 				Citas Recibidas
 			</h1>
+
+			<StartConversation />
 
 			{/* SEARCH */}
 			<div className="relative mb-6 max-w-md">
@@ -294,8 +305,7 @@ export default function ProviderAppointmentsPage() {
 									key={o.id}
 									className="border-b hover:bg-gray-50"
 								>
-									{/* ID */}
-									<td className="py-3 px-4 max-w-[120px] ">
+									<td className="py-3 px-4 max-w-[130px] ">
 										<div className="flex flex-col gap-1">
 											<span className="text-[11px] break-all">
 												{o.id}
@@ -328,7 +338,6 @@ export default function ProviderAppointmentsPage() {
 										{address}
 									</td>
 
-									{/* Pago */}
 									<td className="py-3 px-4">
 										<div className="flex flex-col gap-1">
 											<span className="font-semibold text-[12px]">
@@ -338,15 +347,12 @@ export default function ProviderAppointmentsPage() {
 										</div>
 									</td>
 
-									{/* Estado */}
 									<td className="py-3 px-4">
 										{getStatusBadge(o.status)}
 									</td>
 
-									{/* Acciones */}
-									<td className="py-3 px-4">
+									<td className="py-3 px-4 text-center">
 										<div className="flex justify-center gap-3">
-											{/* Ver */}
 											<button
 												onClick={() =>
 													setSelectedOrder(o)
@@ -356,7 +362,6 @@ export default function ProviderAppointmentsPage() {
 												<FontAwesomeIcon icon={faEye} />
 											</button>
 
-											{/* Aceptar */}
 											{o.status === "paid" && (
 												<button
 													onClick={() =>
@@ -377,7 +382,6 @@ export default function ProviderAppointmentsPage() {
 												</button>
 											)}
 
-											{/* Cancelar */}
 											{(o.status === "paid" ||
 												o.status === "accepted") && (
 												<button
@@ -433,39 +437,39 @@ export default function ProviderAppointmentsPage() {
 								Detalles de la cita
 							</h2>
 
-							<p className="text-sm">
+							<p className="text-sm mb-2">
 								<strong>ID:</strong> {selectedOrder.id}
 							</p>
 
-							<p className="mt-2 text-sm">
+							<p className="text-sm mb-1">
 								<strong>Cliente:</strong>{" "}
 								{selectedOrder.user.names}{" "}
 								{selectedOrder.user.surnames}
 							</p>
 
-							<p className="text-sm">
+							<p className="text-sm mb-1">
 								<strong>Servicio:</strong>{" "}
 								{selectedOrder.service?.name}
 							</p>
 
-							<p className="text-sm">
+							<p className="text-sm mb-1">
 								<strong>Precio:</strong> $
 								{getPrice(selectedOrder)}
 							</p>
 
-							<p className="mt-2 text-sm">
+							<p className="text-sm mb-1">
 								<strong>Dirección:</strong>{" "}
 								{getCompactAddress(selectedOrder.address)}
 							</p>
 
-							<p className="mt-2 text-sm">
+							<p className="text-sm mb-1">
 								<strong>Fecha:</strong>{" "}
 								{new Date(
 									selectedOrder.createdAt
 								).toLocaleString("es-MX")}
 							</p>
 
-							{/* Actions */}
+							{/* Modal Actions */}
 							<div className="flex justify-end gap-3 mt-6">
 								{canCancel(selectedOrder.status) && (
 									<button
