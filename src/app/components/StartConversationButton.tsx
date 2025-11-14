@@ -2,24 +2,38 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/app/store/auth.store";
 
 export default function StartConversation() {
   const router = useRouter();
+  const { role } = useAuthStore(); // ← aquí obtenemos el rol real
+
   const [userId, setUserId] = useState("");
 
   const handleStart = () => {
     if (!userId.trim()) {
-      console.warn("⚠️ Debes escribir un userId");
+      console.warn("⚠️ Debes escribir un ID válido");
       return;
     }
 
-    router.push(`/provider/messages/${userId}`);
+    if (!role) {
+      console.warn("⚠️ No se detectó rol de usuario");
+      return;
+    }
+
+    // Ruta dinámica según el rol
+    const baseRoute =
+      role === "provider"
+        ? "/provider/messages"
+        : "/user/messages";
+
+    router.push(`${baseRoute}/${userId}`);
   };
 
   return (
     <div className="flex flex-col gap-3 p-4 bg-white border rounded-xl shadow max-w-sm">
       <label className="text-sm font-semibold text-gray-700">
-        Escribe el ID del usuario:
+        Escribe el ID:
       </label>
 
       <input

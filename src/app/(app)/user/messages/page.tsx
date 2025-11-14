@@ -3,77 +3,121 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
-import { getConversations } from "../../app-services/chatService";
 
-interface Conversation {
+interface ChatConversation {
   userId: string;
-  lastMessage: {
-    id: string;
-    content: string;
-    senderId: string;
-    receiverId: string;
-    time: string;
-  };
+  lastMessage: string;
+  time: string;
+  read: boolean;
 }
 
-export default function UserInboxPage() {
+export default function UserMessagesPage() {
+  const { user, token } = useAuthStore();
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
 
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [unread, setUnread] = useState<Record<string, number>>({});
+
+  // =============================
+  // 🔵 Fetch conversaciones
+  // =============================
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
-    const load = async () => {
-      const data = await getConversations(user.id);
-      setConversations(data);
+    const fetchConversations = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/chat/conversations?userId=${user.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const data = await res.json();
+        setConversations(data);
+
+        // construir lista de no leídos
+        const unreadMap: Record<string, number> = {};
+        data.forEach((c: ChatConversation) => {
+          if (!c.read) unreadMap[c.userId] = (unreadMap[c.userId] || 0) + 1;
+        });
+
+        setUnread(unreadMap);
+      } catch (error) {
+        console.error("Error cargando conversaciones:", error);
+      }
     };
 
-    load();
-  }, [user]);
+    fetchConversations();
+  }, [user?.id, token]);
+
+  // =============================
+  // Formato de hora
+  // =============================
+  const formatHora = (time: string) => {
+    return new Date(time).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   if (!user) return <div>Cargando...</div>;
 
   return (
-    <div className="max-w-lg mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Tus conversaciones</h1>
+    <main className="px-6 py-10 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold text-[var(--color-primary)] mb-6">
+        Mis mensajes
+      </h1>
 
-      <div className="space-y-3">
-        {conversations.length === 0 && (
-          <p className="text-gray-500">Aún no tienes chats.</p>
+      <div className="flex flex-col gap-3">
+        {conversations.length === 0 ? (
+          <p className="text-gray-500 text-center mt-10">
+            No tienes conversaciones aún.
+          </p>
+        ) : (
+          conversations.map((c) => (
+            <div
+              key={c.userId}
+              onClick={() => {
+                // limpiar no leídos
+                setUnread((prev) => ({ ...prev, [c.userId]: 0 }));
+
+                router.push(`/user/messages/${c.userId}`);
+              }}
+              className="bg-white border rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
+            >
+              {/* LEFT */}
+              <div className="flex items-center gap-3">
+                {/* avatar por inicial */}
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                  {c.userId[0]?.toUpperCase()}
+                </div>
+
+                <div>
+                  <p className="font-semibold text-sm">{c.userId}</p>
+
+                  <p className="text-xs text-gray-500 w-44 truncate">
+                    {c.lastMessage}
+                  </p>
+                </div>
+              </div>
+
+              {/* RIGHT */}
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-[11px] text-gray-400">
+                  {formatHora(c.time)}
+                </span>
+
+                {unread[c.userId] > 0 && (
+                  <span className="bg-red-500 text-white px-2 py-0.5 text-[10px] rounded-full">
+                    {unread[c.userId]}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
         )}
-
-        {conversations.map((conv) => (
-          <div
-            key={conv.userId}
-            onClick={() =>
-              router.push(`/user/messages/${conv.userId}`)
-            }
-            className="flex items-center gap-4 bg-white p-3 rounded-xl border shadow-sm cursor-pointer hover:bg-gray-50"
-          >
-            {/* Avatar con inicial */}
-            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold text-lg">
-              {conv.userId[0]?.toUpperCase()}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1">
-              <p className="font-semibold">Proveedor {conv.userId.slice(0, 6)}</p>
-              <p className="text-gray-600 text-sm truncate">
-                {conv.lastMessage.content}
-              </p>
-            </div>
-
-            {/* Hora */}
-            <span className="text-xs text-gray-400">
-              {new Date(conv.lastMessage.time).toLocaleTimeString("es-MX", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </div>
-        ))}
       </div>
-    </div>
+    </main>
   );
 }
