@@ -3,7 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
+import { Api } from "@/app/services/api";
 import { useChatSocket } from "@/app/(app)/app-services/useChatSocket";
+
+interface Partner {
+  id: string;
+  names: string;
+  surnames: string;
+  profilePicture?: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  receiverId: string;
+  time: string;
+  delivered: boolean;
+  read: boolean;
+}
 
 export default function UserChatPage() {
   const params = useParams();
@@ -12,16 +30,48 @@ export default function UserChatPage() {
   const { user } = useAuthStore();
 
   const [content, setContent] = useState("");
+  const [partner, setPartner] = useState<Partner | null>(null);
+  const [loadedMessages, setLoadedMessages] = useState<Message[]>([]);
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // 🟦 Socket (tiempo real)
   const {
-    messages,
+    messages: socketMessages,
     sendMessage,
     sendTyping,
     stopTyping,
     typing,
     markAsRead,
   } = useChatSocket(user?.id || "", providerId);
+
+  // 🟩 MERGE seguro + eliminar duplicados
+  const messages = [
+    ...(Array.isArray(loadedMessages) ? loadedMessages : []),
+    ...(Array.isArray(socketMessages) ? socketMessages : []),
+  ].filter(
+    (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
+  );
+
+  // 🟦 FETCH INICIAL → partner + mensajes
+  useEffect(() => {
+    if (!user?.id || !providerId) return;
+
+    const loadChat = async () => {
+      try {
+        const res = await Api.get(
+          `/chat/messages?userA=${user.id}&userB=${providerId}`
+        );
+
+        setPartner(res.data.partner || null);
+        setLoadedMessages(res.data.messages || []);
+      } catch (err) {
+        console.error("Error cargando chat:", err);
+      }
+    };
+
+    loadChat();
+  }, [user?.id, providerId]);
 
   // scroll automático
   useEffect(() => {
@@ -40,20 +90,26 @@ export default function UserChatPage() {
     stopTyping();
   };
 
-  if (!user) return <div>Cargando...</div>;
+  if (!user || !partner) return <div>Cargando...</div>;
 
   return (
     <div className="flex flex-col h-screen max-w-lg mx-auto bg-gray-50">
       {/* HEADER */}
       <div className="p-4 bg-white border-b shadow flex items-center gap-3">
-        <div className="relative">
-          <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">
-            {providerId[0]?.toUpperCase()}
-          </div>
-          {/* 🔴 ONLINE/OFFLINE REMOVIDO */}
-        </div>
+        <img
+          src={partner.profilePicture || "/default-avatar.png"}
+          className="w-10 h-10 rounded-full object-cover"
+        />
 
-        <span className="font-semibold text-lg">Tu proveedor</span>
+        <div className="flex flex-col">
+          <span className="font-semibold text-lg">
+            {partner.names} {partner.surnames}
+          </span>
+
+          {typing && (
+            <span className="text-xs text-green-500">escribiendo...</span>
+          )}
+        </div>
       </div>
 
       {/* MENSAJES */}
@@ -70,10 +126,8 @@ export default function UserChatPage() {
                   : "bg-white border"
               }`}
             >
-              {/* contenido */}
               <p>{msg.content}</p>
 
-              {/* hora + estado */}
               <div className="flex justify-end gap-2 mt-1 items-center">
                 <span className="text-[10px] opacity-70">
                   {new Date(msg.time).toLocaleTimeString([], {
