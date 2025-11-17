@@ -8,11 +8,14 @@ import {
 	faMapMarkerAlt,
 	faTimes,
 	faCopy,
+	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import StartChatButton from "@/app/components/StartChatButton";
+import MapAddress from "@/app/components/MapAddress";
+import Swal from "sweetalert2";
 
 // 🚀 IMPORTAMOS EL MISMO BOTÓN DE CHAT
 
@@ -22,13 +25,36 @@ interface ServiceOrder {
 	createdAt: string;
 
 	address?: {
+		id: string;
 		name: string;
 		address: string;
 		neighborhood?: string;
 		buildingType?: string;
+
+		lat: number | string;
+		lng: number | string;
+
+		city?: {
+			id: string;
+			name: string;
+		};
+
+		region?: {
+			id: string;
+			name: string;
+		};
+
+		country?: {
+			id: string;
+			name: string;
+		};
+
+		comments?: string;
+		status?: boolean;
 	};
 
 	service?: {
+		id?: string;
 		name: string;
 		description?: string;
 		photos?: string[] | null;
@@ -52,7 +78,6 @@ interface ServiceOrder {
 export default function UserAppointmentsPage() {
 	const { user, token } = useAuthStore();
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
-	const [showUnpaid, setShowUnpaid] = useState(false);
 	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
 		"upcoming"
 	);
@@ -74,6 +99,7 @@ export default function UserAppointmentsPage() {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			setOrders(data);
+			console.log(data);
 		} catch (err) {
 			console.error("❌ Error:", err);
 			toast.error("Error al cargar tus reservas");
@@ -82,7 +108,7 @@ export default function UserAppointmentsPage() {
 		}
 	};
 
-	// CANCELAR
+	// CANCELAR (real)
 	const handleCancel = async (id: string) => {
 		try {
 			await Api.patch(
@@ -100,13 +126,32 @@ export default function UserAppointmentsPage() {
 		}
 	};
 
+	// CANCELAR con SweetAlert
+	const confirmCancel = async (id: string) => {
+		const result = await Swal.fire({
+			title: "¿Seguro que quieres cancelar esta cita?",
+			text: "Esta acción no se puede deshacer.",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonText: "Sí, cancelar",
+			cancelButtonText: "No, volver",
+			confirmButtonColor: "#dc2626", // rojo
+			cancelButtonColor: "#6b7280", // gris
+			reverseButtons: true,
+		});
+
+		if (result.isConfirmed) {
+			await handleCancel(id);
+		}
+	};
+
 	// ------------------------------------
-	//  FILTRO PRINCIPAL (por payment)
+	//  FILTRO PRINCIPAL (solo pagadas)
 	// ------------------------------------
 
 	const filteredByPayment = orders.filter((o) => {
 		const isPaid = o.payments?.[0]?.status === "approved";
-		return showUnpaid ? true : isPaid;
+		return isPaid;
 	});
 
 	// ------------------------------------
@@ -247,33 +292,39 @@ export default function UserAppointmentsPage() {
 
 				{/* BOTONES */}
 				<div className="flex justify-between items-center pt-4">
-					{/* 🔵 Iniciar chat (usa tu StartChatButton) */}
-					{(order.status === "paid" ||
-						order.status === "accepted") && (
-						<StartChatButton
-							receiverId={order.provider.id}
-							role="user"
-						/>
-					)}
-
-					{/* 🟥 Cancelar */}
+					{/* 🟥 Cancelar cita (rojo, abajo izquierda) */}
 					{showCancel && (
 						<button
-							onClick={() => handleCancel(order.id)}
-							className="px-4 py-1 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100"
+							onClick={() => confirmCancel(order.id)}
+							className="flex items-center gap-2 px-1 py-1 text-sm rounded-lg text-red-600 hover:text-red-700 transition"
 						>
-							Cancelar
+							<FontAwesomeIcon
+								icon={faTrash}
+								className="w-3 h-3"
+							/>
 						</button>
 					)}
 
-					{/* 🟦 Ver detalles */}
-					<button
-						onClick={() => setSelectedOrder(order)}
-						className="px-4 py-1 text-sm rounded-lg text-white"
-						style={{ backgroundColor: "var(--color-primary)" }}
-					>
-						Ver Detalles
-					</button>
+					{/* Chat + Detalles (derecha) */}
+					<div className="flex items-center gap-3 ml-auto">
+						{(order.status === "paid" ||
+							order.status === "accepted") && (
+							<div className="flex items-center gap-1 text-[var(--color-primary)] font-large text-l">
+								<StartChatButton
+									receiverId={order.provider.id}
+									role="user"
+								/>
+							</div>
+						)}
+
+						<button
+							onClick={() => setSelectedOrder(order)}
+							className="px-4 py-1 text-sm rounded-lg text-white"
+							style={{ backgroundColor: "var(--color-primary)" }}
+						>
+							Ver Detalles
+						</button>
+					</div>
 				</div>
 			</div>
 		</motion.div>
@@ -291,26 +342,6 @@ export default function UserAppointmentsPage() {
 			<h1 className="text-3xl font-bold mb-8 text-[var(--color-primary)]">
 				Mis reservas
 			</h1>
-
-			{/* TOGGLE */}
-			<div className="flex items-center gap-3 mb-8">
-				<label className="text-sm font-medium text-[var(--color-primary)]">
-					Mostrar citas no pagadas
-				</label>
-
-				<button
-					onClick={() => setShowUnpaid(!showUnpaid)}
-					className={`w-12 h-6 rounded-full p-1 transition-all ${
-						showUnpaid ? "bg-[var(--color-primary)]" : "bg-gray-300"
-					}`}
-				>
-					<div
-						className={`h-4 w-4 bg-white rounded-full transition-all ${
-							showUnpaid ? "translate-x-6" : "translate-x-0"
-						}`}
-					/>
-				</button>
-			</div>
 
 			{/* TABS */}
 			<div className="flex gap-3 mb-8">
@@ -370,7 +401,7 @@ export default function UserAppointmentsPage() {
 				</>
 			) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-					{finalFiltered.map((o) => AppointmentCard(o))}
+					{finalFiltered.map((o) => AppointmentCard(o, true))}
 				</div>
 			)}
 
@@ -387,22 +418,42 @@ export default function UserAppointmentsPage() {
 							initial={{ scale: 0.95, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.95 }}
-							className="bg-white rounded-3xl w-full max-w-md shadow-xl overflow-hidden"
+							className="bg-white rounded-3xl overflow-hidden max-h-[90vh] w-full max-w-md shadow-xl flex flex-col"
 						>
-							<div className="relative h-48">
+							{/* Imagen */}
+							<div className="relative h-44 flex-shrink-0">
 								<img
-									src={selectedOrder.service?.photos?.[0]}
+									src={
+										selectedOrder.service?.photos?.[0] ||
+										"/default-service.jpg"
+									}
 									className="w-full h-full object-cover"
 								/>
+
 								<button
 									onClick={() => setSelectedOrder(null)}
 									className="absolute top-3 left-3 p-2 bg-black/40 rounded-full text-white text-sm"
 								>
 									<FontAwesomeIcon icon={faTimes} />
 								</button>
+
+								{["paid", "accepted"].includes(
+									selectedOrder.status
+								) && (
+									<button
+										onClick={() =>
+											confirmCancel(selectedOrder.id)
+										}
+										className="absolute top-3 right-3 p-2 rounded-full bg-red-600 text-white shadow-md"
+										title="Cancelar cita"
+									>
+										<FontAwesomeIcon icon={faTrash} />
+									</button>
+								)}
 							</div>
 
-							<div className="p-6">
+							{/* CONTENIDO */}
+							<div className="p-6 overflow-y-auto flex-1">
 								{/* ID */}
 								<div className="flex items-center gap-2 mb-2">
 									<span className="text-[11px] text-gray-500 break-all">
@@ -420,17 +471,29 @@ export default function UserAppointmentsPage() {
 									</button>
 								</div>
 
-								<h2 className="text-xl font-bold text-[var(--color-primary)]">
+								{/* Nombre servicio */}
+								<h2 className="text-2xl font-bold text-[var(--color-primary)] leading-tight">
 									{selectedOrder.service?.name}
 								</h2>
 
-								<p className="text-sm text-gray-500 mb-4">
-									{selectedOrder.provider.names}{" "}
-									{selectedOrder.provider.surnames}
-								</p>
+								{/* Proveedor */}
+								<div className="flex flex-row items-center gap-0">
+									<p className="text-sm font-semibold text-[var(--color-primary)]">
+										Servicio por:{" "}
+										<span className="text-gray-700 font-medium">
+											{selectedOrder.provider.names}{" "}
+											{selectedOrder.provider.surnames}
+										</span>
+									</p>
 
-								{/* Info */}
-								<div className="text-sm text-gray-700 space-y-2">
+									<StartChatButton
+										receiverId={selectedOrder.provider.id}
+										role="user"
+									/>
+								</div>
+
+								{/* Datos contacto */}
+								<div className="text-sm text-gray-700 space-y-3 gap-2">
 									<p>
 										<strong>Correo:</strong>{" "}
 										{selectedOrder.provider.email}
@@ -439,34 +502,49 @@ export default function UserAppointmentsPage() {
 										<strong>Teléfono:</strong>{" "}
 										{selectedOrder.provider.phone}
 									</p>
-									{selectedOrder.address && (
-										<p>
-											<strong>Dirección:</strong>{" "}
-											{selectedOrder.address.name},{" "}
-											{selectedOrder.address.address}
-										</p>
-									)}
 								</div>
 
-								{/* Cancelar */}
-								{["paid", "accepted"].includes(
-									selectedOrder.status
-								) && (
-									<div className="mt-6 flex justify-end">
-										<button
-											onClick={() =>
-												handleCancel(selectedOrder.id)
-											}
-											className="px-5 py-2 text-white rounded-lg shadow-md"
-											style={{
-												backgroundColor:
-													"var(--color-primary)",
-											}}
-										>
-											Cancelar cita
-										</button>
+								{/* DIRECCIÓN UNA SOLA LÍNEA */}
+								{selectedOrder.address && (
+									<div className="text-sm text-gray-700 gap-3">
+										<p className="font-semibold text-[var(--color-primary)] space-y-3 ">
+											Dirección:
+										</p>
+
+										<p>
+											{[
+												selectedOrder.address.name,
+												selectedOrder.address.address,
+												selectedOrder.address
+													.neighborhood,
+												selectedOrder.address.city
+													?.name,
+												selectedOrder.address.region
+													?.name,
+												selectedOrder.address.country
+													?.name,
+											]
+												.filter(Boolean)
+												.join(", ")}
+										</p>
 									</div>
 								)}
+
+								{/* Mapa */}
+								{selectedOrder.address?.lat &&
+									selectedOrder.address?.lng && (
+										<div className="mt-4">
+											<MapAddress
+												lat={Number(
+													selectedOrder.address.lat
+												)}
+												lng={Number(
+													selectedOrder.address.lng
+												)}
+												height="200px"
+											/>
+										</div>
+									)}
 							</div>
 						</motion.div>
 					</motion.div>
