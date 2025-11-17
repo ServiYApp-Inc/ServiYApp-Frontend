@@ -6,18 +6,42 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faTags,
-	faUsersGear,
 	faFileShield,
 	faCalendarDays,
-	faChartSimple,
 	faRightFromBracket,
-	faBoxOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
 
 import { getCategories } from "@/app/services/provider.service";
 import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
+
+interface AdminOrder {
+	id: string;
+	status: "pending" | "completed" | "cancelled" | string;
+	createdAt: string;
+
+	user?: {
+		names: string;
+		surnames: string;
+		email: string;
+		phone?: string;
+	};
+
+	provider?: {
+		names: string;
+		surnames: string;
+		email: string;
+		phone?: string;
+	};
+
+	service?: {
+		name: string;
+		price?: number;
+		duration?: number;
+		photos?: string[];
+	};
+}
 
 export default function AdminDashboard() {
 	const router = useRouter();
@@ -26,7 +50,7 @@ export default function AdminDashboard() {
 	/* ---------------- STATE ---------------- */
 	const [categories, setCategories] = useState([]);
 	const [pendingDocs, setPendingDocs] = useState([]);
-	const [orders, setOrders] = useState([]);
+	const [orders, setOrders] = useState<AdminOrder[]>([]);
 
 	const [loading, setLoading] = useState(true);
 
@@ -84,9 +108,14 @@ export default function AdminDashboard() {
 	/* ---------------- METRICS ---------------- */
 
 	const totalOrders = orders.length;
+
 	const pendingOrders = orders.filter((o) => o.status === "pending").length;
-	const completedOrders = orders.filter((o) => o.status === "completed").length;
-	const cancelledOrders = orders.filter((o) => o.status === "cancelled").length;
+	const completedOrders = orders.filter(
+		(o) => o.status === "completed"
+	).length;
+	const cancelledOrders = orders.filter(
+		(o) => o.status === "cancelled"
+	).length;
 
 	const categoriesCount = categories.length;
 	const pendingDocsCount = pendingDocs.length;
@@ -124,7 +153,9 @@ export default function AdminDashboard() {
 						<h3 className="font-bold text-[32px] leading-tight">
 							{user?.names} {user?.surnames}
 						</h3>
-						<h5 className="text-[20px] opacity-90">{user?.email}</h5>
+						<h5 className="text-[20px] opacity-90">
+							{user?.email}
+						</h5>
 					</div>
 				</div>
 
@@ -132,7 +163,9 @@ export default function AdminDashboard() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
 					<div>
 						<p className="text-[36px]">{completedOrders}</p>
-						<p className="text-[18px] opacity-80">Servicios Finalizados</p>
+						<p className="text-[18px] opacity-80">
+							Servicios Finalizados
+						</p>
 					</div>
 					<div>
 						<p className="text-[36px]">{pendingOrders}</p>
@@ -140,7 +173,9 @@ export default function AdminDashboard() {
 					</div>
 					<div>
 						<p className="text-[36px]">{pendingDocsCount}</p>
-						<p className="text-[18px] opacity-80">Documentos por revisar</p>
+						<p className="text-[18px] opacity-80">
+							Documentos por revisar
+						</p>
 					</div>
 				</div>
 			</div>
@@ -153,29 +188,46 @@ export default function AdminDashboard() {
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<Link href="/admin/dashboard/categories">
 					<div className="bg-white border border-gray-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition shadow">
-						<FontAwesomeIcon icon={faTags} className="text-3xl mb-3 text-[var(--color-primary)]" />
-						<h3 className="text-xl font-semibold text-[var(--color-primary)]">Categorías</h3>
-						<p className="text-gray-500">{categoriesCount} categorías registradas</p>
+						<FontAwesomeIcon
+							icon={faTags}
+							className="text-3xl mb-3 text-[var(--color-primary)]"
+						/>
+						<h3 className="text-xl font-semibold text-[var(--color-primary)]">
+							Categorías
+						</h3>
+						<p className="text-gray-500">
+							{categoriesCount} categorías registradas
+						</p>
 					</div>
 				</Link>
 
 				<Link href="/admin/dashboard/ReviewDocuments">
 					<div className="bg-white border border-gray-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition shadow">
-						<FontAwesomeIcon icon={faFileShield} className="text-3xl mb-3 text-[var(--color-primary)]" />
+						<FontAwesomeIcon
+							icon={faFileShield}
+							className="text-3xl mb-3 text-[var(--color-primary)]"
+						/>
 						<h3 className="text-xl font-semibold text-[var(--color-primary)]">
 							Revisión de Documentos
 						</h3>
-						<p className="text-gray-500">{pendingDocsCount} documentos pendientes</p>
+						<p className="text-gray-500">
+							{pendingDocsCount} documentos pendientes
+						</p>
 					</div>
 				</Link>
 
 				<Link href="/admin/dashboard/appointments">
 					<div className="bg-white border border-gray-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition shadow">
-						<FontAwesomeIcon icon={faCalendarDays} className="text-3xl mb-3 text-[var(--color-primary)]" />
+						<FontAwesomeIcon
+							icon={faCalendarDays}
+							className="text-3xl mb-3 text-[var(--color-primary)]"
+						/>
 						<h3 className="text-xl font-semibold text-[var(--color-primary)]">
 							Gestión de Citas
 						</h3>
-						<p className="text-gray-500">{totalOrders} citas registradas</p>
+						<p className="text-gray-500">
+							{totalOrders} citas registradas
+						</p>
 					</div>
 				</Link>
 			</div>
@@ -195,11 +247,16 @@ export default function AdminDashboard() {
 					<div>
 						<div
 							className="bg-[var(--color-primary)]/20 rounded-xl h-32 mx-auto flex items-end"
-							style={{ width: "60%", height: `${bar(totalOrders)}%` }}
+							style={{
+								width: "60%",
+								height: `${bar(totalOrders)}%`,
+							}}
 						>
 							<div className="bg-[var(--color-primary)] w-full h-3 rounded-b-xl"></div>
 						</div>
-						<p className="font-semibold text-[var(--color-primary)] mt-2">Total</p>
+						<p className="font-semibold text-[var(--color-primary)] mt-2">
+							Total
+						</p>
 						<p className="text-sm text-gray-600">{totalOrders}</p>
 					</div>
 
@@ -207,21 +264,31 @@ export default function AdminDashboard() {
 					<div>
 						<div
 							className="bg-green-200 rounded-xl mx-auto flex items-end"
-							style={{ width: "60%", height: `${bar(completedOrders)}%`, minHeight: "20px" }}
+							style={{
+								width: "60%",
+								height: `${bar(completedOrders)}%`,
+								minHeight: "20px",
+							}}
 						>
 							<div className="bg-green-600 w-full h-3 rounded-b-xl"></div>
 						</div>
 						<p className="font-semibold text-[var(--color-primary)] mt-2">
 							Finalizadas
 						</p>
-						<p className="text-sm text-gray-600">{completedOrders}</p>
+						<p className="text-sm text-gray-600">
+							{completedOrders}
+						</p>
 					</div>
 
 					{/* PENDING */}
 					<div>
 						<div
 							className="bg-yellow-200 rounded-xl mx-auto flex items-end"
-							style={{ width: "60%", height: `${bar(pendingOrders)}%`, minHeight: "20px" }}
+							style={{
+								width: "60%",
+								height: `${bar(pendingOrders)}%`,
+								minHeight: "20px",
+							}}
 						>
 							<div className="bg-yellow-600 w-full h-3 rounded-b-xl"></div>
 						</div>
@@ -235,17 +302,32 @@ export default function AdminDashboard() {
 					<div>
 						<div
 							className="bg-red-200 rounded-xl mx-auto flex items-end"
-							style={{ width: "60%", height: `${bar(cancelledOrders)}%`, minHeight: "20px" }}
+							style={{
+								width: "60%",
+								height: `${bar(cancelledOrders)}%`,
+								minHeight: "20px",
+							}}
 						>
 							<div className="bg-red-600 w-full h-3 rounded-b-xl"></div>
 						</div>
-						<p className="font-semibold text-[var(--color-primary)] mt-2">Canceladas</p>
-						<p className="text-sm text-gray-600">{cancelledOrders}</p>
+						<p className="font-semibold text-[var(--color-primary)] mt-2">
+							Canceladas
+						</p>
+						<p className="text-sm text-gray-600">
+							{cancelledOrders}
+						</p>
 					</div>
 				</div>
 			</div>
 
-			
+			{/* LOGOUT */}
+			<button
+				onClick={handleLogout}
+				className="mt-8 px-5 py-2 border border-gray-300 rounded-xl text-[20px] font-semibold hover:bg-gray-100 transition text-[var(--color-primary)]"
+			>
+				<FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
+				Cerrar sesión
+			</button>
 		</main>
 	);
 }
