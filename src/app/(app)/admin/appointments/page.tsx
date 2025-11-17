@@ -13,9 +13,12 @@ import {
 	faXmark,
 	faSearch,
 	faCheck,
+	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
+import MapAddress from "@/app/components/MapAddress";
 
 interface ServiceOrder {
 	id: string;
@@ -37,6 +40,8 @@ interface ServiceOrder {
 		neighborhood?: string;
 		city?: { name: string };
 		region?: { name: string };
+		lat?: string;
+		lng?: string;
 	};
 
 	payments: {
@@ -57,11 +62,11 @@ export default function AdminAppointmentsPage() {
 
 	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
 
-	// 🔍 Búsqueda
 	const [search, setSearch] = useState("");
 
-	// ✔ Mostrar solo pagadas por defecto
-	const [showOnlyPaid, setShowOnlyPaid] = useState(true);
+	// 🚫 ELIMINADO: filtro de mostrar no pagadas
+	// SOLO se mostrarán pagadas
+	const showOnlyPaid = true;
 
 	// GET ALL
 	const fetchOrders = async () => {
@@ -82,15 +87,28 @@ export default function AdminAppointmentsPage() {
 		fetchOrders();
 	}, []);
 
-	// COPY
 	const copyId = (id: string) => {
 		navigator.clipboard.writeText(id);
 		toast.success("ID copiado ✨");
 	};
 
-	// CANCELAR
-	const handleCancel = async (id: string) => {
+	// ❗ SweetAlert Cancelar
+	const confirmCancel = async (id: string) => {
+		const result = await Swal.fire({
+			title: "¿Cancelar esta cita?",
+			text: "Esta acción no se puede deshacer.",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#d33",
+			cancelButtonColor: "#3085d6",
+			confirmButtonText: "Sí, cancelar",
+			cancelButtonText: "No",
+		});
+
+		if (!result.isConfirmed) return;
+
 		setProcessingId(id);
+
 		try {
 			await Api.patch(
 				`/service-orders/${id}/cancel`,
@@ -107,8 +125,21 @@ export default function AdminAppointmentsPage() {
 	};
 
 	// ACEPTAR
-	const handleConfirm = async (id: string) => {
+	const confirmAccept = async (id: string) => {
+		const result = await Swal.fire({
+			title: "¿Aceptar esta cita?",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonColor: "#1d2846",
+			cancelButtonColor: "#aaa",
+			confirmButtonText: "Aceptar",
+			cancelButtonText: "Cancelar",
+		});
+
+		if (!result.isConfirmed) return;
+
 		setProcessingId(id);
+
 		try {
 			await Api.patch(
 				`/service-orders/${id}/confirm`,
@@ -124,24 +155,19 @@ export default function AdminAppointmentsPage() {
 		}
 	};
 
-	// FILTROS
-	const filterByTab = (o: ServiceOrder) => {
-		if (activeTab === "all") return true;
-		if (activeTab === "upcoming") return ["pending", "accepted"].includes(o.status);
-		if (activeTab === "completed") return o.status === "completed";
-		if (activeTab === "cancelled") return o.status === "cancelled";
-		return true;
-	};
-
-	const filterBySearch = (o: ServiceOrder) =>
-		search.trim() ? o.id.toLowerCase().includes(search.toLowerCase()) : true;
-
+	// ---------------- FILTROS ----------------
 	const filteredOrders = orders
-		.filter(filterByTab)
-		.filter(filterBySearch)
-		.filter((o) => (!showOnlyPaid ? true : o.payments?.[0]?.status === "approved"));
+		.filter((o) => o.payments?.[0]?.status === "approved") // SOLO PAGADAS
+		.filter((o) => {
+			if (activeTab === "upcoming") return ["pending", "accepted"].includes(o.status);
+			if (activeTab === "completed") return o.status === "completed";
+			if (activeTab === "cancelled") return o.status === "cancelled";
+			return true;
+		})
+		.filter((o) =>
+			search.trim() ? o.id.toLowerCase().includes(search.toLowerCase()) : true
+		);
 
-	// badges
 	const statusText = {
 		pending: "Pendiente",
 		accepted: "Aceptada",
@@ -180,17 +206,6 @@ export default function AdminAppointmentsPage() {
 					onChange={(e) => setSearch(e.target.value)}
 					className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary)]"
 				/>
-			</div>
-
-			{/* TOGGLE NO PAGADAS */}
-			<div className="flex items-center gap-2 mb-6">
-				<input
-					type="checkbox"
-					checked={!showOnlyPaid}
-					onChange={() => setShowOnlyPaid(!showOnlyPaid)}
-					className="h-4 w-4"
-				/>
-				<label className="text-sm text-gray-700">Mostrar NO pagadas</label>
 			</div>
 
 			{/* ---------------- TABS ---------------- */}
@@ -242,9 +257,7 @@ export default function AdminAppointmentsPage() {
 
 					<tbody>
 						{filteredOrders.map((o) => {
-							const payment = o.payments?.[0];
-							const isPaid = payment?.status === "approved";
-							const amount = payment ? Number(payment.amount) : o.service.price;
+							const amount = o.payments?.[0]?.amount || o.service.price;
 
 							const address = [
 								o.address?.address,
@@ -257,7 +270,6 @@ export default function AdminAppointmentsPage() {
 
 							return (
 								<tr key={o.id} className="border-b hover:bg-gray-50">
-									{/* ID */}
 									<td className="py-3 px-4">
 										<div className="flex items-center gap-2">
 											<span className="text-[11px]">{o.id}</span>
@@ -280,25 +292,21 @@ export default function AdminAppointmentsPage() {
 										{o.provider.names} {o.provider.surnames}
 									</td>
 
-									<td className="py-3 px-4 max-w-[240px] truncate">{address}</td>
+									<td className="py-3 px-4 max-w-[240px] truncate">
+										{address}
+									</td>
 
-									{/* Pago */}
 									<td className="py-3 px-4">
 										<div className="flex flex-col gap-1">
-											<span className="font-semibold text-[12px]">${amount}</span>
-											<span
-												className={`text-[10px] px-2 py-0.5 rounded-md ${
-													isPaid
-														? "bg-green-100 text-green-700"
-														: "bg-red-100 text-red-700"
-												}`}
-											>
-												{isPaid ? "Pagada" : "No pagada"}
+											<span className="font-semibold text-[12px]">
+												${amount}
+											</span>
+											<span className="text-[10px] px-2 py-0.5 rounded-md bg-green-100 text-green-700">
+												Pagada
 											</span>
 										</div>
 									</td>
 
-									{/* Estado */}
 									<td className="py-3 px-4">
 										<span
 											className={`text-[10px] px-2 py-0.5 rounded-md ${statusBadge(
@@ -309,11 +317,10 @@ export default function AdminAppointmentsPage() {
 										</span>
 									</td>
 
-									{/* ACCIONES */}
-									<td className="py-3 px-4">
+									<td className="py-3 px-4 text-center">
 										<div className="flex justify-center gap-3">
 
-											{/* VER */}
+											{/* Ver detalles */}
 											<button
 												onClick={() => setSelectedOrder(o)}
 												className="text-[var(--color-primary)]"
@@ -322,30 +329,29 @@ export default function AdminAppointmentsPage() {
 											</button>
 
 											{/* ACEPTAR */}
-											{o.payments?.[0]?.status === "approved" &&
-												o.status === "pending" && (
-													<button
-														onClick={() => handleConfirm(o.id)}
-														className="text-green-600"
-													>
-														{processingId === o.id ? (
-															<FontAwesomeIcon icon={faSpinner} spin />
-														) : (
-															<FontAwesomeIcon icon={faCheck} />
-														)}
-													</button>
-												)}
+											{o.status === "pending" && (
+												<button
+													onClick={() => confirmAccept(o.id)}
+													className="text-green-600"
+												>
+													{processingId === o.id ? (
+														<FontAwesomeIcon icon={faSpinner} spin />
+													) : (
+														<FontAwesomeIcon icon={faCheck} />
+													)}
+												</button>
+											)}
 
 											{/* CANCELAR */}
 											{["pending", "accepted"].includes(o.status) && (
 												<button
-													onClick={() => handleCancel(o.id)}
+													onClick={() => confirmCancel(o.id)}
 													className="text-red-600"
 												>
 													{processingId === o.id ? (
 														<FontAwesomeIcon icon={faSpinner} spin />
 													) : (
-														<FontAwesomeIcon icon={faTimes} />
+														<FontAwesomeIcon icon={faTrash} />
 													)}
 												</button>
 											)}
@@ -366,6 +372,9 @@ export default function AdminAppointmentsPage() {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+						onClick={(e) => {
+							if (e.target === e.currentTarget) setSelectedOrder(null);
+						}}
 					>
 						<motion.div
 							initial={{ scale: 0.9, opacity: 0 }}
@@ -377,39 +386,38 @@ export default function AdminAppointmentsPage() {
 								onClick={() => setSelectedOrder(null)}
 								className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
 							>
-								<FontAwesomeIcon icon={faXmark} />
+								<FontAwesomeIcon icon={faXmark} size="lg" />
 							</button>
 
 							<h2 className="text-xl font-bold text-[var(--color-primary)] mb-4">
 								Detalles de la Orden
 							</h2>
 
-							<p className="text-sm">
+							<p className="text-sm mb-1">
 								<strong>ID:</strong> {selectedOrder.id}
 							</p>
 
-							<p className="mt-2 text-sm">
+							<p className="text-sm mb-1">
 								<strong>Cliente:</strong>{" "}
 								{selectedOrder.user.names} {selectedOrder.user.surnames}
 							</p>
 
-							<p className="text-sm">
+							<p className="text-sm mb-1">
 								<strong>Proveedor:</strong>{" "}
-								{selectedOrder.provider.names}{" "}
-								{selectedOrder.provider.surnames}
+								{selectedOrder.provider.names} {selectedOrder.provider.surnames}
 							</p>
 
-							<p className="mt-2 text-sm">
+							<p className="text-sm mb-1">
 								<strong>Servicio:</strong> {selectedOrder.service.name}
 							</p>
 
-							<p className="text-sm">
+							<p className="text-sm mb-1">
 								<strong>Pago:</strong> $
 								{selectedOrder.payments?.[0]?.amount ??
 									selectedOrder.service.price}
 							</p>
 
-							<p className="mt-2 text-sm">
+							<p className="text-sm mb-1">
 								<strong>Dirección:</strong>{" "}
 								{[
 									selectedOrder.address?.address,
@@ -421,13 +429,40 @@ export default function AdminAppointmentsPage() {
 									.join(", ")}
 							</p>
 
+							{/* MAPA */}
+							{selectedOrder.address?.lat && selectedOrder.address?.lng && (
+								<div className="mt-4">
+									<MapAddress
+										lat={Number(selectedOrder.address.lat)}
+										lng={Number(selectedOrder.address.lng)}
+										height="200px"
+									/>
+								</div>
+							)}
+
 							<div className="flex justify-end gap-3 mt-6">
 								{["pending", "accepted"].includes(selectedOrder.status) && (
 									<button
-										onClick={() => handleCancel(selectedOrder.id)}
+										onClick={async () => {
+											const result = await Swal.fire({
+												title: "¿Cancelar esta cita?",
+												text: "Esta acción no se puede deshacer.",
+												icon: "warning",
+												showCancelButton: true,
+												confirmButtonColor: "#d33",
+												cancelButtonColor: "#3085d6",
+												confirmButtonText: "Sí, cancelar",
+												cancelButtonText: "No",
+											});
+
+											if (result.isConfirmed) {
+												await confirmCancel(selectedOrder.id);
+												setSelectedOrder(null);
+											}
+										}}
 										className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm"
 									>
-										Cancelar
+										Cancelar cita
 									</button>
 								)}
 							</div>
