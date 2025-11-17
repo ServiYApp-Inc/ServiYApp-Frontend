@@ -244,7 +244,7 @@ export default function ServiceUpdateForm() {
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 mt-3"
+								className="w-full bg-[var(--color-primary)] text-white py-2 rounded-lg hover:scale-105 transition mt-3"
 							>
 								{isSubmitting ? "Guardando..." : "Guardar cambios"}
 							</button>
@@ -255,7 +255,7 @@ export default function ServiceUpdateForm() {
 
 			<button
 				onClick={() => router.back()}
-				className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-xl mt-5 hover:scale-105 transition"
+				className="max-w-[200px] py-1 px-2 text-white bg-[var(--color-primary)] rounded-lg mt-5 hover:scale-105 transition"
 			>
 				<FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
 				Volver a Servicios
