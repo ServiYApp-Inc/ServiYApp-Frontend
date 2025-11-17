@@ -1,6 +1,6 @@
 "use client";
 
-import { faCheck, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBook, faBookBookmark, faCheck, faXmark } from "@fortawesome/free-solid-svg-icons";
 import FilterTagsProvider from "@/app/components/FilterTagsProvider";
 import { notFound } from "next/navigation";
 import IService from "@/app/interfaces/IService";
@@ -14,7 +14,7 @@ export default function PageServices() {
 	const { user, role } = useAuthStore();
 	const [services, setServices] = useState<IService[]>([]);
 	const [filteredServices, setFilteredServices] = useState<IService[]>([]);
-	const [selectedFilter, setSelectedFilter] = useState<"ALL" | "active" | "inactive">("ALL");
+	const [selectedFilter, setSelectedFilter] = useState<"ALL" | "active" | "inactive" | "pending">("ALL");
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -46,7 +46,7 @@ export default function PageServices() {
 			</div>
 		);
 
-	const handleFilter = (status: "active" | "inactive" | "ALL") => {
+	const handleFilter = (status: "active" | "inactive" | "pending" | "ALL") => {
 		setSelectedFilter(status);
 		if (status === "ALL") {
 			setFilteredServices(services);
@@ -95,6 +95,13 @@ export default function PageServices() {
 						onClick={() => handleFilter("inactive")}
 					/>
 					<FilterTagsProvider
+						icon={faBookBookmark}
+						label="Pendientes"
+						active={selectedFilter === "pending"}
+						onClick={() => handleFilter("pending")}
+					/>
+					<FilterTagsProvider
+						icon={faBook}
 						label="Todos"
 						active={selectedFilter === "ALL"}
 						onClick={() => handleFilter("ALL")}

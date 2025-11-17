@@ -12,8 +12,11 @@ import FilterTag from "@/app/components/FilterTag";
 import IService from "@/app/interfaces/IService";
 import ServiceCard from "@/app/components/ServiceCard";
 import { useAuthStore } from "@/app/store/auth.store";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function PageServices() {
+	const router = useRouter();
 	const { token } = useAuthStore();
 	const [services, setServices] = useState<IService[]>([]);
 	const [activeFilter, setActiveFilter] = useState<string>("");
@@ -28,7 +31,7 @@ export default function PageServices() {
 		const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}services`;
 		const endpoint = paramValue
 			? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}`
-			: `${baseUrl}/find-all-paged?page=${page}&limit=${limit}`;
+			: `${baseUrl}/find-all-paged?page=${page}&limit=9`;
 
 		const res = await axios.get(endpoint, {
 			headers: {
@@ -177,6 +180,7 @@ const handleSearchResults = (data: IService[]) => {
 			Siguiente
 			</button>
 		</div>)}
+		<span className="text-[var(--color-primary)] mt-5 block">Si algún servicio presenta contenido ofensivo y/o viola los <button className="underline hover:font-bold transition" onClick={()=> {router.push("/user/terms")}}> términos y condiciones</button> de nuestra página, por favor contactarse a <strong>serviyapp.auth@gmail.com</strong></span>
 		</main>
 	);
 	}

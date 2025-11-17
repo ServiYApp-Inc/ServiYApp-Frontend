@@ -5,7 +5,7 @@ export default interface IService {
 	id: string;
 	name: string;
 	description:string;
-	photo?: string;
+	photos?: string[] | null;
 	status:string;
 	duration: number;
 	createdAt:string;

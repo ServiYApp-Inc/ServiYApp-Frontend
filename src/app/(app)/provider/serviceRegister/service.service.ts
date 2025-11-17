@@ -11,10 +11,14 @@ export const getProviderServices = async (providerId: string) => {
     return data;
     };
 
-export const getAllServices = async () => {
-    const { data } = await apiClient.get(`services/find-all`);
+export const getAllServices = async (page: number, limit = 9) => {
+    const { data } = await apiClient.get(`services/find-all?page=${page}&limit=${limit}`);
     return data;
-    };
+};
+export const getAllAdminServices = async () => {
+    const { data } = await apiClient.get(`services/admin/all`);
+    return data;
+};
 
 export const updateService = async (id: string, serviceData: any) => {
     const { data } = await apiClient.patch(`services/update/${id}`, serviceData);
@@ -44,3 +48,13 @@ export const deleteService = async (id: string) => {
     const { data } = await apiClient.delete(`services/delete/${id}`);
     return data;
 };
+
+export const createCategory = async (categoryData: any) => {
+    const { data } = await apiClient.post(`categories/create`, categoryData);
+    return data;
+};
+
+export const getCategories = async () => {
+    const { data } = await apiClient.get(`categories`);
+    return data;
+}

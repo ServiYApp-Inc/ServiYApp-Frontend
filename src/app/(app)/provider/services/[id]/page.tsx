@@ -82,7 +82,7 @@ export default function ServiceDetailPage() {
             {/* Imagen principal con detalles */}
             <section className="relative w-full max-w-4xl overflow-hidden rounded-t-2xl shadow-md">
                 <img
-                    src={service.photo}
+                    src={service?.photos?.[0]}
                     alt={service.name}
                     className="w-full h-[220px] sm:h-[260px] md:h-[300px] object-cover"
                 />
@@ -206,9 +206,11 @@ export default function ServiceDetailPage() {
                     </motion.button>
                     :
                     <motion.button
+                        title={service.status === "pending" ? "Servicio Pendiente de Alta" : undefined}
                         whileTap={{ scale: 0.97 }}
-                        className="flex items-center justify-center gap-2 sm:gap-3 bg-green-500 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-green-450 shadow-md hover:shadow-lg transition-all"
+                        className="flex items-center justify-center gap-2 sm:gap-3 bg-green-500 text-white w-full sm:w-auto px-8 sm:px-10 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-green-450 shadow-md hover:shadow-lg transition-all disabled:bg-gray-400"
                         onClick={handleStatus}
+                        disabled={service.status === "pending"}
                     >
                         <FontAwesomeIcon
                             icon={faCheckCircle}

@@ -68,3 +68,53 @@ html {
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--color-primary-hover);
 }
+
+/* ===========================
+   ANIMACIONES DEL CHAT WIDGET
+   =========================== */
+
+/* Panel subiendo + fade */
+@keyframes chat-slide-up-fade {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-chat-slide-up-fade {
+  animation: chat-slide-up-fade 0.25s ease-out;
+}
+
+/* Elementos entrando desde la izquierda */
+@keyframes chat-slide-left {
+  0% {
+    transform: translateX(15px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-chat-slide-left {
+  animation: chat-slide-left 0.2s ease-out;
+}
+
+/* Fade-in básico */
+@keyframes chat-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-chat-fade {
+  animation: chat-fade-in 0.25s ease-out;
+}

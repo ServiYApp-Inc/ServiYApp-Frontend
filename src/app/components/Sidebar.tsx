@@ -13,6 +13,7 @@ import {
 	faPowerOff,
 	faCartShopping,
 } from "@fortawesome/free-solid-svg-icons";
+
 import { useAuthStore } from "@/app/store/auth.store";
 import { useCartStore } from "../store/useCartStore";
 import Swal from "sweetalert2";
@@ -37,7 +38,7 @@ export default function Sidebar({
 	const pathname = usePathname();
 	const router = useRouter();
 	const { role, user, clearAuth } = useAuthStore();
-	const { items } = useCartStore();
+	const { item: itemCart } = useCartStore();
 
 	const isAuthenticated = !!user;
 
@@ -56,13 +57,14 @@ export default function Sidebar({
 
 	const basePath = getBasePath();
 
-	// 🔹 Menú base sin “Perfil”
+	// 🔹 Menú Desktop (NO mensajes)
 	let menuItems: MenuItem[] = [
 		{ icon: faHome, label: "Inicio", href: `${basePath}/dashboard` },
 		{ icon: faCalendar, label: "Citas", href: `${basePath}/appointments` },
 		{ icon: faSearch, label: "Servicios", href: `${basePath}/services` },
 	];
 
+	// Carrito solo para usuarios
 	if (role === "user") {
 		menuItems.push({
 			icon: faCartShopping,
@@ -72,46 +74,24 @@ export default function Sidebar({
 		});
 	}
 
-	if (role !== "admin") {
-		menuItems.push({
-			icon: faCommentDots,
-			label: "Mensajes",
-			href: `${basePath}/messages`,
-		});
-	}
-
+	// 🔴 Logout
 	const handleLogout = async () => {
 		const result = await MySwal.fire({
 			title: "¿Cerrar sesión?",
-			html: `<p style="font-size:14px; color:#555; margin-top:6px;">
-			Se cerrará tu sesión actual y volverás al inicio.
-		</p>`,
+			html: `<p style="font-size:14px; color:#555;">Se cerrará tu sesión actual.</p>`,
 			icon: "warning",
-			iconColor: "#1D2846",
-			width: 360,
-			padding: "1.2rem",
-			showCancelButton: true,
-			focusCancel: true,
-			reverseButtons: true,
-			background: "#fff",
-			color: "#1D2846",
 			confirmButtonText: "Sí, cerrar",
 			cancelButtonText: "Cancelar",
+			showCancelButton: true,
 			confirmButtonColor: "#1D2846",
 			cancelButtonColor: "#d33",
 			customClass: {
-				popup: "rounded-2xl shadow-lg",
-				title: "text-base font-semibold",
-				confirmButton: "px-4 py-2 rounded-lg text-sm font-medium",
-				cancelButton: "px-4 py-2 rounded-lg text-sm font-medium",
-				icon: "scale-75",
+				popup: "rounded-xl",
 			},
 		});
-
 		if (result.isConfirmed) {
 			clearAuth();
 			router.push("/");
-			
 		}
 	};
 
@@ -119,7 +99,7 @@ export default function Sidebar({
 
 	return (
 		<>
-			{/* 🖥️ SIDEBAR (Desktop) */}
+			{/* 🖥️ SIDEBAR DESKTOP */}
 			<aside
 				className="fixed top-0 left-0 h-full flex-col justify-between transition-all duration-400 shadow-lg hidden md:flex"
 				style={{
@@ -133,79 +113,45 @@ export default function Sidebar({
 						className="flex items-center gap-4 px-6 py-5 border-b"
 						style={{ borderColor: "var(--color-primary-hover)" }}
 					>
-						<div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 bg-white text--primary">
+						<div className="w-8 h-8 rounded-full flex items-center justify-center bg-white font-bold">
 							S
 						</div>
+
 						<span
-							className={`text-lg text-white font-semibold tracking-wide whitespace-nowrap overflow-hidden transition-all duration-400 ${
-								isCollapsed
-									? "opacity-0 w-0"
-									: "opacity-100 w-auto"
+							className={`text-lg text-white font-semibold transition-all ${
+								isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
 							}`}
 						>
 							serviYApp
 						</span>
 					</div>
 
-					{/* PERFIL clickeable */}
+					{/* PERFIL */}
 					<div
 						onClick={() =>
 							isAuthenticated
 								? router.push(`${basePath}/profile`)
 								: router.push("/loginUser")
 						}
-						className="flex items-center gap-3 px-4 border-b h-[78px] cursor-pointer relative group transition-all"
+						className="flex items-center gap-3 px-4 border-b h-[78px] cursor-pointer"
 						style={{ borderColor: "var(--color-primary-hover)" }}
-						onMouseEnter={(e) =>
-							(e.currentTarget.style.backgroundColor =
-								"var(--color-primary-hover)")
-						}
-						onMouseLeave={(e) =>
-							(e.currentTarget.style.backgroundColor =
-								"transparent")
-						}
 					>
-						{/* Tooltip navy */}
-						<span
-							className={`absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] text-white bg-[#1D2846] px-2 py-1 rounded-lg shadow-md z-[9999] opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
-								!isCollapsed ? "hidden" : "block"
-							}`}
-						>
-							Ir al perfil
-						</span>
-
 						<div className="relative">
 							{isAuthenticated && userHasPhoto ? (
 								<img
 									src={user.profilePicture}
-									alt={user.names || "Usuario"}
-									className="w-10 h-10 rounded-full object-cover border border-white/20 transition-transform duration-300 group-hover:scale-105"
+									className="w-10 h-10 rounded-full object-cover"
 								/>
 							) : (
-								<div
-									className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
-									style={{
-										backgroundColor:
-											"rgba(255,255,255,0.1)",
-									}}
-								>
-									<FontAwesomeIcon
-										icon={faUser}
-										className="text-gray-300"
-										style={{
-											width: "1.2rem",
-											height: "1.2rem",
-										}}
-									/>
+								<div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+									<FontAwesomeIcon icon={faUser} className="text-gray-300" />
 								</div>
 							)}
 						</div>
 
 						<div
-							className={`flex flex-col transition-all duration-300 ${
-								isCollapsed
-									? "opacity-0 w-0"
-									: "opacity-100 w-auto"
+							className={`flex-col transition-all ${
+								isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
 							}`}
 						>
 							{isAuthenticated ? (
@@ -213,7 +159,7 @@ export default function Sidebar({
 									<p className="text-sm font-semibold text-white leading-tight">
 										{user?.names}
 									</p>
-									<p className="text-xs italic text-gray-300 leading-tight truncate">
+									<p className="text-xs text-gray-300 leading-tight">
 										{user?.email}
 									</p>
 									<p className="text-[11px] text-gray-400 italic mt-0.5">
@@ -221,7 +167,7 @@ export default function Sidebar({
 									</p>
 								</>
 							) : (
-								<p className="text-sm font-semibold text-white underline underline-offset-2 hover:text-gray-200">
+								<p className="text-sm font-semibold text-white underline">
 									Inicia sesión
 								</p>
 							)}
@@ -229,231 +175,106 @@ export default function Sidebar({
 					</div>
 				</div>
 
-				{/* MENÚ PRINCIPAL */}
-				<nav className="mt-6 flex flex-col items-start relative flex-1">
+				{/* MENÚ */}
+				<nav className="mt-6 flex flex-col items-start flex-1">
 					{menuItems.map((item) => {
 						const active = pathname === item.href;
 						const isCart = item.label === "Carrito";
+
 						return (
-							<div
+							<Link
 								key={item.label}
-								className="relative group w-full"
+								href={item.href}
+								className={`flex items-center px-6 py-2.5 text-sm font-medium rounded-md w-full transition ${
+									active ? "text-white" : "text-gray-300 hover:text-white"
+								}`}
+								style={{
+									backgroundColor: active
+										? "var(--color-selected)"
+										: "transparent",
+								}}
 							>
-								{/* Tooltip navy */}
-								{isCollapsed && (
-									<span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] text-white bg-[#1D2846] px-2 py-1 rounded-lg shadow-md z-[9999] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-										{item.label}
-									</span>
-								)}
+								<div className="w-6 flex justify-center relative">
+									<FontAwesomeIcon icon={item.icon} />
 
-								{active && (
-									<div className="absolute left-0 top-0 h-full w-[3px] rounded-l bg-white" />
-								)}
+									{isCart && itemCart && (
+										<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+											1
+										</span>
+									)}
+								</div>
 
-								<Link
-									href={item.href}
-									className={`flex items-center px-6 py-2.5 w-full text-sm font-medium rounded-md transition-all duration-300 relative ${
-										active
-											? "text-white"
-											: "text-gray-300 hover:text-white"
+								<span
+									className={`ml-3 transition-all ${
+										isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
 									}`}
-									style={{
-										backgroundColor: active
-											? "var(--color-selected)"
-											: "transparent",
-									}}
-									onMouseEnter={(e) => {
-										if (!active)
-											e.currentTarget.style.backgroundColor =
-												"var(--color-primary-hover)";
-									}}
-									onMouseLeave={(e) => {
-										if (!active)
-											e.currentTarget.style.backgroundColor =
-												"transparent";
-									}}
 								>
-									<div className="w-6 flex justify-center relative">
-										<FontAwesomeIcon
-											icon={item.icon}
-											className="text-base"
-											style={{
-												width: "1.25rem",
-												height: "1.25rem",
-											}}
-										/>
-										{isCart && items.length > 0 && (
-											<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[0.6rem] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
-												{items.length}
-											</span>
-										)}
-									</div>
-									<span
-										className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ${
-											isCollapsed
-												? "opacity-0 w-0"
-												: "opacity-100 w-auto"
-										}`}
-									>
-										{item.label}
-									</span>
-								</Link>
-							</div>
+									{item.label}
+								</span>
+							</Link>
 						);
 					})}
 				</nav>
 
 				{/* FOOTER */}
-				<div>
-					{isAuthenticated && (
-						<div
-							className="relative group border-t"
-							style={{
-								borderColor: "var(--color-primary-hover)",
-							}}
+				{isAuthenticated && (
+					<button
+						onClick={handleLogout}
+						className="flex items-center gap-2 px-6 py-3 w-full text-sm text-gray-300 hover:text-white hover:bg-red-600 transition"
+					>
+						<FontAwesomeIcon icon={faPowerOff} />
+						<span
+							className={`transition ${
+								isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+							}`}
 						>
-							{isCollapsed && (
-								<span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] text-white bg-[#1D2846] px-2 py-1 rounded-lg shadow-md z-[9999] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-									Cerrar sesión
-								</span>
-							)}
+							Cerrar sesión
+						</span>
+					</button>
+				)}
 
-							<button
-								onClick={handleLogout}
-								className="flex items-center w-full gap-2 px-6 py-3 text-sm font-medium text-gray-300 hover:text-white transition-colors duration-200"
-								onMouseEnter={(e) =>
-									(e.currentTarget.style.backgroundColor =
-										"#dc2626")
-								}
-								onMouseLeave={(e) =>
-									(e.currentTarget.style.backgroundColor =
-										"transparent")
-								}
-							>
-								<div className="w-6 flex justify-center">
-									<FontAwesomeIcon
-										icon={faPowerOff}
-										className="text-base"
-										style={{
-											width: "1.25rem",
-											height: "1.25rem",
-										}}
-									/>
-								</div>
-								<span
-									className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ${
-										isCollapsed
-											? "opacity-0 w-0"
-											: "opacity-100 w-auto"
-									}`}
-								>
-									Cerrar sesión
-								</span>
-							</button>
-						</div>
-					)}
-
-					{/* BOTÓN COLAPSAR */}
-					<div className="relative group">
-						{isCollapsed && (
-							<span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] text-white bg-[#1D2846] px-2 py-1 rounded-lg shadow-md z-[9999] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-								Expandir menú
-							</span>
-						)}
-
-						<div
-							className="flex items-center justify-between px-6 py-3 transition-all duration-300"
-							style={{
-								borderTop:
-									"1px solid var(--color-primary-hover)",
-							}}
-							onMouseEnter={(e) =>
-								(e.currentTarget.style.backgroundColor =
-									"var(--color-primary-hover)")
-							}
-							onMouseLeave={(e) =>
-								(e.currentTarget.style.backgroundColor =
-									"transparent")
-							}
-						>
-							<button
-								onClick={() => setIsCollapsed(!isCollapsed)}
-								className="text-gray-300 hover:text-white transition-colors"
-								aria-label="Colapsar menú"
-							>
-								<FontAwesomeIcon
-									icon={faBars}
-									className="text-lg"
-									style={{
-										width: "1.25rem",
-										height: "1.25rem",
-									}}
-								/>
-							</button>
-						</div>
-					</div>
+				{/* COLAPSAR */}
+				<div
+					className="border-t border-[var(--color-primary-hover)] px-6 py-3 cursor-pointer hover:bg-[var(--color-primary-hover)]"
+					onClick={() => setIsCollapsed(!isCollapsed)}
+				>
+					<FontAwesomeIcon icon={faBars} className="text-gray-300" />
 				</div>
 			</aside>
 
-			{/* 📱 MOBILE HEADER */}
-			<header className="md:hidden fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-4 z-50 bg-white shadow">
-				<div className="flex items-center gap-2">
-					<div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-white">
-						S
-					</div>
-					<span
-						className="text-sm font-semibold"
-						style={{ color: "var(--color-primary)" }}
-					>
-						serviYApp
-					</span>
-				</div>
-				{isAuthenticated && (
-					<button onClick={handleLogout}>
-						<FontAwesomeIcon
-							icon={faPowerOff}
-							className="text-gray-700"
-							style={{ width: "1.2rem", height: "1.2rem" }}
-						/>
-					</button>
-				)}
-			</header>
-
-			{/* 📱 MOBILE NAVBAR */}
+			{/* 📱 NAVBAR MOBILE */}
 			<nav className="fixed bottom-0 left-0 right-0 bg-bg-light border-t border-bg-hover flex justify-around items-center py-2 shadow-sm md:hidden z-40">
 				{[
 					...menuItems,
+					// 👇 AQUÍ AÑADIMOS MENSAJES (SOLO MOBILE)
+					{
+						icon: faCommentDots,
+						label: "Mensajes",
+						href: `${basePath}/messages`,
+					},
 					{
 						icon: faUser,
 						label: "Perfil",
-						href: isAuthenticated
-							? `${basePath}/profile`
-							: "/loginUser",
+						href: isAuthenticated ? `${basePath}/profile` : "/loginUser",
 					},
 				].map((item) => {
 					const active = pathname === item.href;
 					const isCart = item.label === "Carrito";
+
 					return (
 						<Link
 							key={item.label}
 							href={item.href}
-							className="flex flex-col items-center justify-center text-xs font-medium relative"
-							style={{
-								color: active
-									? "var(--color-primary)"
-									: "var(--color-foreground)",
-							}}
+							className="flex flex-col items-center text-xs font-medium relative"
 						>
-							<FontAwesomeIcon
-								icon={item.icon}
-								className="mb-1"
-								style={{ width: "1.2rem", height: "1.2rem" }}
-							/>
-							{isCart && items.length > 0 && (
-								<span className="absolute top-0 right-3 bg-red-500 text-white text-[0.6rem] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
-									{items.length}
-								</span>
-							)}
+							<div className="relative">
+								<FontAwesomeIcon icon={item.icon} />
+								{isCart && itemCart && (
+									<span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+										1
+									</span>
+								)}
+							</div>
 							<span>{item.label}</span>
 						</Link>
 					);
