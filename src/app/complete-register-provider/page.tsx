@@ -107,7 +107,6 @@ export default function CompleteRegister() {
 			className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 md:px-8 py-6"
 			style={{ backgroundColor: "var(--background)" }}
 		>
-			
 			<div
 				className="w-full max-w-md rounded-2xl shadow-sm p-6 sm:p-8 md:p-10 border"
 				style={{
@@ -156,7 +155,6 @@ export default function CompleteRegister() {
 								regionId: values.region,
 								cityId: values.city,
 								address: values.address,
-								
 							};
 
 							if (values.createPassword && values.password)
@@ -171,7 +169,7 @@ export default function CompleteRegister() {
 							console.log(providerId);
 
 							await axios.patch(
-								`${process.env.NEXT_PUBLIC_API_URL}providers/${providerId}`,
+								`${process.env.NEXT_PUBLIC_API_URL}auth/complete-register-provider`,
 								payload,
 								{
 									headers: {
