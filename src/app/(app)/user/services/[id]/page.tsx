@@ -16,6 +16,30 @@ import IService from "@/app/interfaces/IService";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/app/store/useCartStore";
 
+interface ReviewHard {
+    userName: string;
+    rating: number;
+    comment: string;
+    photo: string;
+}
+
+interface ServiceHard {
+    id: number;
+    reviews: ReviewHard;
+}
+
+const services: ServiceHard[] = [
+    {
+        id: 1,
+        reviews: {
+            userName: "Juan Perez",
+            rating: 4,
+            comment: "Excelente trabajo, muy profesionales",
+            photo: "https://static.wixstatic.com/media/4304a4_d7707815b8d940a0b237a7a0c488e563~mv2.webp/v1/fill/w_568,h_568,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/4304a4_d7707815b8d940a0b237a7a0c488e563~mv2.webp"
+        }
+    }
+]
+
 export default function ServiceDetailPage() {
 	const { id } = useParams();
 	const router = useRouter();
@@ -170,6 +194,65 @@ export default function ServiceDetailPage() {
 				/>
 				Volver a Servicios
 			</button>
+
+			{/* === Reviews Section === */}
+			<section className="w-full max-w-4xl mt-10 px-4 sm:px-8 md:px-10">
+				<h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">
+					Opiniones del servicio
+				</h2>
+
+				{/* Si no hay reviews */}
+				{(!services || services.length === 0) && (
+					<p className="text-gray-500 italic">
+						Aún no hay opiniones sobre este servicio.
+					</p>
+				)} 
+
+				{/* Lista de reviews */}
+				<div className="space-y-4">
+					{services.map((s, index) => (
+						<div
+							key={index}
+							className="bg-white shadow-sm rounded-xl p-4 border border-gray-100"
+						>
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center gap-2">
+									<FontAwesomeIcon
+										icon={faUser}
+										className="text-[var(--color-primary)]"
+									/>
+									<p className="font-semibold">{s.reviews.userName}</p>
+								</div>
+
+								{/* Stars */}
+								<div className="flex items-center gap-1">
+									{[1,2,3,4,5].map(num => (
+										<FontAwesomeIcon
+											key={num}
+											icon={faStar}
+											className={`${
+												num <= s.reviews.rating
+													? "text-yellow-400"
+													: "text-gray-300"
+											}`}
+										/>
+									))}
+								</div>
+							</div>
+
+							<p className="text-gray-700 mb-2">{s.reviews.comment}</p>
+
+							{s.reviews.photo && (
+								<img
+									src={s.reviews.photo}
+									alt="Imagen del usuario"
+									className="w-32 h-32 object-cover rounded-lg mt-2"
+								/>
+							)}
+						</div>
+					))}
+				</div>
+			</section>
 		</main>
 	);
 }
