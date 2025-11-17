@@ -65,15 +65,13 @@ export default function LoginForm({ role }: LoginFormProps) {
 			if (role === "provider") {
 				const providerData = data.provider;
 
-				if (providerData && providerData.isCompleted === false) {
+				if (providerData.isCompleted === false) {
 					toast.info(
-						"Tu cuenta aún no está verificada. Completa tu identificación."
+						"Tu cuenta aún no está verificada. Completa tu identificación en el perfil."
 					);
-
-					// Redirección inmediata a la subida de documentos
-					return router.push(
-						`/provider/documents?id=${providerData.id}&token=${data.access_token}`
-					);
+					setTimeout(() => {
+						router.replace(`/provider/profile`);
+					}, 3000);
 				}
 			}
 
