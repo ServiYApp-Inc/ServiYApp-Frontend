@@ -1,6 +1,6 @@
 ✨ ServiYApp ✨
 
-Plataforma integral de gestión de servicios de belleza
+Plataforma integral de gestión de servicios de belleza a domicilio
 
 ---
 
@@ -131,7 +131,6 @@ El backend cuenta con:
 ### 🗄 Base de Datos
 
 * PostgreSQL
-* Prisma ORM
 * Relaciones entre usuarios, servicios y citas
 
 ---
@@ -143,13 +142,13 @@ El backend cuenta con:
 * Next.js + TypeScript
 * Componentes reutilizables
 * Manejo global del estado con Zustand
-* Hojas de estilo con Tailwind CSS
+* Estilos con Tailwind CSS
 
 ### **Backend**
 
 * Node.js + Express
 * Módulos separados por dominio
-* Prisma ORM para integridad y migraciones
+* Type ORM para integridad y migraciones
 * Middlewares de seguridad y validación
 * Deploy en Render
 
