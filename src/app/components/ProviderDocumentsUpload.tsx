@@ -24,10 +24,7 @@ export default function UploadProviderDocumentsModal({
 	const { user, token } = useAuthStore();
 	const providerId = user?.id;
 
-	// Si no está abierto, no renderizar nada
 	if (!isOpen) return null;
-
-	// Validación básica
 	if (!providerId || !token) {
 		return (
 			<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -39,10 +36,8 @@ export default function UploadProviderDocumentsModal({
 		);
 	}
 
-	/* -------------------- Estados -------------------- */
-
-	// Tabs
-	const [activeTab, setActiveTab] = useState<"identity" | "bank">("identity");
+	/* -------------------- ESTADOS -------------------- */
+	const [step, setStep] = useState<"identity" | "bank" | "done">("identity");
 
 	// Identidad
 	const [idData, setIdData] = useState({
@@ -50,7 +45,6 @@ export default function UploadProviderDocumentsModal({
 		documentNumber: "",
 		description: "",
 	});
-
 	const [idFile, setIdFile] = useState<File | null>(null);
 	const [idPhoto, setIdPhoto] = useState<File | null>(null);
 	const [loadingIdentity, setLoadingIdentity] = useState(false);
@@ -61,7 +55,6 @@ export default function UploadProviderDocumentsModal({
 		accountType: "",
 		accountNumber: "",
 	});
-
 	const [bankFile, setBankFile] = useState<File | null>(null);
 	const [loadingBank, setLoadingBank] = useState(false);
 
@@ -70,11 +63,9 @@ export default function UploadProviderDocumentsModal({
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-	/* -------------------- Cámara -------------------- */
-
+	/* -------------------- CÁMARA -------------------- */
 	const openCamera = async () => {
 		setCameraOpen(true);
-
 		try {
 			const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
@@ -92,7 +83,6 @@ export default function UploadProviderDocumentsModal({
 		const canvas = canvasRef.current;
 
 		if (!video || !canvas) return;
-
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
@@ -111,14 +101,12 @@ export default function UploadProviderDocumentsModal({
 		}, "image/jpeg");
 	};
 
-	/* -------------------- Validaciones -------------------- */
-
+	/* -------------------- VALIDACIONES -------------------- */
 	const validateIdentity = () => {
 		if (!idFile || idFile.type !== "application/pdf")
 			return toast.error("El documento debe ser un PDF.");
 
 		if (!idPhoto) return toast.error("Falta la foto de verificación.");
-
 		if (!idData.documentType || !idData.documentNumber)
 			return toast.error("Completa todos los datos obligatorios.");
 
@@ -135,8 +123,7 @@ export default function UploadProviderDocumentsModal({
 		return true;
 	};
 
-	/* -------------------- SUBMIT IDENTITY -------------------- */
-
+	/* -------------------- SUBMIT IDENTIDAD -------------------- */
 	const submitIdentity = async () => {
 		if (!validateIdentity()) return;
 
@@ -144,11 +131,13 @@ export default function UploadProviderDocumentsModal({
 		formData.append("documentType", idData.documentType);
 		formData.append("documentNumber", idData.documentNumber);
 		formData.append("description", idData.description);
+
 		if (idFile) formData.append("file", idFile);
 		if (idPhoto) formData.append("photoVerification", idPhoto);
 
 		try {
 			setLoadingIdentity(true);
+
 			await Api.post(`provider-documents/${providerId}`, formData, {
 				headers: {
 					Authorization: `Bearer ${token}`,
@@ -157,8 +146,7 @@ export default function UploadProviderDocumentsModal({
 			});
 
 			toast.success("Documento de identidad enviado.");
-			setIdFile(null);
-			setIdPhoto(null);
+			setStep("bank");
 		} catch (error: any) {
 			toast.error(error?.response?.data?.message || "Error al enviar documento.");
 		} finally {
@@ -167,14 +155,19 @@ export default function UploadProviderDocumentsModal({
 	};
 
 	/* -------------------- SUBMIT BANK -------------------- */
-
 	const submitBank = async () => {
 		if (!validateBank()) return;
 
 		const formData = new FormData();
+
+		// CUMPLIR CON EL BACKEND
+		formData.append("documentType", bankData.accountType);
+		formData.append("documentNumber", bankData.accountNumber);
+
 		formData.append("bank", bankData.bank);
 		formData.append("accountType", bankData.accountType);
 		formData.append("accountNumber", bankData.accountNumber);
+
 		if (bankFile) formData.append("accountFile", bankFile);
 
 		try {
@@ -187,8 +180,8 @@ export default function UploadProviderDocumentsModal({
 				},
 			});
 
-			toast.success("Documento bancario enviado.");
-			setBankFile(null);
+			toast.success("Datos bancarios enviados.");
+			setStep("done");
 		} catch (error: any) {
 			toast.error(error?.response?.data?.message || "Error al enviar documento.");
 		} finally {
@@ -196,8 +189,7 @@ export default function UploadProviderDocumentsModal({
 		}
 	};
 
-	/* -------------------- Preview -------------------- */
-
+	/* -------------------- PREVIEW -------------------- */
 	const FilePreview = ({ file }: { file: File | null }) => {
 		if (!file) return null;
 
@@ -213,13 +205,12 @@ export default function UploadProviderDocumentsModal({
 	};
 
 	/* -------------------- RENDER -------------------- */
-
 	return (
 		<div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
 			<div className="bg-white w-full max-w-xl rounded-2xl shadow-xl relative overflow-hidden">
 
 				{/* HEADER */}
-				<div className="flex items-center justify-between p-5 border-b bg-white/80">
+				<div className="flex items-center justify-between p-5 border-b">
 					<h1 className="text-xl font-bold text-[var(--color-primary)]">
 						Verificación de documentos
 					</h1>
@@ -229,46 +220,49 @@ export default function UploadProviderDocumentsModal({
 					</button>
 				</div>
 
-				{/* TABS */}
+				{/* STEPS */}
 				<div className="flex border-b">
-					<button
-						onClick={() => setActiveTab("identity")}
-						className={`flex-1 py-3 font-semibold transition ${
-							activeTab === "identity"
-								? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
-								: "text-gray-500 hover:bg-gray-50"
-						}`}
-					>
-						Documento de identidad
-					</button>
+					<div className={`flex-1 text-center py-3 font-semibold ${
+						step === "identity"
+							? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
+							: "text-gray-400"
+					}`}>
+						1. Identidad
+					</div>
 
-					<button
-						onClick={() => setActiveTab("bank")}
-						className={`flex-1 py-3 font-semibold transition ${
-							activeTab === "bank"
-								? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
-								: "text-gray-500 hover:bg-gray-50"
-						}`}
-					>
-						Datos bancarios
-					</button>
+					<div className={`flex-1 text-center py-3 font-semibold ${
+						step === "bank"
+							? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
+							: "text-gray-400"
+					}`}>
+						2. Datos bancarios
+					</div>
+
+					<div className={`flex-1 text-center py-3 font-semibold ${
+						step === "done"
+							? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
+							: "text-gray-400"
+					}`}>
+						3. Finalizado
+					</div>
 				</div>
 
-				{/* CONTENIDO DEL MODAL */}
+				{/* CONTENIDO */}
 				<div className="p-6 max-h-[70vh] overflow-y-auto">
 
-					{/* --- TAB IDENTIDAD --- */}
-					{activeTab === "identity" && (
+					{/* PASO 1 – IDENTIDAD */}
+					{step === "identity" && (
 						<div className="space-y-6">
 
-							{/* Tipo */}
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Tipo de documento
 								</label>
 								<select
 									value={idData.documentType}
-									onChange={(e) => setIdData({ ...idData, documentType: e.target.value })}
+									onChange={(e) =>
+										setIdData({ ...idData, documentType: e.target.value })
+									}
 									className="w-full border p-2 rounded"
 								>
 									<option value="">Selecciona...</option>
@@ -280,7 +274,6 @@ export default function UploadProviderDocumentsModal({
 								</select>
 							</div>
 
-							{/* Número */}
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Número del documento
@@ -288,13 +281,14 @@ export default function UploadProviderDocumentsModal({
 								<input
 									type="text"
 									className="w-full border p-2 rounded"
-									value={idData.documentNumber}
 									placeholder="Ej. 12345678"
-									onChange={(e) => setIdData({ ...idData, documentNumber: e.target.value })}
+									value={idData.documentNumber}
+									onChange={(e) =>
+										setIdData({ ...idData, documentNumber: e.target.value })
+									}
 								/>
 							</div>
 
-							{/* PDF */}
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Documento (PDF)
@@ -314,7 +308,6 @@ export default function UploadProviderDocumentsModal({
 								<FilePreview file={idFile} />
 							</div>
 
-							{/* Selfie */}
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Foto de verificación
@@ -331,7 +324,9 @@ export default function UploadProviderDocumentsModal({
 											type="file"
 											accept="image/*"
 											className="hidden"
-											onChange={(e) => setIdPhoto(e.target.files?.[0] || null)}
+											onChange={(e) =>
+												setIdPhoto(e.target.files?.[0] || null)
+											}
 										/>
 									</label>
 
@@ -346,7 +341,6 @@ export default function UploadProviderDocumentsModal({
 								<FilePreview file={idPhoto} />
 							</div>
 
-							{/* Botón enviar */}
 							<button
 								onClick={submitIdentity}
 								disabled={loadingIdentity}
@@ -359,58 +353,63 @@ export default function UploadProviderDocumentsModal({
 						</div>
 					)}
 
-					{/* --- TAB BANCARIO --- */}
-					{activeTab === "bank" && (
+					{/* PASO 2 – BANCO */}
+					{step === "bank" && (
 						<div className="space-y-6">
 
-							{/* Banco */}
 							<div>
-								<label className="block text-sm font-semibold mb-1">Banco</label>
+								<label className="block text-sm font-semibold mb-1">
+									Nombre del banco
+								</label>
 								<input
 									type="text"
 									className="w-full border p-2 rounded"
 									placeholder="Ej. BBVA, Bancolombia..."
 									value={bankData.bank}
-									onChange={(e) => setBankData({ ...bankData, bank: e.target.value })}
+									onChange={(e) =>
+										setBankData({ ...bankData, bank: e.target.value })
+									}
 								/>
 							</div>
 
-							{/* Tipo */}
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Tipo de cuenta
 								</label>
-
 								<select
 									className="w-full border p-2 rounded bg-white"
 									value={bankData.accountType}
-									onChange={(e) => setBankData({ ...bankData, accountType: e.target.value })}
+									onChange={(e) =>
+										setBankData({ ...bankData, accountType: e.target.value })
+									}
 								>
 									<option value="">Selecciona...</option>
+									<option value="Débito">Débito</option>
 									<option value="Ahorros">Ahorros</option>
 									<option value="Corriente / Cheques">Corriente / Cheques</option>
-									<option value="Débito">Débito</option>
 									<option value="Nómina">Nómina</option>
 									<option value="Cuenta digital">Cuenta digital</option>
 								</select>
 							</div>
 
-							{/* Número */}
 							<div>
-								<label className="block text-sm font-semibold mb-1">Número de cuenta</label>
+								<label className="block text-sm font-semibold mb-1">
+									Número de cuenta
+								</label>
 								<input
 									type="text"
 									className="w-full border p-2 rounded"
 									placeholder="Ej. 1234567890"
 									value={bankData.accountNumber}
-									onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
+									onChange={(e) =>
+										setBankData({ ...bankData, accountNumber: e.target.value })
+									}
 								/>
 							</div>
 
-							{/* PDF */}
 							<div>
 								<label className="block text-sm font-semibold mb-1">
-									Documento bancario (PDF)
+									Extracto bancario (PDF)
 								</label>
 
 								<label className="cursor-pointer w-full border rounded-lg p-4 flex items-center justify-center gap-3 hover:bg-gray-50">
@@ -420,14 +419,15 @@ export default function UploadProviderDocumentsModal({
 										type="file"
 										accept="application/pdf"
 										className="hidden"
-										onChange={(e) => setBankFile(e.target.files?.[0] || null)}
+										onChange={(e) =>
+											setBankFile(e.target.files?.[0] || null)
+										}
 									/>
 								</label>
 
 								<FilePreview file={bankFile} />
 							</div>
 
-							{/* Botón */}
 							<button
 								onClick={submitBank}
 								disabled={loadingBank}
@@ -435,13 +435,35 @@ export default function UploadProviderDocumentsModal({
 								style={{ background: "var(--color-primary)" }}
 							>
 								{loadingBank && <FontAwesomeIcon icon={faSpinner} spin />}
-								Enviar documento bancario
+								Enviar datos bancarios
+							</button>
+						</div>
+					)}
+
+					{/* PASO 3 – FINALIZADO */}
+					{step === "done" && (
+						<div className="text-center py-10">
+							<h2 className="text-2xl font-semibold text-[var(--color-primary)] mb-4">
+								Tu información ha sido enviada
+							</h2>
+
+							<p className="text-gray-600 leading-relaxed max-w-sm mx-auto">
+								Tus documentos están siendo revisados por un administrador de
+								ServiYApp.  
+								Te notificaremos cuando tu cuenta sea verificada.
+							</p>
+
+							<button
+								onClick={onClose}
+								className="mt-6 px-6 py-3 bg-[var(--color-primary)] text-white rounded-lg shadow"
+							>
+								Cerrar
 							</button>
 						</div>
 					)}
 				</div>
 
-				{/* ----- MODAL DE CÁMARA ----- */}
+				{/* MODAL DE CÁMARA */}
 				{cameraOpen && (
 					<div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6">
 						<div className="bg-white p-4 rounded-xl w-full max-w-md relative">
