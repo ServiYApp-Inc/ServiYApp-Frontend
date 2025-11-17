@@ -24,6 +24,19 @@ interface IAddressFull {
 	country?: { name: string };
 }
 
+// ⭐ Helper global
+const getCurrencyByCountry = (countryName?: string) => {
+	if (!countryName) return "MXN"; // default
+
+	const normalized = countryName.toLowerCase();
+
+	if (normalized.includes("colombia")) return "COP";
+	if (normalized.includes("méxico") || normalized.includes("mexico")) return "MXN";
+	if (normalized.includes("argentina")) return "ARS";
+
+	return "MXN"; // fallback
+};
+
 export default function CartPage() {
 	const router = useRouter();
 	const { token, user } = useAuthStore();
@@ -33,7 +46,7 @@ export default function CartPage() {
 	const [address, setAddress] = useState<IAddressFull | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	// ✅ Cargar dirección del servicio actual
+	// Cargar dirección
 	useEffect(() => {
 		if (!item || !token) return;
 
@@ -52,6 +65,12 @@ export default function CartPage() {
 		setLoading(true);
 
 		try {
+			// Detecta país dinámicamente
+			const userCountry = address?.country?.name || user?.country?.name;
+			const currency = getCurrencyByCountry(userCountry);
+
+			console.log("🌎 Moneda detectada:", currency);
+
 			const { order, payment } = await createOrderAndPayment({
 				providerId: item.providerId,
 				userId: user.id,
@@ -60,7 +79,7 @@ export default function CartPage() {
 				amount: item.price,
 				description: item.name,
 				payerEmail: user.email,
-				currency: "COP",
+				currency,
 			});
 
 			console.log("✅ Orden creada:", order);
@@ -70,7 +89,7 @@ export default function CartPage() {
 				clearCart();
 				window.location.href = payment.init_point;
 			} else {
-				alert("No se recibió un enlace de pago válido 😢");
+				alert("No se recibió un enlace de pago válido");
 			}
 		} catch (error) {
 			console.error("❌ Error al procesar el pago:", error);
@@ -80,7 +99,7 @@ export default function CartPage() {
 		}
 	};
 
-	// 🛒 Carrito vacío
+	// Carrito vacío
 	if (!item) {
 		return (
 			<main className="min-h-screen flex flex-col items-center justify-center bg-[var(--background)] text-gray-600">
@@ -101,36 +120,36 @@ export default function CartPage() {
 			style={{ backgroundColor: "var(--background)" }}
 		>
 			<section className="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-8 md:p-10 font-nunito">
+
 				<h1 className="text-3xl font-bold text-[var(--color-primary)] mb-1">
 					Tu carrito
 				</h1>
+
 				<p className="text-gray-500 mb-6">
 					Revisa tu servicio antes de continuar con el pago.
 				</p>
 
-				{/* 🏠 Dirección */}
+				{/* Dirección */}
 				<div className="border border-gray-200 rounded-2xl p-5 mb-6">
 					<h3 className="flex items-center gap-2 font-semibold text-[var(--color-primary)] text-lg">
 						<FontAwesomeIcon icon={faMapMarkerAlt} />
-						Entrega en:{" "}
-						{address?.name || "(Dirección no encontrada)"}
+						Entrega en: {address?.name || "(Dirección no encontrada)"}
 					</h3>
 					{address ? (
 						<p className="text-sm text-gray-600 leading-tight mt-1">
 							{address.address} <br />
-							{address.neighborhood &&
-								`${address.neighborhood}, `}
+							{address.neighborhood && `${address.neighborhood}, `}
 							{address.city?.name}, {address.region?.name} <br />
 							{address.country?.name}
 						</p>
 					) : (
 						<p className="text-sm text-red-500">
-							⚠️ Esta dirección fue eliminada o no existe
+							Esta dirección fue eliminada o no existe
 						</p>
 					)}
 				</div>
 
-				{/* 💅 Servicio */}
+				{/* Servicio */}
 				<div className="border border-gray-200 rounded-2xl p-5 flex justify-between items-center">
 					<div>
 						<p className="font-semibold text-gray-700 leading-tight">
@@ -150,7 +169,7 @@ export default function CartPage() {
 					</button>
 				</div>
 
-				{/* 🧾 Total + Botón */}
+				{/* Total */}
 				<div className="flex flex-col sm:flex-row justify-between items-center mt-10 gap-6">
 					<button
 						onClick={clearCart}
@@ -182,6 +201,7 @@ export default function CartPage() {
 						</motion.button>
 					</div>
 				</div>
+
 			</section>
 		</main>
 	);

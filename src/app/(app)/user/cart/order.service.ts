@@ -8,6 +8,7 @@ export const createServiceOrder = async (payload: {
 	userId: string;
 	serviceId: string;
 	addressId: string;
+	price: number; // ⭐ AGREGADO
 }) => {
 	try {
 		console.log("📦 Enviando orden de servicio:", payload);
@@ -19,7 +20,7 @@ export const createServiceOrder = async (payload: {
 		}
 
 		console.log("✅ Orden creada exitosamente:", data);
-		return data; // debe contener al menos { id: string }
+		return data;
 	} catch (error: any) {
 		console.error(
 			"❌ Error al crear la orden de servicio:",
@@ -75,6 +76,7 @@ export const createOrderAndPayment = async (payload: {
 			userId: payload.userId,
 			serviceId: payload.serviceId,
 			addressId: payload.addressId,
+			price: payload.amount, 
 		});
 
 		// Paso 2: Crear la preferencia solo si la orden tiene ID
