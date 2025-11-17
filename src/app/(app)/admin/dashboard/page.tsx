@@ -5,7 +5,7 @@ import ProfileItem from "@/app/components/ProfileItem";
 
 /*-- iconos --*/
 import { faBell, faCalendar, faHeart, faStar, faUser } from "@fortawesome/free-regular-svg-icons";
-import { faBook, faGear, faUsersGear } from "@fortawesome/free-solid-svg-icons";
+import { faBook, faGear, faTag, faTags, faUsersGear } from "@fortawesome/free-solid-svg-icons";
 import { useAuthStore } from "@/app/store/auth.store";
 import Swal from "sweetalert2";
 import IService from "@/app/interfaces/IService";
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
 			<div className="flex flex-col lg:flex-row justify-around gap-4 mt-8 w-[100%]">
 				<div className="flex flex-col gap-6 bg-white w-full p-6 rounded-3xl text-[var(--color-primary)] border border-[#949492]">
 					<ProfileItem icon={faUsersGear} label="Administracion de Perfiles" />
-					<ProfileItem icon={faHeart} label="Perfiles Destacados" />
+					<ProfileItem path="admin/dashboard/categories" icon={faTags} label="Administrar Categorías" />
 					<ProfileItem icon={faBook} label="Mis Anotaciones" />
 				</div>
 				<div className="flex flex-col gap-6 bg-white w-full p-6 rounded-3xl text-[var(--color-primary)] border border-[#949492]">

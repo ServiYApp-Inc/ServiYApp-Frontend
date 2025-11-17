@@ -48,3 +48,13 @@ export const deleteService = async (id: string) => {
     const { data } = await apiClient.delete(`services/delete/${id}`);
     return data;
 };
+
+export const createCategory = async (categoryData: any) => {
+    const { data } = await apiClient.post(`categories/create`, categoryData);
+    return data;
+};
+
+export const getCategories = async () => {
+    const { data } = await apiClient.get(`categories`);
+    return data;
+}
