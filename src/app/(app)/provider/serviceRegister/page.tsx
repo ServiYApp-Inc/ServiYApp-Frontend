@@ -267,7 +267,7 @@ export default function ServiceForm() {
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 mt-3"
+								className="w-full bg-[var(--color-primary)] text-white py-2 rounded-lg hover:scale-105 transition mt-3"
 							>
 								{isSubmitting ? "Guardando..." : "Registrar servicio"}
 							</button>
