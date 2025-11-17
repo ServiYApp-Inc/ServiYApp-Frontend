@@ -4,9 +4,16 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/app/store/auth.store";
 import AddressFormModal from "./AddressFormModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome, faMapMarkerAlt, faGlobe, faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { deactivateAddress, getAddresses} from "../services/provider.service";
+import {
+	faHome,
+	faMapMarkerAlt,
+	faGlobe,
+	faPenToSquare,
+	faTrash,
+} from "@fortawesome/free-solid-svg-icons";
+import { deactivateAddress, getAddresses } from "../services/provider.service";
 import { toast } from "react-toastify";
+import MapAddress from "./MapAddress";
 
 export default function AddressList() {
 	const { token } = useAuthStore();
@@ -16,25 +23,26 @@ export default function AddressList() {
 	const [loading, setLoading] = useState(true);
 
 	const fetchAddresses = async () => {
-	try {
-		setLoading(true);
-		const data = await getAddresses(token!);
+		try {
+			setLoading(true);
+			const data = await getAddresses(token!);
 
-		// ✅ Filtrar solo direcciones activas
-		const active = Array.isArray(data) ? data.filter(a => a.status === true) : [];
-
-		setAddresses(active);
-	} catch (error: any) {
-		if (error?.status === 404 || error?.response?.status === 404) {
-			setAddresses([]);
-		} else {
-			console.error("Error al cargar direcciones:", error);
+			// ✅ Filtrar solo direcciones activas
+			const active = Array.isArray(data)
+				? data.filter((a) => a.status === true)
+				: [];
+			console.log(data);
+			setAddresses(active);
+		} catch (error: any) {
+			if (error?.status === 404 || error?.response?.status === 404) {
+				setAddresses([]);
+			} else {
+				console.error("Error al cargar direcciones:", error);
+			}
+		} finally {
+			setLoading(false);
 		}
-	} finally {
-		setLoading(false);
-	}
-};
-
+	};
 
 	const handleDelete = async (id: string) => {
 		if (!confirm("¿Seguro que quieres eliminar esta dirección?")) return;
@@ -45,7 +53,9 @@ export default function AddressList() {
 			fetchAddresses();
 		} catch (err: any) {
 			console.error("Error al eliminar dirección:", err);
-			toast.error(err.response?.data?.message || "Error al eliminar dirección");
+			toast.error(
+				err.response?.data?.message || "Error al eliminar dirección"
+			);
 		}
 	};
 
@@ -75,7 +85,9 @@ export default function AddressList() {
 			{loading ? (
 				<p className="text-gray-500 text-sm">Cargando direcciones...</p>
 			) : addresses.length === 0 ? (
-				<p className="text-gray-500 text-sm">No tienes direcciones registradas todavía.</p>
+				<p className="text-gray-500 text-sm">
+					No tienes direcciones registradas todavía.
+				</p>
 			) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 					{addresses.map((a) => (
@@ -91,32 +103,57 @@ export default function AddressList() {
 							<div className="flex flex-col gap-3 text-gray-700">
 								{/* Dirección */}
 								<div className="flex items-start gap-3">
-									<FontAwesomeIcon icon={faHome} className="text-[var(--color-primary)] w-5 h-5 mt-1" />
+									<FontAwesomeIcon
+										icon={faHome}
+										className="text-[var(--color-primary)] w-5 h-5 mt-1"
+									/>
 									<p className="font-medium">
-										<span className="block text-gray-500 text-sm">Dirección</span>
+										<span className="block text-gray-500 text-sm">
+											Dirección
+										</span>
 										{a.address}
 									</p>
 								</div>
 
 								{/* Colonia / Ciudad / Estado */}
 								<div className="flex items-start gap-3">
-									<FontAwesomeIcon icon={faMapMarkerAlt} className="text-[var(--color-primary)] w-5 h-5 mt-1" />
+									<FontAwesomeIcon
+										icon={faMapMarkerAlt}
+										className="text-[var(--color-primary)] w-5 h-5 mt-1"
+									/>
 									<p className="font-medium">
-										<span className="block text-gray-500 text-sm">Colonia / Ciudad / Estado</span>
-										{a.neighborhood}, {a.city?.name}, {a.region?.name}
+										<span className="block text-gray-500 text-sm">
+											Colonia / Ciudad / Estado
+										</span>
+										{a.neighborhood}, {a.city?.name},{" "}
+										{a.region?.name}
 									</p>
 								</div>
 
 								{/* País */}
 								<div className="flex items-start gap-3">
-									<FontAwesomeIcon icon={faGlobe} className="text-[var(--color-primary)] w-5 h-5 mt-1" />
+									<FontAwesomeIcon
+										icon={faGlobe}
+										className="text-[var(--color-primary)] w-5 h-5 mt-1"
+									/>
 									<p className="font-medium">
-										<span className="block text-gray-500 text-sm">País</span>
+										<span className="block text-gray-500 text-sm">
+											País
+										</span>
 										{a.country?.name}
 									</p>
 								</div>
 							</div>
-
+							{/* MAPA */}
+							{a.lat && a.lng && (
+								<div className="mt-4">
+									<MapAddress
+										lat={a.lat}
+										lng={a.lng}
+										height="200px"
+									/>
+								</div>
+							)}
 							{/* Botones */}
 							<div className="flex justify-end gap-4 mt-4">
 								<button
