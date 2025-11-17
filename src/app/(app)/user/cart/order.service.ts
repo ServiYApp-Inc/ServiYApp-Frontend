@@ -76,12 +76,12 @@ export const createOrderAndPayment = async (payload: {
 			userId: payload.userId,
 			serviceId: payload.serviceId,
 			addressId: payload.addressId,
-			price: payload.amount, 
+			price: payload.amount,
 		});
 
 		// Paso 2: Crear la preferencia solo si la orden tiene ID
 		const payment = await createPaymentPreference({
-			amount: payload.amount,
+			amount: Number(payload.amount),
 			description: payload.description,
 			payerEmail: payload.payerEmail,
 			currency: payload.currency,
@@ -90,7 +90,10 @@ export const createOrderAndPayment = async (payload: {
 
 		return { order, payment };
 	} catch (error: any) {
-		console.error("❌ Error general en la creación de orden y pago:", error);
+		console.error(
+			"❌ Error general en la creación de orden y pago:",
+			error
+		);
 		throw error;
 	}
 };
