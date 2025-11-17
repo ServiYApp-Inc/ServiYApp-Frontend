@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
-import {
-  getSocket,
-  listenMessages,
-  getMessagesBetween,
-  sendMessage,
-} from "@/app/(app)/app-services/chatService";
+import { Api } from "@/app/services/api";
+import { useChatSocket } from "@/app/(app)/app-services/useChatSocket";
+
+interface Partner {
+  id: string;
+  names: string;
+  surnames: string;
+  profilePicture?: string;
+}
 
 interface Message {
   id: string;
+  content: string;
   senderId: string;
   receiverId: string;
-  content: string;
   time: string;
+  delivered: boolean;
+  read: boolean;
 }
 
 export default function UserChatPage() {
@@ -23,83 +28,134 @@ export default function UserChatPage() {
   const providerId = params.id as string;
 
   const { user } = useAuthStore();
-  const [messages, setMessages] = useState<Message[]>([]);
+
   const [content, setContent] = useState("");
+  const [partner, setPartner] = useState<Partner | null>(null);
+  const [loadedMessages, setLoadedMessages] = useState<Message[]>([]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  if (!user) return <div>Cargando...</div>;
+  // 🟦 Socket (tiempo real)
+  const {
+    messages: socketMessages,
+    sendMessage,
+    sendTyping,
+    stopTyping,
+    typing,
+    markAsRead,
+  } = useChatSocket(user?.id || "", providerId);
 
-  // conectar socket
-  useEffect(() => {
-    getSocket();
-  }, []);
+  // 🟩 MERGE seguro + eliminar duplicados
+  const messages = [
+    ...(Array.isArray(loadedMessages) ? loadedMessages : []),
+    ...(Array.isArray(socketMessages) ? socketMessages : []),
+  ].filter(
+    (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
+  );
 
-  // historial inicial
+  // 🟦 FETCH INICIAL → partner + mensajes
   useEffect(() => {
-    const loadHistory = async () => {
+    if (!user?.id || !providerId) return;
+
+    const loadChat = async () => {
       try {
-        const data = await getMessagesBetween(user.id, providerId);
-        setMessages(data);
+        const res = await Api.get(
+          `/chat/messages?userA=${user.id}&userB=${providerId}`
+        );
+
+        setPartner(res.data.partner || null);
+        setLoadedMessages(res.data.messages || []);
       } catch (err) {
-        console.error("Error al cargar historial:", err);
+        console.error("Error cargando chat:", err);
       }
     };
-    loadHistory();
-  }, [providerId, user.id]);
 
-  // escuchar mensajes nuevos
-  useEffect(() => {
-    listenMessages((msg: Message) => {
-      const isBetween =
-        (msg.senderId === user.id && msg.receiverId === providerId) ||
-        (msg.senderId === providerId && msg.receiverId === user.id);
+    loadChat();
+  }, [user?.id, providerId]);
 
-      if (!isBetween) return;
-
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-    });
-  }, [providerId, user.id]);
-
-  // auto scroll
+  // scroll automático
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // marcar como leído
+  useEffect(() => {
+    if (providerId) markAsRead();
+  }, [providerId, messages]);
+
   const handleSend = () => {
     if (!content.trim()) return;
-
-    sendMessage(user.id, providerId, content);
+    sendMessage(content);
     setContent("");
+    stopTyping();
   };
+
+  if (!user || !partner) return <div>Cargando...</div>;
 
   return (
     <div className="flex flex-col h-screen max-w-lg mx-auto bg-gray-50">
       {/* HEADER */}
       <div className="p-4 bg-white border-b shadow flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">
-          {providerId[0]?.toUpperCase()}
+        <img
+          src={partner.profilePicture || "/default-avatar.png"}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+
+        <div className="flex flex-col">
+          <span className="font-semibold text-lg">
+            {partner.names} {partner.surnames}
+          </span>
+
+          {typing && (
+            <span className="text-xs text-green-500">escribiendo...</span>
+          )}
         </div>
-        <span className="font-semibold text-lg">Chat con tu proveedor</span>
       </div>
 
       {/* MENSAJES */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`max-w-[70%] px-3 py-2 rounded-lg text-sm ${
-              msg.senderId === user.id
-                ? "bg-primary text-white ml-auto"
-                : "bg-white border"
-            }`}
-          >
-            {msg.content}
-          </div>
-        ))}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((msg) => {
+          const isMine = msg.senderId === user.id;
+
+          return (
+            <div
+              key={msg.id}
+              className={`max-w-[70%] px-3 py-2 rounded-lg text-sm ${
+                isMine
+                  ? "bg-primary text-white ml-auto"
+                  : "bg-white border"
+              }`}
+            >
+              <p>{msg.content}</p>
+
+              <div className="flex justify-end gap-2 mt-1 items-center">
+                <span className="text-[10px] opacity-70">
+                  {new Date(msg.time).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+
+                {isMine && (
+                  <span className="text-[12px]">
+                    {msg.read ? (
+                      <span className="text-blue-400">✓✓</span>
+                    ) : msg.delivered ? (
+                      "✓✓"
+                    ) : (
+                      "✓"
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {typing && (
+          <div className="text-xs text-gray-400 italic">Escribiendo...</div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
@@ -107,7 +163,11 @@ export default function UserChatPage() {
       <div className="p-4 bg-white border-t flex gap-2">
         <input
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => {
+            setContent(e.target.value);
+            sendTyping();
+            if (!e.target.value) stopTyping();
+          }}
           placeholder="Escribe un mensaje..."
           className="flex-1 border rounded-lg px-3 py-2"
         />

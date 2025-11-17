@@ -5,8 +5,9 @@ import FilterTagsProvider from "@/app/components/FilterTagsProvider";
 import IService from "@/app/interfaces/IService";
 import { useAuthStore } from "@/app/store/auth.store";
 import { useEffect, useState } from "react";
-import { getAllServices } from "../../provider/serviceRegister/service.service";
+import { getAllAdminServices, getAllServices } from "../../provider/serviceRegister/service.service";
 import {
+	faBook,
 	faBookBookmark,
 	faCheck,
 	faXmark,
@@ -29,7 +30,8 @@ export default function Services() {
 	const fetchServices = async (pageNumber: number) => {
 		try {
 			setLoading(true);
-			const data = await getAllServices(pageNumber, limit);
+			// const data = await getAllServices(pageNumber, limit);
+			const data = await getAllAdminServices();
 
 			// 🔹 Reemplazamos servicios previos por los nuevos
 			setServices(data);
@@ -114,6 +116,7 @@ export default function Services() {
 						onClick={() => handleFilter("pending")}
 					/>
 					<FilterTagsProvider
+						icon={faBook}
 						label="Todos"
 						active={selectedFilter === "ALL"}
 						onClick={() => handleFilter("ALL")}

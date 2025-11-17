@@ -12,10 +12,13 @@ import {
 	faXmark,
 	faSearch,
 	faCopy,
+	faComments, // <-- AGREGADO
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import StartConversation from "@/app/components/StartConversationButton";
+import StartChatButton from "@/app/components/StartChatButton";
+
+// 🔥 IMPORTANTE: IMPORTA TU BOTÓN DE CHAT
 
 // ---------------------------------------------------------
 // TYPES
@@ -26,6 +29,7 @@ interface ServiceOrder {
 	createdAt: string;
 
 	user: {
+		id: string; // <-- necesario para el chat
 		names: string;
 		surnames: string;
 		email: string;
@@ -61,17 +65,15 @@ export default function ProviderAppointmentsPage() {
 	const [loading, setLoading] = useState(true);
 	const [processingId, setProcessingId] = useState<string | null>(null);
 
-	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
+		null
+	);
 
-	// Tab Selected
 	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
 		"upcoming"
 	);
 
-	// Search string
 	const [search, setSearch] = useState("");
-
-	// Show only paid
 	const [showOnlyPaid, setShowOnlyPaid] = useState(true);
 
 	// ---------------------------------------------------------
@@ -220,8 +222,6 @@ export default function ProviderAppointmentsPage() {
 				Citas Recibidas
 			</h1>
 
-			<StartConversation />
-
 			{/* SEARCH */}
 			<div className="relative mb-6 max-w-md">
 				<FontAwesomeIcon
@@ -353,6 +353,7 @@ export default function ProviderAppointmentsPage() {
 
 									<td className="py-3 px-4 text-center">
 										<div className="flex justify-center gap-3">
+											{/* Ver detalles */}
 											<button
 												onClick={() =>
 													setSelectedOrder(o)
@@ -362,6 +363,16 @@ export default function ProviderAppointmentsPage() {
 												<FontAwesomeIcon icon={faEye} />
 											</button>
 
+											{/* CHAT – SOLO SI ES PAGADA O ACEPTADA */}
+											{(o.status === "paid" ||
+												o.status === "accepted") && (
+												<StartChatButton
+													receiverId={o.user.id}
+													role="provider"
+												/>
+											)}
+
+											{/* Aceptar */}
 											{o.status === "paid" && (
 												<button
 													onClick={() =>
@@ -382,6 +393,7 @@ export default function ProviderAppointmentsPage() {
 												</button>
 											)}
 
+											{/* Cancelar */}
 											{(o.status === "paid" ||
 												o.status === "accepted") && (
 												<button
