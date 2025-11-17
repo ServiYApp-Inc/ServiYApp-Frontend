@@ -30,10 +30,15 @@ export default function ReviewModal({
     const fileRef = useRef<HTMLInputElement | null>(null);
 
     const submitReview = async () => {
+        if(!user){
+            toast.error("No hay usuario");
+            return;
+        }
         if (!rate) {
             toast.error("Selecciona una calificación");
             return;
         }
+
 
         setLoading(true);
 
