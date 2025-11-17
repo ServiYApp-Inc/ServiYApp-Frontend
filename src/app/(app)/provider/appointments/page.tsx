@@ -9,16 +9,15 @@ import {
 	faEye,
 	faCheck,
 	faTimes,
-	faXmark,
 	faSearch,
 	faCopy,
-	faComments, // <-- AGREGADO
+	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import StartChatButton from "@/app/components/StartChatButton";
-
-// 🔥 IMPORTANTE: IMPORTA TU BOTÓN DE CHAT
+import MapAddress from "@/app/components/MapAddress";
+import Swal from "sweetalert2";
 
 // ---------------------------------------------------------
 // TYPES
@@ -29,7 +28,7 @@ interface ServiceOrder {
 	createdAt: string;
 
 	user: {
-		id: string; // <-- necesario para el chat
+		id: string;
 		names: string;
 		surnames: string;
 		email: string;
@@ -47,6 +46,8 @@ interface ServiceOrder {
 		neighborhood?: string;
 		city?: { name: string };
 		region?: { name: string };
+		lat: string;
+		lng: string;
 	};
 
 	payments: {
@@ -64,17 +65,13 @@ export default function ProviderAppointmentsPage() {
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [processingId, setProcessingId] = useState<string | null>(null);
-
-	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
-		null
-	);
+	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
 
 	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
 		"upcoming"
 	);
 
 	const [search, setSearch] = useState("");
-	const [showOnlyPaid, setShowOnlyPaid] = useState(true);
 
 	// ---------------------------------------------------------
 	// FETCH ORDERS
@@ -160,7 +157,17 @@ export default function ProviderAppointmentsPage() {
 	// ACTIONS
 	// ---------------------------------------------------------
 	const handleConfirm = async (id: string) => {
-		if (!confirm("¿Aceptar esta cita?")) return;
+		const result = await Swal.fire({
+			title: "¿Aceptar esta cita?",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonColor: "#1d2846",
+			cancelButtonColor: "#aaa",
+			confirmButtonText: "Aceptar",
+			cancelButtonText: "Cancelar",
+		});
+
+		if (!result.isConfirmed) return;
 
 		try {
 			setProcessingId(id);
@@ -177,8 +184,6 @@ export default function ProviderAppointmentsPage() {
 	};
 
 	const handleCancel = async (id: string) => {
-		if (!confirm("¿Cancelar esta cita?")) return;
-
 		try {
 			setProcessingId(id);
 			await Api.patch(
@@ -194,9 +199,10 @@ export default function ProviderAppointmentsPage() {
 	};
 
 	// ---------------------------------------------------------
-	// FILTERING
+	// FILTER (solo pagadas)
 	// ---------------------------------------------------------
 	const filteredOrders = orders
+		.filter((o) => o.payments?.[0]?.status === "approved") // SOLO PAGADAS
 		.filter((o) => {
 			if (tab === "upcoming")
 				return o.status === "paid" || o.status === "accepted";
@@ -208,9 +214,6 @@ export default function ProviderAppointmentsPage() {
 			search.trim()
 				? o.id.toLowerCase().includes(search.toLowerCase())
 				: true
-		)
-		.filter((o) =>
-			showOnlyPaid ? o.payments?.[0]?.status === "approved" : true
 		);
 
 	// ---------------------------------------------------------
@@ -235,19 +238,6 @@ export default function ProviderAppointmentsPage() {
 					onChange={(e) => setSearch(e.target.value)}
 					className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary)]"
 				/>
-			</div>
-
-			{/* TOGGLE PAGADAS */}
-			<div className="flex items-center gap-2 mb-6">
-				<input
-					type="checkbox"
-					checked={!showOnlyPaid}
-					onChange={() => setShowOnlyPaid(!showOnlyPaid)}
-					className="h-4 w-4"
-				/>
-				<label className="text-sm text-gray-700">
-					Mostrar NO pagadas
-				</label>
 			</div>
 
 			{/* TABS */}
@@ -363,7 +353,7 @@ export default function ProviderAppointmentsPage() {
 												<FontAwesomeIcon icon={faEye} />
 											</button>
 
-											{/* CHAT – SOLO SI ES PAGADA O ACEPTADA */}
+											{/* CHAT */}
 											{(o.status === "paid" ||
 												o.status === "accepted") && (
 												<StartChatButton
@@ -394,12 +384,32 @@ export default function ProviderAppointmentsPage() {
 											)}
 
 											{/* Cancelar */}
-											{(o.status === "paid" ||
-												o.status === "accepted") && (
+											{canCancel(o.status) && (
 												<button
-													onClick={() =>
-														handleCancel(o.id)
-													}
+													onClick={async () => {
+														const result =
+															await Swal.fire({
+																title: "¿Cancelar esta cita?",
+																text: "Esta acción no se puede deshacer.",
+																icon: "warning",
+																showCancelButton:
+																	true,
+																confirmButtonColor:
+																	"#d33",
+																cancelButtonColor:
+																	"#3085d6",
+																confirmButtonText:
+																	"Sí, cancelar",
+																cancelButtonText:
+																	"No",
+															});
+
+														if (
+															result.isConfirmed
+														) {
+															handleCancel(o.id);
+														}
+													}}
 													className="text-red-600"
 												>
 													{processingId === o.id ? (
@@ -409,7 +419,7 @@ export default function ProviderAppointmentsPage() {
 														/>
 													) : (
 														<FontAwesomeIcon
-															icon={faTimes}
+															icon={faTrash}
 														/>
 													)}
 												</button>
@@ -431,6 +441,10 @@ export default function ProviderAppointmentsPage() {
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+						onClick={(e) => {
+							if (e.target === e.currentTarget)
+								setSelectedOrder(null);
+						}}
 					>
 						<motion.div
 							initial={{ scale: 0.9, opacity: 0 }}
@@ -438,11 +452,12 @@ export default function ProviderAppointmentsPage() {
 							exit={{ scale: 0.9, opacity: 0 }}
 							className="bg-white p-6 w-full max-w-lg rounded-2xl shadow-xl relative"
 						>
+							{/* Close button */}
 							<button
 								onClick={() => setSelectedOrder(null)}
-								className="absolute top-4 right-4 text-gray-500"
+								className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
 							>
-								<FontAwesomeIcon icon={faXmark} />
+								<FontAwesomeIcon icon={faTimes} size="lg" />
 							</button>
 
 							<h2 className="text-xl font-bold text-[var(--color-primary)] mb-4">
@@ -474,26 +489,54 @@ export default function ProviderAppointmentsPage() {
 								{getCompactAddress(selectedOrder.address)}
 							</p>
 
-							<p className="text-sm mb-1">
-								<strong>Fecha:</strong>{" "}
-								{new Date(
-									selectedOrder.createdAt
-								).toLocaleString("es-MX")}
-							</p>
+							{/* Mapa */}
+							{selectedOrder.address?.lat &&
+								selectedOrder.address?.lng && (
+									<div className="mt-4">
+										<MapAddress
+											lat={Number(
+												selectedOrder.address.lat
+											)}
+											lng={Number(
+												selectedOrder.address.lng
+											)}
+											height="200px"
+										/>
+									</div>
+								)}
 
 							{/* Modal Actions */}
 							<div className="flex justify-end gap-3 mt-6">
+								{/* Cancelar */}
 								{canCancel(selectedOrder.status) && (
 									<button
-										onClick={() =>
-											handleCancel(selectedOrder.id)
-										}
+										onClick={async () => {
+											const result = await Swal.fire({
+												title: "¿Cancelar la cita?",
+												text: "Esta acción no se puede deshacer.",
+												icon: "warning",
+												showCancelButton: true,
+												confirmButtonColor: "#d33",
+												cancelButtonColor: "#3085d6",
+												confirmButtonText:
+													"Sí, cancelar",
+												cancelButtonText: "No",
+											});
+
+											if (result.isConfirmed) {
+												handleCancel(
+													selectedOrder.id
+												);
+												setSelectedOrder(null);
+											}
+										}}
 										className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm"
 									>
-										Cancelar
+										Cancelar cita
 									</button>
 								)}
 
+								{/* Aceptar */}
 								{canAccept(selectedOrder.status) && (
 									<button
 										onClick={() =>
