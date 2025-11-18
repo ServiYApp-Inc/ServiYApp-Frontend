@@ -15,6 +15,7 @@ import { Api } from "@/app/services/api";
 import IService from "@/app/interfaces/IService";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/app/store/useCartStore";
+import { useAuthStore } from "@/app/store/auth.store";
 
 interface ReviewHard {
     userName: string;
@@ -42,9 +43,25 @@ const services: ServiceHard[] = [
 
 export default function ServiceDetailPage() {
 	const { id } = useParams();
+	const { user } = useAuthStore();
 	const router = useRouter();
 	const [service, setService] = useState<IService | null>(null);
 	const [loading, setLoading] = useState(true);
+
+	const getCurrencyByCountry = (countryName?: string) => {
+		if (!countryName) return "COP"; // default
+
+		const normalized = countryName.toLowerCase();
+
+		if (normalized.includes("colombia")) return "COP";
+		if (normalized.includes("méxico") || normalized.includes("mexico")) return "MXN";
+		if (normalized.includes("argentina")) return "ARS";
+
+		return "COP"; // fallback
+	};
+
+	const userCountry = user?.country?.name;
+	const currency = getCurrencyByCountry(userCountry);
 
 	useEffect(() => {
 		if (!id) return;
@@ -173,7 +190,7 @@ export default function ServiceDetailPage() {
 				{/* Precio y CTA */}
 				<div className="flex flex-col sm:flex-row justify-between items-center border-t pt-5 mt-2 gap-4 sm:gap-0">
 					<p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-primary)]">
-						${service.price} MXN
+						${service.price} {currency}
 					</p>
 
 					<motion.button
