@@ -4,170 +4,171 @@ import { useEffect, useRef, useState } from "react";
 import io, { Socket } from "socket.io-client";
 
 export interface ChatMessage {
-    id: string;
-    content: string;
-    senderId: string;
-    receiverId: string;
-    time: string;
-    delivered: boolean;
-    read: boolean;
+	id: string;
+	content: string;
+	senderId: string;
+	receiverId: string;
+	time: string;
+	delivered: boolean;
+	read: boolean;
 }
 
 export function useChatSocket(userId: string, receiverId?: string) {
-    const socketRef = useRef<Socket | null>(null);
+	const socketRef = useRef<Socket | null>(null);
 
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [partner, setPartner] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
+	const [messages, setMessages] = useState<ChatMessage[]>([]);
+	const [partner, setPartner] = useState<any>(null);
+	const [loading, setLoading] = useState(false);
 
-    // NEW: Online / offline + última conexión
-    const [online, setOnline] = useState(false);
-    const [lastSeen, setLastSeen] = useState<string | null>(null);
+	// NEW: Online / offline + última conexión
+	const [online, setOnline] = useState(false);
+	const [lastSeen, setLastSeen] = useState<string | null>(null);
 
-    const [typing, setTyping] = useState(false);
+	const [typing, setTyping] = useState(false);
 
-    // Sound
-    const soundRef = useRef<HTMLAudioElement | null>(null);
+	// Sound
+	const soundRef = useRef<HTMLAudioElement | null>(null);
 
-    useEffect(() => {
-        soundRef.current = new Audio("/sounds/message.mp3"); // pon el archivo en /public/sounds
-    }, []);
+	useEffect(() => {
+		soundRef.current = new Audio("/sounds/message.mp3"); // pon el archivo en /public/sounds
+	}, []);
 
-    // ======================
-    // CONNECT
-    // ======================
-    useEffect(() => {
-        if (!userId) return;
+	// ======================
+	// CONNECT
+	// ======================
+	useEffect(() => {
+		if (!userId) return;
 
-        const socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
-            transports: ["websocket"],
-            query: { userId },
-        });
+		const socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
+			transports: ["websocket"],
+			query: { userId },
+		});
 
-        socketRef.current = socket;
+		socketRef.current = socket;
 
-        socket.on("connect", () => {
-            console.log("🟢 Conectado:", socket.id);
-        });
+		socket.on("connect", () => {
+			console.log("🟢 Conectado:", socket.id);
+		});
 
-        // Obtener historial
-        if (receiverId) {
-            setLoading(true);
-            socket.emit("getHistory", { userId, receiverId });
-        }
+		// Obtener historial
+		if (receiverId) {
+			setLoading(true);
+			socket.emit("getHistory", { userId, receiverId });
+		}
 
-        socket.on("messagesHistory", (history) => {
-            setPartner(history.partner);
-            setMessages(history.messages || []);
-            setLoading(false);
-        });
+		socket.on("messagesHistory", (history) => {
+			setPartner(history.partner);
+			setMessages(history.messages || []);
+			setLoading(false);
+		});
 
-        // ======================
-        // ONLINE / OFFLINE
-        // ======================
-        socket.on("userOnline", ({ userId: id }) => {
-            if (id === receiverId) {
-                setOnline(true);
-            }
-        });
+		// ======================
+		// ONLINE / OFFLINE
+		// ======================
+		socket.on("userOnline", ({ userId: id }) => {
+			if (id === receiverId) {
+				setOnline(true);
+			}
+		});
 
-        socket.on("userOffline", ({ userId: id }) => {
-            if (id === receiverId) {
-                setOnline(false);
-                setLastSeen(new Date().toISOString()); // guardamos última conexión
-            }
-        });
+		socket.on("userOffline", ({ userId: id }) => {
+			if (id === receiverId) {
+				setOnline(false);
+				setLastSeen(new Date().toISOString()); // guardamos última conexión
+			}
+		});
 
-        // ======================
-        // NEW MESSAGE
-        // ======================
-        socket.on("receiveMessage", (msg) => {
-            const isBetween =
-                (msg.senderId === userId && msg.receiverId === receiverId) ||
-                (msg.senderId === receiverId && msg.receiverId === userId);
+		// ======================
+		// NEW MESSAGE
+		// ======================
+		socket.on("receiveMessage", (msg) => {
+			const isBetween =
+				(msg.senderId === userId && msg.receiverId === receiverId) ||
+				(msg.senderId === receiverId && msg.receiverId === userId);
 
-            if (isBetween) {
-                setMessages((prev) => [...prev, msg]);
+			if (isBetween) {
+				setMessages((prev) => [...prev, msg]);
 
-                // sound only if it's NOT me
-                if (msg.senderId !== userId) {
-                    soundRef.current?.play().catch(() => {});
-                }
-            }
-        });
+				// sound only if it's NOT me
+				if (msg.senderId !== userId) {
+					soundRef.current?.play().catch(() => {});
+				}
+			}
+		});
 
-        // Delivered ✓✓ gris
-        socket.on("messageDelivered", ({ messageId }) => {
-            setMessages((prev) =>
-                prev.map((m) =>
-                    m.id === messageId ? { ...m, delivered: true } : m
-                )
-            );
-        });
+		// Delivered ✓✓ gris
+		socket.on("messageDelivered", ({ messageId }) => {
+			setMessages((prev) =>
+				prev.map((m) =>
+					m.id === messageId ? { ...m, delivered: true } : m
+				)
+			);
+		});
 
-        // Read ✓✓ azul
-        socket.on("allMessagesRead", ({ from }) => {
-            if (from === receiverId) {
-                setMessages((prev) =>
-                    prev.map((m) =>
-                        m.receiverId === userId ? { ...m, read: true } : m
-                    )
-                );
-            }
-        });
+		// Read ✓✓ azul
+		socket.on("allMessagesRead", ({ from }) => {
+			if (from === receiverId) {
+				setMessages((prev) =>
+					prev.map((m) =>
+						m.receiverId === userId ? { ...m, read: true } : m
+					)
+				);
+			}
+		});
 
-        // TYPING
-        socket.on("typing", ({ from }) => {
-            if (from === receiverId) setTyping(true);
-        });
+		// TYPING
+		socket.on("typing", ({ from }) => {
+			if (from === receiverId) setTyping(true);
+		});
 
-        socket.on("stopTyping", ({ from }) => {
-            if (from === receiverId) setTyping(false);
-        });
+		socket.on("stopTyping", ({ from }) => {
+			if (from === receiverId) setTyping(false);
+		});
 
-        return () => {
-            socket.disconnect();
-        };
-    }, [userId, receiverId]);
+		return () => {
+			socket.disconnect();
+		};
+	}, [userId, receiverId]);
 
-    // ======================
-    // SEND MESSAGE
-    // ======================
-    const sendMessage = (content: string) => {
-        if (!socketRef.current || !receiverId) return;
+	// ======================
+	// SEND MESSAGE
+	// ======================
+	const sendMessage = (content: string) => {
+		if (!socketRef.current || !receiverId) return;
 
-        socketRef.current.emit("sendMessage", {
-            senderId: userId,
-            receiverId,
-            content,
-        });
-    };
+		socketRef.current.emit("sendMessage", {
+			senderId: userId,
+			receiverId,
+			content,
+		});
+	};
 
-    // TYPING
-    const sendTyping = () => {
-        socketRef.current?.emit("typing", { from: userId, to: receiverId });
-    };
+	// TYPING
+	const sendTyping = () => {
+		socketRef.current?.emit("typing", { from: userId, to: receiverId });
+	};
 
-    const stopTyping = () => {
-        socketRef.current?.emit("stopTyping", { from: userId, to: receiverId });
-    };
+	const stopTyping = () => {
+		socketRef.current?.emit("stopTyping", { from: userId, to: receiverId });
+	};
 
-    // READ
-    const markAsRead = () => {
-        socketRef.current?.emit("markAsRead", { userId, receiverId });
-    };
+	// READ
+	const markAsRead = () => {
+		socketRef.current?.emit("markAsRead", { userId, receiverId });
+	};
 
-    return {
-        socket: socketRef.current,
-        messages,
-        partner,
-        loading,
-        typing,
-        online,
-        lastSeen,
-        sendMessage,
-        sendTyping,
-        stopTyping,
-        markAsRead,
-    };
+	return {
+		socket: socketRef.current,
+		messages,
+		setMessages, // 👈 AGREGA ESTO
+		partner,
+		loading,
+		typing,
+		online,
+		lastSeen,
+		sendMessage,
+		sendTyping,
+		stopTyping,
+		markAsRead,
+	};
 }
