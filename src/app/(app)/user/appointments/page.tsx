@@ -307,6 +307,14 @@ export default function UserAppointmentsPage() {
 
 					{/* Chat + Detalles (derecha) */}
 					<div className="flex items-center gap-3 ml-auto">
+						<button
+            				onClick={() => router.push('/user/calendar')}
+            				className="px-4 py-1 text-sm rounded-lg text-white"
+            				style={{ backgroundColor: "var(--color-primary)" }} // Usa un color secundario para diferenciarlo
+        				>
+            				Ver Calendario
+        				</button>
+						
 						{(order.status === "paid" ||
 							order.status === "accepted") && (
 							<div className="flex items-center gap-1 text-[var(--color-primary)] font-large text-l">
