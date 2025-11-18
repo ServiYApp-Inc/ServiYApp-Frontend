@@ -59,7 +59,7 @@ export default function CategoriesPage() {
                 // Endpoint Delete Category
             await Swal.fire({
                 title: "Categoría eliminada",
-                text: res.message || "La categoría fue eliminado con éxito.",
+                // text: res.message || "La categoría fue eliminado con éxito.",
                 icon: "success",
             });
 
