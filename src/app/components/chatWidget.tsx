@@ -3,404 +3,394 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/app/store/auth.store";
 import { useChatWidgetStore } from "@/app/store/chatWidget.store";
-import { Api } from "@/app/services/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faComments,
-  faUser,
-  faChevronLeft,
-  faXmark,
+	faComments,
+	faUser,
+	faChevronLeft,
+	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
+
 import { useChatSocket } from "@/app/(app)/app-services/useChatSocket";
 
+// ======================================
+// TYPES
+// ======================================
 interface Conversation {
-  userId: string;
-  lastMessage: string;
-  lastSenderId?: string;
-  time: string;
-  read: boolean;
-  delivered?: boolean;
-  user?: {
-    id: string;
-    names: string;
-    surnames: string;
-    profilePicture?: string;
-  };
+	userId: string;
+	lastMessage: string;
+	lastSenderId?: string;
+	time: string;
+	read: boolean;
+	user?: {
+		id: string;
+		names: string;
+		surnames: string;
+		profilePicture?: string;
+	};
 }
 
 interface Message {
-  id: string;
-  content: string;
-  senderId: string;
-  receiverId: string;
-  time: string;
-  delivered: boolean;
-  read: boolean;
+	id: string;
+	content: string;
+	senderId: string;
+	receiverId: string;
+	time: string;
+	delivered: boolean;
+	read: boolean;
 }
 
+// ======================================
+// COMPONENT
+// ======================================
 export default function ChatWidget() {
-  const { user, token } = useAuthStore();
+	const { user, token } = useAuthStore();
+	const {
+		open,
+		minimized,
+		targetUserId,
+		openWidget,
+		closeWidget,
+		clearTarget,
+	} = useChatWidgetStore();
 
-  const {
-    open,
-    minimized,
-    targetUserId,
-    openWidget,
-    closeWidget,
-    clearTarget,
-  } = useChatWidgetStore();
+	const [conversations, setConversations] = useState<Conversation[]>([]);
+	const [activeChat, setActiveChat] = useState<Conversation | null>(null);
+	const [content, setContent] = useState("");
+	const [localLoading, setLocalLoading] = useState(false);
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [unread, setUnread] = useState<Record<string, number>>({});
-  const [activeChat, setActiveChat] = useState<Conversation | null>(null);
-  const [loadedMessages, setLoadedMessages] = useState<Message[]>([]);
-  const [content, setContent] = useState("");
-  const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
+	// *** 🔥 Partner local para poder limpiarlo ***
+	const [localPartner, setLocalPartner] = useState<any>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+	const bottomRef = useRef<HTMLDivElement>(null);
 
-  // SOCKET
-  const {
-    socket,
-    messages: socketMessages,
-    typing,
-    sendMessage,
-    sendTyping,
-    stopTyping,
-    markAsRead,
-  } = useChatSocket(
-    activeChat ? user?.id || "" : "",
-    activeChat ? activeChat.userId : ""
-  );
+	// SOCKET
+	const {
+		messages,
+		setMessages,
+		partner,
+		typing,
+		sendMessage,
+		sendTyping,
+		stopTyping,
+		markAsRead,
+		loading,
+	} = useChatSocket(
+		activeChat ? user?.id || "" : "",
+		activeChat ? activeChat.userId : ""
+	);
 
-  // MERGE seguro de mensajes
-  const mergedMessages = [
-    ...loadedMessages,
-    ...(Array.isArray(socketMessages) ? socketMessages : []),
-  ].filter(
-    (msg, i, arr) => i === arr.findIndex((m) => m.id === msg.id)
-  );
+	// Sync partner → pero controlado
+	useEffect(() => {
+		if (partner) setLocalPartner(partner);
+	}, [partner]);
 
-  // ===============================
-  // CARGAR CONVERSACIONES
-  // ===============================
-  useEffect(() => {
-    if (!user?.id) return;
+	// ======================================
+	// LOAD INBOX
+	// ======================================
+	useEffect(() => {
+		if (!user?.id) return;
 
-    const load = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+		const load = async () => {
+			const res = await fetch(
+				`${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
 
-        const data = await res.json();
+			const data: Conversation[] = await res.json();
+			data.forEach((c: any) => {
+				if (c.lastMessageObj)
+					c.lastSenderId = c.lastMessageObj.senderId;
+			});
 
-        // Agregamos lastSenderId si viene en el backend
-        data.forEach((c: any) => {
-          if (c.lastMessageObj) c.lastSenderId = c.lastMessageObj.senderId;
-        });
+			setConversations(data);
+		};
 
-        setConversations(data);
+		load();
+	}, [user?.id, token]);
 
-        const unreadMap: Record<string, number> = {};
-        data.forEach((c: Conversation) => {
-          if (!c.read) unreadMap[c.userId] = (unreadMap[c.userId] || 0) + 1;
-        });
+	// ======================================
+	// OPEN FROM OUTSIDE
+	// ======================================
+	useEffect(() => {
+		if (!targetUserId) return;
 
-        setUnread(unreadMap);
-      } catch (err) {
-        console.error("Error cargando conversaciones:", err);
-      }
-    };
+		const conv = conversations.find((c) => c.userId === targetUserId);
+		if (conv) {
+			setActiveChat(null);
+			setLocalPartner(null); // limpia partner
 
-    load();
-  }, [user?.id, token]);
+			setTimeout(() => {
+				setActiveChat(conv);
+				markAsRead();
+			}, 80);
 
-  // ===============================
-  // SOCKET → TYPING
-  // ===============================
- 
-  // ===============================
-  // SOCKET → actualización inbox
-  // ===============================
-  useEffect(() => {
-    if (!socketMessages || socketMessages.length === 0) return;
+			openWidget();
+		}
 
-    const lastMsg = socketMessages[socketMessages.length - 1];
-    if (!lastMsg) return;
+		clearTarget();
+	}, [targetUserId, conversations]);
 
-    setConversations((prev) => {
-      const updated = prev.map((c) =>
-        c.userId === lastMsg.senderId || c.userId === lastMsg.receiverId
-          ? {
-              ...c,
-              lastMessage: lastMsg.content,
-              time: lastMsg.time,
-              lastSenderId: lastMsg.senderId,
-              delivered: lastMsg.delivered,
-              read: lastMsg.read,
-            }
-          : c
-      );
+	// ======================================
+	// SCROLL
+	// ======================================
+	useEffect(() => {
+		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
-      return updated.sort(
-        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-      );
-    });
-  }, [socketMessages]);
+	// ======================================
+	// MARK AS READ (blue ✓✓)
+	// ======================================
+	useEffect(() => {
+		if (!activeChat) return;
 
-  // ===============================
-  // targetUserId → abre chat desde botón externo
-  // ===============================
-  useEffect(() => {
-    if (!targetUserId) return;
+		markAsRead();
 
-    const conv = conversations.find((c) => c.userId === targetUserId);
-    if (conv) {
-      openChat(conv);
-      openWidget();
-    }
+		setTimeout(() => {
+			setMessages((prev: Message[]) =>
+				prev.map((m) =>
+					m.receiverId === user?.id
+						? { ...m, delivered: true, read: true }
+						: m
+				)
+			);
+		}, 80);
+	}, [activeChat]);
 
-    clearTarget();
-  }, [targetUserId, conversations]);
+	// ======================================
+	// SEND
+	// ======================================
+	const handleSend = () => {
+		if (!content.trim()) return;
+		sendMessage(content);
+		setContent("");
+		stopTyping();
+	};
 
-  // ===============================
-  // ABRIR CHAT
-  // ===============================
-  const openChat = async (conv: Conversation) => {
-    setActiveChat(conv);
-    setUnread((prev) => ({ ...prev, [conv.userId]: 0 }));
+	// ======================================
+	// TIME
+	// ======================================
+	const formatTime = (t: string) =>
+		new Date(t).toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 
-    try {
-      const res = await Api.get(
-        `/chat/messages?userA=${user?.id}&userB=${conv.userId}`
-      );
+	// ======================================
+	// CHECKMARKS
+	// ======================================
+	const renderTicks = (msg: Message) => {
+		if (!msg.delivered) return <span className="text-gray-400 text-[11px]">✓</span>;
+		if (!msg.read) return <span className="text-gray-500 text-[11px]">✓✓</span>;
+		return <span className="text-blue-500 font-semibold text-[11px]">✓✓</span>;
+	};
 
-      setLoadedMessages(res.data.messages || []);
-      markAsRead();
-    } catch (err) {
-      console.error("Error cargando chat:", err);
-    }
-  };
+	// ======================================
+	// Bubble
+	// ======================================
+	const Bubble = ({ msg }: { msg: Message }) => {
+		const mine = msg.senderId === user?.id;
 
-  // AUTO-SCROLL
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mergedMessages]);
+		return (
+			<div
+				className={`flex ${
+					mine ? "justify-end" : "justify-start"
+				} animate-[fadeIn_.25s_ease,slideIn_.25s_ease]`}
+			>
+				<div
+					className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] shadow-sm ${
+						mine ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
+					}`}
+					style={{
+						borderBottomRightRadius: mine ? "4px" : "20px",
+						borderBottomLeftRadius: mine ? "20px" : "4px",
+					}}
+				>
+					<div>{msg.content}</div>
 
-  const handleSend = () => {
-    if (!content.trim()) return;
-    sendMessage(content);
-    setContent("");
-    stopTyping();
-  };
+					<div className="mt-1 flex justify-end gap-1 text-[10px] opacity-80">
+						{formatTime(msg.time)}
+						{mine && renderTicks(msg)}
+					</div>
+				</div>
+			</div>
+		);
+	};
 
-  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
+	// ======================================
+	// INBOX
+	// ======================================
+	const renderInbox = () => (
+		<div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
+			{conversations.length === 0 && (
+				<p className="text-gray-500 text-center mt-10">
+					No tienes mensajes.
+				</p>
+			)}
 
-  // PALOMITAS
-  const renderTicks = (msg: Message) => {
-    if (msg.read) return <span className="text-blue-400 text-xs">✓✓</span>;
-    if (msg.delivered) return <span className="text-gray-500 text-xs">✓✓</span>;
-    return <span className="text-gray-400 text-xs">✓</span>;
-  };
+			{conversations.map((c) => (
+				<div
+					key={c.userId}
+					className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer border"
+					onClick={() => {
+						setLocalLoading(true);
+						setActiveChat(null);
+						setLocalPartner(null); // limpiar partner
+						setMessages([]);
 
-  // FORMATEAR HORA
-  const formatTime = (t: string) =>
-    new Date(t).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+						setTimeout(() => {
+							setActiveChat(c);
+							markAsRead();
+							setLocalLoading(false);
+						}, 150);
+					}}
+				>
+					{c.user?.profilePicture ? (
+						<img src={c.user.profilePicture} className="w-10 h-10 rounded-full object-cover" />
+					) : (
+						<div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+							<FontAwesomeIcon icon={faUser} className="text-gray-600" />
+						</div>
+					)}
 
-  return (
-    <>
-      {/* GLOBITO */}
-      {!open && !minimized && (
-        <button
-          onClick={() => openWidget()}
-          className="fixed bottom-6 right-6 bg-primary text-white rounded-full shadow-xl hover:scale-110 transition-all duration-300 p-4 animate-chat-slide-up-fade"
-        >
-          <FontAwesomeIcon icon={faComments} size="lg" />
+					<div className="flex-1">
+						<div className="font-medium text-sm">
+							{c.user ? `${c.user.names} ${c.user.surnames}` : c.userId}
+						</div>
+						<div className="text-xs text-gray-500 truncate">
+							{c.lastSenderId === user?.id ? "Tú: " : ""}
+							{c.lastMessage}
+						</div>
+					</div>
 
-          {totalUnread > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-              {totalUnread}
-            </span>
-          )}
-        </button>
-      )}
+					<div className="text-[11px] text-gray-400">{formatTime(c.time)}</div>
+				</div>
+			))}
+		</div>
+	);
 
-      {/* ===============================
-          WIDGET
-      =============================== */}
-      {open && (
-        <div className="fixed bottom-2 right-6 w-80 h-[32rem] bg-white shadow-lg border rounded-xl overflow-hidden z-50 flex flex-col animate-chat-slide-up-fade">
+	// ======================================
+	// CHAT VIEW
+	// ======================================
+	const renderChat = () => (
+		<div className="flex flex-col h-full">
+			{/* HEADER */}
+			<div
+				className="flex items-center gap-2 px-3 border-b bg-gray-100"
+				style={{ height: "54px", flexShrink: 0 }}
+			>
+				<button onClick={() => setActiveChat(null)}>
+					<FontAwesomeIcon icon={faChevronLeft} className="text-gray-600" />
+				</button>
 
-          {/* HEADER */}
-          <div className="bg-primary text-white p-2 flex justify-between items-center">
-            <span className="font-medium text-sm">
-              {activeChat ? "Chat" : "Mis Mensajes"}
-            </span>
+				{localPartner?.profilePicture ? (
+					<img
+						src={localPartner.profilePicture}
+						className="w-8 h-8 rounded-full object-cover"
+					/>
+				) : (
+					<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+						<FontAwesomeIcon icon={faUser} className="text-gray-600" />
+					</div>
+				)}
 
-            <button onClick={() => closeWidget()}>
-              <FontAwesomeIcon icon={faXmark} className="text-white" />
-            </button>
-          </div>
+				<div className="font-medium text-sm">
+					{localPartner ? `${localPartner.names} ${localPartner.surnames}` : ""}
+				</div>
+			</div>
 
-          {/* ===========================
-              INBOX
-          =========================== */}
-          {!activeChat && (
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {conversations.length === 0 ? (
-                <p className="text-gray-500 text-center text-sm mt-10">
-                  No tienes mensajes aún.
-                </p>
-              ) : (
-                conversations.map((c) => (
-                  <div
-                    key={c.userId}
-                    onClick={() => openChat(c)}
-                    className="p-2 border rounded-lg flex items-center justify-between hover:bg-gray-50 cursor-pointer"
-                  >
-                    {/* FOTO */}
-                    {c.user?.profilePicture ? (
-                      <img
-                        src={c.user.profilePicture}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <FontAwesomeIcon icon={faUser} />
-                      </div>
-                    )}
+			{/* BODY */}
+			<div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+				{loading || localLoading ? (
+					<div className="w-full h-full flex justify-center items-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent" />
+					</div>
+				) : (
+					<>
+						{messages.map((msg) => (
+							<Bubble key={msg.id} msg={msg} />
+						))}
 
-                    {/* NOMBRE + MENSAJE */}
-                    <div className="ml-3 flex-1">
-                      <p className="font-semibold text-sm">
-                        {c.user
-                          ? `${c.user.names} ${c.user.surnames}`
-                          : c.userId}
-                      </p>
+						{typing && (
+							<div className="text-sm text-gray-600 ml-1">escribiendo...</div>
+						)}
 
-                      {/* escribiendo */}
-                      {typingMap[c.userId] ? (
-                        <p className="text-xs text-green-600 italic">
-                          escribiendo...
-                        </p>
-                      ) : (
-                        <p className="text-xs text-gray-500 truncate w-40">
-                          {c.lastSenderId === user?.id && (
-                            <span className="font-semibold mr-1">Tú:</span>
-                          )}
-                          {c.lastMessage}
-                        </p>
-                      )}
-                    </div>
+						<div ref={bottomRef} />
+					</>
+				)}
+			</div>
 
-                    {/* HORA + BADGE */}
-                    <div className="text-right flex flex-col items-end gap-1">
-                      <span className="text-[11px] text-gray-400">
-                        {formatTime(c.time)}
-                      </span>
+			{/* INPUT */}
+			<div
+				className="flex items-center gap-2 px-3 border-t bg-white rounded-b-xl"
+				style={{ height: "56px", flexShrink: 0 }}
+			>
+				<input
+					className="flex-1 border rounded-full px-3 py-2 text-sm"
+					placeholder="Escribe un mensaje..."
+					value={content}
+					onChange={(e) => {
+						setContent(e.target.value);
+						sendTyping();
+					}}
+					onBlur={stopTyping}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							e.preventDefault();
+							handleSend();
+						}
+					}}
+				/>
 
-                      {unread[c.userId] > 0 && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {unread[c.userId]}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+				<button
+					className="bg-primary text-white px-4 py-2 rounded-full text-sm"
+					onClick={handleSend}
+				>
+					Enviar
+				</button>
+			</div>
+		</div>
+	);
 
-          {/* ===========================
-              CHAT
-          =========================== */}
-          {activeChat && (
-            <div className="flex flex-col flex-1">
+	// ======================================
+	// MAIN
+	// ======================================
+	return (
+		<>
+			{/* Floating button */}
+			{!open && !minimized && (
+				<button
+					onClick={() => openWidget()}
+					className="fixed bottom-6 right-6 bg-primary text-white p-4 rounded-full shadow-lg hover:scale-110 transition"
+				>
+					<FontAwesomeIcon icon={faComments} />
+				</button>
+			)}
 
-              {/* SUBHEADER */}
-              <div className="p-3 bg-gray-100 border-b flex items-center gap-2">
-                <button onClick={() => setActiveChat(null)}>
-                  <FontAwesomeIcon
-                    icon={faChevronLeft}
-                    className="text-gray-600"
-                  />
-                </button>
+			{/* WIDGET */}
+			{open && (
+				<div
+					className="fixed bottom-2 right-6 bg-white shadow-lg border rounded-xl flex flex-col z-50"
+					style={{ width: "24rem", height: "36rem" }}
+				>
+					<div
+						className="flex items-center justify-between px-4 bg-primary text-white rounded-t-xl"
+						style={{ height: "50px", flexShrink: 0 }}
+					>
+						<span className="font-medium text-sm">
+							{activeChat ? "Chat" : "Mensajes"}
+						</span>
 
-                {activeChat.user?.profilePicture ? (
-                  <img
-                    src={activeChat.user.profilePicture}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <FontAwesomeIcon icon={faUser} className="text-gray-500" />
-                  </div>
-                )}
+						<button onClick={closeWidget}>
+							<FontAwesomeIcon icon={faXmark} />
+						</button>
+					</div>
 
-                <span className="font-medium text-sm">
-                  {activeChat.user
-                    ? `${activeChat.user.names} ${activeChat.user.surnames}`
-                    : activeChat.userId}
-                </span>
-              </div>
-
-              {/* MENSAJES */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-1">
-                {mergedMessages.map((msg) => {
-                  const mine = msg.senderId === user?.id;
-
-                  return (
-                    <div key={msg.id} className="mb-1">
-                      <div
-                        className={`max-w-[70%] px-3 py-2 rounded-lg text-sm ${
-                          mine
-                            ? "bg-primary text-white ml-auto"
-                            : "bg-gray-100"
-                        }`}
-                      >
-                        {msg.content}
-
-                        {/* PALOMITAS DENTRO */}
-                        <span className="ml-2">
-                          {renderTicks(msg)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <div ref={bottomRef} />
-              </div>
-
-              {/* INPUT */}
-              <div className="p-3 border-t flex gap-2">
-                <input
-                  value={content}
-                  onChange={(e) => {
-                    setContent(e.target.value);
-                    sendTyping();
-                  }}
-                  onBlur={stopTyping}
-                  placeholder="Escribe..."
-                  className="flex-1 border rounded-lg px-3 py-1 text-sm"
-                />
-
-                <button
-                  onClick={handleSend}
-                  className="bg-primary text-white px-3 py-1 rounded-lg text-sm"
-                >
-                  Enviar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
+					<div className="flex-1 flex flex-col min-h-0">
+						{activeChat ? renderChat() : renderInbox()}
+					</div>
+				</div>
+			)}
+		</>
+	);
 }
