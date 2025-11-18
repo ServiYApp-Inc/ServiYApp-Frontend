@@ -57,6 +57,10 @@ export default function ChatWidget() {
 	const [conversations, setConversations] = useState<Conversation[]>([]);
 	const [activeChat, setActiveChat] = useState<Conversation | null>(null);
 	const [content, setContent] = useState("");
+	const [localLoading, setLocalLoading] = useState(false);
+
+	// *** 🔥 Partner local para poder limpiarlo ***
+	const [localPartner, setLocalPartner] = useState<any>(null);
 
 	const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -70,10 +74,16 @@ export default function ChatWidget() {
 		sendTyping,
 		stopTyping,
 		markAsRead,
+		loading,
 	} = useChatSocket(
 		activeChat ? user?.id || "" : "",
 		activeChat ? activeChat.userId : ""
 	);
+
+	// Sync partner → pero controlado
+	useEffect(() => {
+		if (partner) setLocalPartner(partner);
+	}, [partner]);
 
 	// ======================================
 	// LOAD INBOX
@@ -107,32 +117,35 @@ export default function ChatWidget() {
 
 		const conv = conversations.find((c) => c.userId === targetUserId);
 		if (conv) {
-			setActiveChat(conv);
+			setActiveChat(null);
+			setLocalPartner(null); // limpia partner
+
+			setTimeout(() => {
+				setActiveChat(conv);
+				markAsRead();
+			}, 80);
+
 			openWidget();
-			markAsRead();
 		}
 
 		clearTarget();
 	}, [targetUserId, conversations]);
 
 	// ======================================
-	// SCROLL TO BOTTOM
+	// SCROLL
 	// ======================================
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
 
 	// ======================================
-	// FORCE READ WHEN OPEN CHAT
-	// (Esto hace que las palomitas se vuelvan azul)
+	// MARK AS READ (blue ✓✓)
 	// ======================================
 	useEffect(() => {
 		if (!activeChat) return;
 
-		// Avisar al back
 		markAsRead();
 
-		// Actualizar visualmente
 		setTimeout(() => {
 			setMessages((prev: Message[]) =>
 				prev.map((m) =>
@@ -145,7 +158,7 @@ export default function ChatWidget() {
 	}, [activeChat]);
 
 	// ======================================
-	// SEND MESSAGE
+	// SEND
 	// ======================================
 	const handleSend = () => {
 		if (!content.trim()) return;
@@ -155,7 +168,7 @@ export default function ChatWidget() {
 	};
 
 	// ======================================
-	// TIME FORMAT
+	// TIME
 	// ======================================
 	const formatTime = (t: string) =>
 		new Date(t).toLocaleTimeString([], {
@@ -163,46 +176,30 @@ export default function ChatWidget() {
 			minute: "2-digit",
 		});
 
-
 	// ======================================
-	// CHECKMARKS ✓ • ✓✓ • ✓✓ azul
+	// CHECKMARKS
 	// ======================================
 	const renderTicks = (msg: Message) => {
-		// Aún no entregado → ✓ gris
-		if (!msg.delivered) {
-			return (
-				<span className="text-gray-400 text-[11px] select-none">✓</span>
-			);
-		}
-
-		// Entregado pero NO leído → ✓✓ gris
-		if (msg.delivered && !msg.read) {
-			return (
-				<span className="text-gray-500 text-[11px] select-none">✓✓</span>
-			);
-		}
-
-		// Leído → ✓✓ azul
-		return (
-			<span className="text-blue-500 font-semibold text-[11px] select-none">
-				✓✓
-			</span>
-		);
+		if (!msg.delivered) return <span className="text-gray-400 text-[11px]">✓</span>;
+		if (!msg.read) return <span className="text-gray-500 text-[11px]">✓✓</span>;
+		return <span className="text-blue-500 font-semibold text-[11px]">✓✓</span>;
 	};
 
 	// ======================================
-	// BUBBLE STYLES
+	// Bubble
 	// ======================================
 	const Bubble = ({ msg }: { msg: Message }) => {
 		const mine = msg.senderId === user?.id;
 
 		return (
-			<div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+			<div
+				className={`flex ${
+					mine ? "justify-end" : "justify-start"
+				} animate-[fadeIn_.25s_ease,slideIn_.25s_ease]`}
+			>
 				<div
 					className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] shadow-sm ${
-						mine
-							? "bg-primary text-white"
-							: "bg-gray-200 text-gray-700"
+						mine ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
 					}`}
 					style={{
 						borderBottomRightRadius: mine ? "4px" : "20px",
@@ -211,7 +208,6 @@ export default function ChatWidget() {
 				>
 					<div>{msg.content}</div>
 
-					{/* Hora + palomitas */}
 					<div className="mt-1 flex justify-end gap-1 text-[10px] opacity-80">
 						{formatTime(msg.time)}
 						{mine && renderTicks(msg)}
@@ -222,7 +218,7 @@ export default function ChatWidget() {
 	};
 
 	// ======================================
-	// INBOX LIST
+	// INBOX
 	// ======================================
 	const renderInbox = () => (
 		<div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
@@ -237,28 +233,29 @@ export default function ChatWidget() {
 					key={c.userId}
 					className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer border"
 					onClick={() => {
-						setActiveChat(c);
-						markAsRead(); // importante
+						setLocalLoading(true);
+						setActiveChat(null);
+						setLocalPartner(null); // limpiar partner
+						setMessages([]);
+
+						setTimeout(() => {
+							setActiveChat(c);
+							markAsRead();
+							setLocalLoading(false);
+						}, 150);
 					}}
 				>
-					{/* FOTO */}
 					{c.user?.profilePicture ? (
-						<img
-							src={c.user.profilePicture}
-							className="w-10 h-10 rounded-full object-cover"
-						/>
+						<img src={c.user.profilePicture} className="w-10 h-10 rounded-full object-cover" />
 					) : (
 						<div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
 							<FontAwesomeIcon icon={faUser} className="text-gray-600" />
 						</div>
 					)}
 
-					{/* NOMBRE + LAST MESSAGE */}
 					<div className="flex-1">
 						<div className="font-medium text-sm">
-							{c.user
-								? `${c.user.names} ${c.user.surnames}`
-								: c.userId}
+							{c.user ? `${c.user.names} ${c.user.surnames}` : c.userId}
 						</div>
 						<div className="text-xs text-gray-500 truncate">
 							{c.lastSenderId === user?.id ? "Tú: " : ""}
@@ -266,7 +263,6 @@ export default function ChatWidget() {
 						</div>
 					</div>
 
-					{/* HORA */}
 					<div className="text-[11px] text-gray-400">{formatTime(c.time)}</div>
 				</div>
 			))}
@@ -278,7 +274,7 @@ export default function ChatWidget() {
 	// ======================================
 	const renderChat = () => (
 		<div className="flex flex-col h-full">
-			{/* Header */}
+			{/* HEADER */}
 			<div
 				className="flex items-center gap-2 px-3 border-b bg-gray-100"
 				style={{ height: "54px", flexShrink: 0 }}
@@ -287,9 +283,9 @@ export default function ChatWidget() {
 					<FontAwesomeIcon icon={faChevronLeft} className="text-gray-600" />
 				</button>
 
-				{partner?.profilePicture ? (
+				{localPartner?.profilePicture ? (
 					<img
-						src={partner.profilePicture}
+						src={localPartner.profilePicture}
 						className="w-8 h-8 rounded-full object-cover"
 					/>
 				) : (
@@ -299,21 +295,29 @@ export default function ChatWidget() {
 				)}
 
 				<div className="font-medium text-sm">
-					{partner ? `${partner.names} ${partner.surnames}` : "Usuario"}
+					{localPartner ? `${localPartner.names} ${localPartner.surnames}` : ""}
 				</div>
 			</div>
 
-			{/* Mensajes */}
-			<div className="flex-1 overflow-y-auto px-3 py-3 space-y-0 min-h-0">
-				{messages.map((msg) => (
-					<Bubble key={msg.id} msg={msg} />
-				))}
+			{/* BODY */}
+			<div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+				{loading || localLoading ? (
+					<div className="w-full h-full flex justify-center items-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent" />
+					</div>
+				) : (
+					<>
+						{messages.map((msg) => (
+							<Bubble key={msg.id} msg={msg} />
+						))}
 
-				{typing && (
-					<div className="text-sm text-gray-600 ml-1">escribiendo...</div>
+						{typing && (
+							<div className="text-sm text-gray-600 ml-1">escribiendo...</div>
+						)}
+
+						<div ref={bottomRef} />
+					</>
 				)}
-
-				<div ref={bottomRef} />
 			</div>
 
 			{/* INPUT */}
@@ -330,6 +334,12 @@ export default function ChatWidget() {
 						sendTyping();
 					}}
 					onBlur={stopTyping}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							e.preventDefault();
+							handleSend();
+						}
+					}}
 				/>
 
 				<button
@@ -347,7 +357,7 @@ export default function ChatWidget() {
 	// ======================================
 	return (
 		<>
-			{/* Botón flotante */}
+			{/* Floating button */}
 			{!open && !minimized && (
 				<button
 					onClick={() => openWidget()}
@@ -357,7 +367,7 @@ export default function ChatWidget() {
 				</button>
 			)}
 
-			{/* Widget */}
+			{/* WIDGET */}
 			{open && (
 				<div
 					className="fixed bottom-2 right-6 bg-white shadow-lg border rounded-xl flex flex-col z-50"
