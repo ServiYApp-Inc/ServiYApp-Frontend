@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import StartChatButton from "@/app/components/StartChatButton";
 import { motion } from "framer-motion";
-import { IServiceOrder } from "../interfaces/IServiceOrder2";
+import { IServiceOrder } from "../interfaces/IServiceOrder";
 
 interface AppointmentCardProps {
 	order: IServiceOrder;
