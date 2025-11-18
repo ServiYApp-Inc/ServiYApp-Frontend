@@ -6,401 +6,375 @@ import { useChatWidgetStore } from "@/app/store/chatWidget.store";
 import { Api } from "@/app/services/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faComments,
-  faUser,
-  faChevronLeft,
-  faXmark,
+	faComments,
+	faUser,
+	faChevronLeft,
+	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
+
 import { useChatSocket } from "@/app/(app)/app-services/useChatSocket";
 
+// =========================================================
+// TYPES
+// =========================================================
 interface Conversation {
-  userId: string;
-  lastMessage: string;
-  lastSenderId?: string;
-  time: string;
-  read: boolean;
-  delivered?: boolean;
-  user?: {
-    id: string;
-    names: string;
-    surnames: string;
-    profilePicture?: string;
-  };
+	userId: string;
+	lastMessage: string;
+	lastSenderId?: string;
+	time: string;
+	read: boolean;
+	delivered?: boolean;
+	user?: {
+		id: string;
+		names: string;
+		surnames: string;
+		profilePicture?: string;
+	};
 }
 
 interface Message {
-  id: string;
-  content: string;
-  senderId: string;
-  receiverId: string;
-  time: string;
-  delivered: boolean;
-  read: boolean;
+	id: string;
+	content: string;
+	senderId: string;
+	receiverId: string;
+	time: string;
+	delivered: boolean;
+	read: boolean;
 }
 
+// =========================================================
+// COMPONENT
+// =========================================================
 export default function ChatWidget() {
-  const { user, token } = useAuthStore();
+	const { user, token } = useAuthStore();
+	const {
+		open,
+		minimized,
+		targetUserId,
+		openWidget,
+		closeWidget,
+		clearTarget,
+	} = useChatWidgetStore();
 
-  const {
-    open,
-    minimized,
-    targetUserId,
-    openWidget,
-    closeWidget,
-    clearTarget,
-  } = useChatWidgetStore();
+	const [conversations, setConversations] = useState<Conversation[]>([]);
+	// const [unread, setUnread] = useState<Record<string, number>>({});
+	const [activeChat, setActiveChat] = useState<Conversation | null>(null);
+	const [content, setContent] = useState("");
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [unread, setUnread] = useState<Record<string, number>>({});
-  const [activeChat, setActiveChat] = useState<Conversation | null>(null);
-  const [loadedMessages, setLoadedMessages] = useState<Message[]>([]);
-  const [content, setContent] = useState("");
-  const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
+	const bottomRef = useRef<HTMLDivElement>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+	// SOCKET HOOK
+	const {
+		messages,
+		partner,
+		typing,
+		loading,
+		online,
+		lastSeen,
+		sendMessage,
+		sendTyping,
+		stopTyping,
+		markAsRead,
+	} = useChatSocket(
+		activeChat ? user?.id || "" : "",
+		activeChat ? activeChat.userId : ""
+	);
 
-  // SOCKET
-  const {
-    socket,
-    messages: socketMessages,
-    typing,
-    sendMessage,
-    sendTyping,
-    stopTyping,
-    markAsRead,
-  } = useChatSocket(
-    activeChat ? user?.id || "" : "",
-    activeChat ? activeChat.userId : ""
-  );
+	// =========================================================
+	// CARGAR INBOX
+	// =========================================================
+	useEffect(() => {
+		if (!user?.id) return;
 
-  // MERGE seguro de mensajes
-  const mergedMessages = [
-    ...loadedMessages,
-    ...(Array.isArray(socketMessages) ? socketMessages : []),
-  ].filter(
-    (msg, i, arr) => i === arr.findIndex((m) => m.id === msg.id)
-  );
+		const load = async () => {
+			try {
+				const res = await fetch(
+					`${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
+					{ headers: { Authorization: `Bearer ${token}` } }
+				);
 
-  // ===============================
-  // CARGAR CONVERSACIONES
-  // ===============================
-  useEffect(() => {
-    if (!user?.id) return;
+				const data: Conversation[] = await res.json();
 
-    const load = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+				data.forEach((c: any) => {
+					if (c.lastMessageObj) c.lastSenderId = c.lastMessageObj.senderId;
+				});
 
-        const data = await res.json();
+				setConversations(data);
 
-        // Agregamos lastSenderId si viene en el backend
-        data.forEach((c: any) => {
-          if (c.lastMessageObj) c.lastSenderId = c.lastMessageObj.senderId;
-        });
+				// 🔴 NOTIFICACIONES DESACTIVADAS
+				/*
+				const unreadMap: Record<string, number> = {};
+				data.forEach((c) => {
+					if (!c.read) unreadMap[c.userId] = (unreadMap[c.userId] || 0) + 1;
+				});
+				setUnread(unreadMap);
+				*/
+			} catch (err) {
+				console.error("Error cargando conversaciones:", err);
+			}
+		};
 
-        setConversations(data);
+		load();
+	}, [user?.id, token]);
 
-        const unreadMap: Record<string, number> = {};
-        data.forEach((c: Conversation) => {
-          if (!c.read) unreadMap[c.userId] = (unreadMap[c.userId] || 0) + 1;
-        });
+	// =========================================================
+	// ABRIR CHAT EXTERNO
+	// =========================================================
+	useEffect(() => {
+		if (!targetUserId) return;
 
-        setUnread(unreadMap);
-      } catch (err) {
-        console.error("Error cargando conversaciones:", err);
-      }
-    };
+		const conv = conversations.find((c) => c.userId === targetUserId);
+		if (conv) {
+			openChat(conv);
+			openWidget();
+		}
 
-    load();
-  }, [user?.id, token]);
+		clearTarget();
+	}, [targetUserId, conversations]);
 
-  // ===============================
-  // SOCKET → TYPING
-  // ===============================
- 
-  // ===============================
-  // SOCKET → actualización inbox
-  // ===============================
-  useEffect(() => {
-    if (!socketMessages || socketMessages.length === 0) return;
+	// =========================================================
+	// ABRIR CHAT
+	// =========================================================
+	const openChat = (conv: Conversation) => {
+		setActiveChat(conv);
 
-    const lastMsg = socketMessages[socketMessages.length - 1];
-    if (!lastMsg) return;
+		// 🔴 NOTIFICACIONES DESACTIVADAS
+		// setUnread((prev) => ({ ...prev, [conv.userId]: 0 }));
 
-    setConversations((prev) => {
-      const updated = prev.map((c) =>
-        c.userId === lastMsg.senderId || c.userId === lastMsg.receiverId
-          ? {
-              ...c,
-              lastMessage: lastMsg.content,
-              time: lastMsg.time,
-              lastSenderId: lastMsg.senderId,
-              delivered: lastMsg.delivered,
-              read: lastMsg.read,
-            }
-          : c
-      );
+		markAsRead();
+	};
 
-      return updated.sort(
-        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-      );
-    });
-  }, [socketMessages]);
+	// =========================================================
+	// SCROLL AUTO
+	// =========================================================
+	useEffect(() => {
+		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
-  // ===============================
-  // targetUserId → abre chat desde botón externo
-  // ===============================
-  useEffect(() => {
-    if (!targetUserId) return;
+	// =========================================================
+	// ENVIAR MENSAJE
+	// =========================================================
+	const handleSend = () => {
+		if (!content.trim()) return;
+		sendMessage(content);
+		setContent("");
+		stopTyping();
+	};
 
-    const conv = conversations.find((c) => c.userId === targetUserId);
-    if (conv) {
-      openChat(conv);
-      openWidget();
-    }
+	// =========================================================
+	// ✓✓ CHECKS
+	// =========================================================
+	const renderTicks = (msg: Message) => {
+		if (msg.read) return <span className="text-blue-400 text-xs">✓✓</span>;
+		if (msg.delivered) return <span className="text-gray-500 text-xs">✓✓</span>;
+		return <span className="text-gray-400 text-xs">✓</span>;
+	};
 
-    clearTarget();
-  }, [targetUserId, conversations]);
+	// =========================================================
+	// HORA
+	// =========================================================
+	const formatTime = (t: string) =>
+		new Date(t).toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 
-  // ===============================
-  // ABRIR CHAT
-  // ===============================
-  const openChat = async (conv: Conversation) => {
-    setActiveChat(conv);
-    setUnread((prev) => ({ ...prev, [conv.userId]: 0 }));
+	// 🔴 NOTIFICACIONES DESACTIVADAS
+	// const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
 
-    try {
-      const res = await Api.get(
-        `/chat/messages?userA=${user?.id}&userB=${conv.userId}`
-      );
+	// =========================================================
+	// RENDER
+	// =========================================================
+	return (
+		<>
+			{/* BOTÓN FLOTANTE */}
+			{!open && !minimized && (
+				<button
+					onClick={() => openWidget()}
+					className="fixed bottom-6 right-6 bg-primary text-white rounded-full shadow-xl hover:scale-110 transition-all duration-300 p-4 animate-[fadeInUp_.3s]"
+				>
+					<FontAwesomeIcon icon={faComments} size="lg" />
 
-      setLoadedMessages(res.data.messages || []);
-      markAsRead();
-    } catch (err) {
-      console.error("Error cargando chat:", err);
-    }
-  };
+					{/* 🔴 DESACTIVADO */}
+					{/*
+					{totalUnread > 0 && (
+						<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+							{totalUnread}
+						</span>
+					)}
+					*/}
+				</button>
+			)}
 
-  // AUTO-SCROLL
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mergedMessages]);
+			{/* WIDGET */}
+			{open && (
+				<div className="fixed bottom-2 right-6 w-80 h-[32rem] bg-white shadow-lg border rounded-xl overflow-hidden z-50 flex flex-col animate-[fadeIn_.25s]">
+					{/* HEADER */}
+					<div className="bg-primary text-white p-2 flex justify-between items-center">
+						<span className="font-medium text-sm">
+							{activeChat ? "Chat" : "Mensajes"}
+						</span>
 
-  const handleSend = () => {
-    if (!content.trim()) return;
-    sendMessage(content);
-    setContent("");
-    stopTyping();
-  };
+						<button onClick={closeWidget}>
+							<FontAwesomeIcon icon={faXmark} />
+						</button>
+					</div>
 
-  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
+					{/* INBOX */}
+					{!activeChat && (
+						<div className="flex-1 overflow-y-auto p-3 space-y-2 animate-[fadeIn_.2s]">
+							{conversations.length === 0 ? (
+								<p className="text-gray-500 text-center mt-10">
+									No tienes mensajes.
+								</p>
+							) : (
+								conversations.map((c) => (
+									<div
+										key={c.userId}
+										onClick={() => openChat(c)}
+										className="p-2 border rounded-lg flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+									>
+										{/* FOTO */}
+										{c.user?.profilePicture ? (
+											<img
+												src={c.user.profilePicture}
+												className="w-10 h-10 rounded-full object-cover"
+											/>
+										) : (
+											<div className="w-10 h-10 bg-gray-200 rounded-full flex justify-center items-center">
+												<FontAwesomeIcon icon={faUser} />
+											</div>
+										)}
 
-  // PALOMITAS
-  const renderTicks = (msg: Message) => {
-    if (msg.read) return <span className="text-blue-400 text-xs">✓✓</span>;
-    if (msg.delivered) return <span className="text-gray-500 text-xs">✓✓</span>;
-    return <span className="text-gray-400 text-xs">✓</span>;
-  };
+										<div className="ml-3 flex-1">
+											<p className="font-semibold text-sm">
+												{c.user
+													? `${c.user.names} ${c.user.surnames}`
+													: c.userId}
+											</p>
+											<p className="text-xs text-gray-500 truncate w-40">
+												{c.lastMessage}
+											</p>
+										</div>
 
-  // FORMATEAR HORA
-  const formatTime = (t: string) =>
-    new Date(t).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+										<div className="text-right">
+											<span className="text-[11px] text-gray-400">
+												{formatTime(c.time)}
+											</span>
 
-  return (
-    <>
-      {/* GLOBITO */}
-      {!open && !minimized && (
-        <button
-          onClick={() => openWidget()}
-          className="fixed bottom-6 right-6 bg-primary text-white rounded-full shadow-xl hover:scale-110 transition-all duration-300 p-4 animate-chat-slide-up-fade"
-        >
-          <FontAwesomeIcon icon={faComments} size="lg" />
+											{/* 🔴 DESACTIVADO */}
+											{/*
+											{unread[c.userId] > 0 && (
+												<span className="block bg-red-500 text-white text-xs px-2 py-0.5 rounded-full mt-1">
+													{unread[c.userId]}
+												</span>
+											)}
+											*/}
+										</div>
+									</div>
+								))
+							)}
+						</div>
+					)}
 
-          {totalUnread > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-              {totalUnread}
-            </span>
-          )}
-        </button>
-      )}
+					{/* CHAT */}
+					{activeChat && (
+						<div className="flex flex-col h-full animate-[fadeIn_.2s]">
+							{/* SUBHEADER */}
+							<div className="p-3 bg-gray-100 border-b flex items-center gap-2">
+								<button onClick={() => setActiveChat(null)}>
+									<FontAwesomeIcon icon={faChevronLeft} className="text-gray-600" />
+								</button>
 
-      {/* ===============================
-          WIDGET
-      =============================== */}
-      {open && (
-        <div className="fixed bottom-2 right-6 w-80 h-[32rem] bg-white shadow-lg border rounded-xl overflow-hidden z-50 flex flex-col animate-chat-slide-up-fade">
+								{/* FOTO */}
+								{partner?.profilePicture ? (
+									<img
+										src={partner.profilePicture}
+										className="w-8 h-8 rounded-full object-cover"
+									/>
+								) : (
+									<div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+										<FontAwesomeIcon icon={faUser} className="text-gray-500" />
+									</div>
+								)}
 
-          {/* HEADER */}
-          <div className="bg-primary text-white p-2 flex justify-between items-center">
-            <span className="font-medium text-sm">
-              {activeChat ? "Chat" : "Mis Mensajes"}
-            </span>
+								{/* NOMBRE */}
+								<div className="flex flex-col">
+									<span className="font-medium text-sm">
+										{partner
+											? `${partner.names} ${partner.surnames}`
+											: activeChat?.userId}
+									</span>
+								</div>
 
-            <button onClick={() => closeWidget()}>
-              <FontAwesomeIcon icon={faXmark} className="text-white" />
-            </button>
-          </div>
+								{typing && (
+									<span className="text-[10px] text-green-600 ml-2">
+										escribiendo...
+									</span>
+								)}
+							</div>
 
-          {/* ===========================
-              INBOX
-          =========================== */}
-          {!activeChat && (
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {conversations.length === 0 ? (
-                <p className="text-gray-500 text-center text-sm mt-10">
-                  No tienes mensajes aún.
-                </p>
-              ) : (
-                conversations.map((c) => (
-                  <div
-                    key={c.userId}
-                    onClick={() => openChat(c)}
-                    className="p-2 border rounded-lg flex items-center justify-between hover:bg-gray-50 cursor-pointer"
-                  >
-                    {/* FOTO */}
-                    {c.user?.profilePicture ? (
-                      <img
-                        src={c.user.profilePicture}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <FontAwesomeIcon icon={faUser} />
-                      </div>
-                    )}
+							{/* MENSAJES */}
+							<div className="flex-1 overflow-y-auto p-4 space-y-2">
+								{messages.map((msg) => {
+									const mine = msg.senderId === user?.id;
 
-                    {/* NOMBRE + MENSAJE */}
-                    <div className="ml-3 flex-1">
-                      <p className="font-semibold text-sm">
-                        {c.user
-                          ? `${c.user.names} ${c.user.surnames}`
-                          : c.userId}
-                      </p>
+									return (
+										<div
+											key={msg.id}
+											className={`mb-1 ${mine ? "text-right" : ""} animate-[fadeIn_.2s]`}
+										>
+											<div
+												className={`max-w-[70%] px-3 py-2 rounded-lg text-sm shadow-sm ${
+													mine
+														? "bg-primary text-white ml-auto"
+														: "bg-gray-100 border"
+												}`}
+											>
+												{msg.content}
 
-                      {/* escribiendo */}
-                      {typingMap[c.userId] ? (
-                        <p className="text-xs text-green-600 italic">
-                          escribiendo...
-                        </p>
-                      ) : (
-                        <p className="text-xs text-gray-500 truncate w-40">
-                          {c.lastSenderId === user?.id && (
-                            <span className="font-semibold mr-1">Tú:</span>
-                          )}
-                          {c.lastMessage}
-                        </p>
-                      )}
-                    </div>
+												<div className="mt-1 flex justify-end items-center gap-2 opacity-80 text-[10px]">
+													{formatTime(msg.time)}
+													{mine && renderTicks(msg)}
+												</div>
+											</div>
+										</div>
+									);
+								})}
 
-                    {/* HORA + BADGE */}
-                    <div className="text-right flex flex-col items-end gap-1">
-                      <span className="text-[11px] text-gray-400">
-                        {formatTime(c.time)}
-                      </span>
+								{typing && (
+									<div className="text-xs text-gray-400 italic animate-pulse">
+										escribiendo...
+									</div>
+								)}
 
-                      {unread[c.userId] > 0 && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {unread[c.userId]}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+								<div ref={bottomRef} />
+							</div>
 
-          {/* ===========================
-              CHAT
-          =========================== */}
-          {activeChat && (
-            <div className="flex flex-col flex-1">
+							{/* INPUT */}
+							<div className="p-3 border-t flex gap-2">
+								<input
+									value={content}
+									onChange={(e) => {
+										setContent(e.target.value);
+										sendTyping();
+									}}
+									onBlur={stopTyping}
+									placeholder="Escribe..."
+									className="flex-1 border rounded-lg px-3 py-1 text-sm shadow-inner"
+								/>
 
-              {/* SUBHEADER */}
-              <div className="p-3 bg-gray-100 border-b flex items-center gap-2">
-                <button onClick={() => setActiveChat(null)}>
-                  <FontAwesomeIcon
-                    icon={faChevronLeft}
-                    className="text-gray-600"
-                  />
-                </button>
-
-                {activeChat.user?.profilePicture ? (
-                  <img
-                    src={activeChat.user.profilePicture}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <FontAwesomeIcon icon={faUser} className="text-gray-500" />
-                  </div>
-                )}
-
-                <span className="font-medium text-sm">
-                  {activeChat.user
-                    ? `${activeChat.user.names} ${activeChat.user.surnames}`
-                    : activeChat.userId}
-                </span>
-              </div>
-
-              {/* MENSAJES */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-1">
-                {mergedMessages.map((msg) => {
-                  const mine = msg.senderId === user?.id;
-
-                  return (
-                    <div key={msg.id} className="mb-1">
-                      <div
-                        className={`max-w-[70%] px-3 py-2 rounded-lg text-sm ${
-                          mine
-                            ? "bg-primary text-white ml-auto"
-                            : "bg-gray-100"
-                        }`}
-                      >
-                        {msg.content}
-
-                        {/* PALOMITAS DENTRO */}
-                        <span className="ml-2">
-                          {renderTicks(msg)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <div ref={bottomRef} />
-              </div>
-
-              {/* INPUT */}
-              <div className="p-3 border-t flex gap-2">
-                <input
-                  value={content}
-                  onChange={(e) => {
-                    setContent(e.target.value);
-                    sendTyping();
-                  }}
-                  onBlur={stopTyping}
-                  placeholder="Escribe..."
-                  className="flex-1 border rounded-lg px-3 py-1 text-sm"
-                />
-
-                <button
-                  onClick={handleSend}
-                  className="bg-primary text-white px-3 py-1 rounded-lg text-sm"
-                >
-                  Enviar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
+								<button
+									onClick={handleSend}
+									className="bg-primary text-white px-3 py-1 rounded-lg text-sm hover:bg-primary-hover transition-all duration-200"
+								>
+									Enviar
+								</button>
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+		</>
+	);
 }

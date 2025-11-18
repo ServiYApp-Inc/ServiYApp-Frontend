@@ -4,150 +4,170 @@ import { useEffect, useRef, useState } from "react";
 import io, { Socket } from "socket.io-client";
 
 export interface ChatMessage {
-	id: string;
-	content: string;
-	senderId: string;
-	receiverId: string;
-	time: string;
-	delivered: boolean;
-	read: boolean;
+    id: string;
+    content: string;
+    senderId: string;
+    receiverId: string;
+    time: string;
+    delivered: boolean;
+    read: boolean;
 }
 
 export function useChatSocket(userId: string, receiverId?: string) {
-	const socketRef = useRef<Socket | null>(null);
+    const socketRef = useRef<Socket | null>(null);
 
-	const [messages, setMessages] = useState<ChatMessage[]>([]);
-	const [online, setOnline] = useState(false);
-	const [typing, setTyping] = useState(false);
-	const [isSending, setIsSending] = useState(false);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [partner, setPartner] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
 
-	// ======================
-	// 🔵 CONECTAR SOCKET
-	// ======================
-	useEffect(() => {
-		if (!userId) return;
+    // NEW: Online / offline + última conexión
+    const [online, setOnline] = useState(false);
+    const [lastSeen, setLastSeen] = useState<string | null>(null);
 
-		const socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
-			transports: ["websocket"],
-			query: { userId },
-		});
+    const [typing, setTyping] = useState(false);
 
-		socketRef.current = socket;
+    // Sound
+    const soundRef = useRef<HTMLAudioElement | null>(null);
 
-		// Log de conexión
-		socket.on("connect", () => {
-			console.log("🟢 Socket conectado:", socket.id);
+    useEffect(() => {
+        soundRef.current = new Audio("/sounds/message.mp3"); // pon el archivo en /public/sounds
+    }, []);
 
-			// FIX: si el receptor soy yo mismo en otra pantalla
-			if (userId === receiverId) {
-				setOnline(true);
-			}
-		});
+    // ======================
+    // CONNECT
+    // ======================
+    useEffect(() => {
+        if (!userId) return;
 
-		// Cargar historial al conectar
-		if (receiverId) {
-			socket.emit("getHistory", { userId, receiverId });
-		}
+        const socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
+            transports: ["websocket"],
+            query: { userId },
+        });
 
-		// Recibir historial
-		socket.on("messagesHistory", (history) => {
-			if (history && Array.isArray(history.messages)) {
-				setMessages(history.messages);
-			} else {
-				setMessages([]);
-			}
-		});
+        socketRef.current = socket;
 
-		// ======================
-		// 🔥 FIX ONLINE / OFFLINE
-		// ======================
-		socket.on("userOnline", ({ userId: onlineId }) => {
-			if (onlineId === receiverId) {
-				setOnline(true);
-			}
-		});
+        socket.on("connect", () => {
+            console.log("🟢 Conectado:", socket.id);
+        });
 
-		socket.on("userOffline", ({ userId: offlineId }) => {
-			if (offlineId === receiverId) {
-				setOnline(false);
-			}
-		});
+        // Obtener historial
+        if (receiverId) {
+            setLoading(true);
+            socket.emit("getHistory", { userId, receiverId });
+        }
 
-		// ======================
-		// 📩 NUEVOS MENSAJES
-		// ======================
-		socket.on("receiveMessage", (msg: ChatMessage) => {
-			const isBetween =
-				(msg.senderId === userId && msg.receiverId === receiverId) ||
-				(msg.senderId === receiverId && msg.receiverId === userId);
+        socket.on("messagesHistory", (history) => {
+            setPartner(history.partner);
+            setMessages(history.messages || []);
+            setLoading(false);
+        });
 
-			if (isBetween) {
-				setMessages((prev) => [...prev, msg]);
-			}
-		});
+        // ======================
+        // ONLINE / OFFLINE
+        // ======================
+        socket.on("userOnline", ({ userId: id }) => {
+            if (id === receiverId) {
+                setOnline(true);
+            }
+        });
 
-		// ======================
-		// ✏️ TYPING
-		// ======================
-		socket.on("typing", ({ from }) => {
-			if (from === receiverId) setTyping(true);
-		});
+        socket.on("userOffline", ({ userId: id }) => {
+            if (id === receiverId) {
+                setOnline(false);
+                setLastSeen(new Date().toISOString()); // guardamos última conexión
+            }
+        });
 
-		socket.on("stopTyping", ({ from }) => {
-			if (from === receiverId) setTyping(false);
-		});
+        // ======================
+        // NEW MESSAGE
+        // ======================
+        socket.on("receiveMessage", (msg) => {
+            const isBetween =
+                (msg.senderId === userId && msg.receiverId === receiverId) ||
+                (msg.senderId === receiverId && msg.receiverId === userId);
 
-		// Cleanup
-		return () => {
-			socket.disconnect();
-		};
-	}, [userId, receiverId]);
+            if (isBetween) {
+                setMessages((prev) => [...prev, msg]);
 
-	// ======================
-	// ✉️ ENVIAR MENSAJE
-	// ======================
-	const sendMessage = (content: string) => {
-		if (!socketRef.current || !receiverId) return;
+                // sound only if it's NOT me
+                if (msg.senderId !== userId) {
+                    soundRef.current?.play().catch(() => {});
+                }
+            }
+        });
 
-		setIsSending(true);
+        // Delivered ✓✓ gris
+        socket.on("messageDelivered", ({ messageId }) => {
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m.id === messageId ? { ...m, delivered: true } : m
+                )
+            );
+        });
 
-		socketRef.current.emit(
-			"sendMessage",
-			{ senderId: userId, receiverId, content },
-			() => setIsSending(false)
-		);
-	};
+        // Read ✓✓ azul
+        socket.on("allMessagesRead", ({ from }) => {
+            if (from === receiverId) {
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m.receiverId === userId ? { ...m, read: true } : m
+                    )
+                );
+            }
+        });
 
-	// ======================
-	// ✏️ ENVIAR TYPING
-	// ======================
-	const sendTyping = () => {
-		if (!receiverId) return;
-		socketRef.current?.emit("typing", { from: userId, to: receiverId });
-	};
+        // TYPING
+        socket.on("typing", ({ from }) => {
+            if (from === receiverId) setTyping(true);
+        });
 
-	const stopTyping = () => {
-		if (!receiverId) return;
-		socketRef.current?.emit("stopTyping", { from: userId, to: receiverId });
-	};
+        socket.on("stopTyping", ({ from }) => {
+            if (from === receiverId) setTyping(false);
+        });
 
-	// ======================
-	// 👁️ MARCAR COMO LEÍDO
-	// ======================
-	const markAsRead = () => {
-		if (!receiverId) return;
-		socketRef.current?.emit("markAsRead", { userId, receiverId });
-	};
+        return () => {
+            socket.disconnect();
+        };
+    }, [userId, receiverId]);
 
-	return {
-		socket: socketRef.current,
-		messages,
-		online,
-		typing,
-		isSending,
-		sendMessage,
-		sendTyping,
-		stopTyping,
-		markAsRead,
-	};
+    // ======================
+    // SEND MESSAGE
+    // ======================
+    const sendMessage = (content: string) => {
+        if (!socketRef.current || !receiverId) return;
+
+        socketRef.current.emit("sendMessage", {
+            senderId: userId,
+            receiverId,
+            content,
+        });
+    };
+
+    // TYPING
+    const sendTyping = () => {
+        socketRef.current?.emit("typing", { from: userId, to: receiverId });
+    };
+
+    const stopTyping = () => {
+        socketRef.current?.emit("stopTyping", { from: userId, to: receiverId });
+    };
+
+    // READ
+    const markAsRead = () => {
+        socketRef.current?.emit("markAsRead", { userId, receiverId });
+    };
+
+    return {
+        socket: socketRef.current,
+        messages,
+        partner,
+        loading,
+        typing,
+        online,
+        lastSeen,
+        sendMessage,
+        sendTyping,
+        stopTyping,
+        markAsRead,
+    };
 }
