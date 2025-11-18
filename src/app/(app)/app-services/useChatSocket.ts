@@ -17,12 +17,24 @@ export function useChatSocket(userId: string, receiverId?: string) {
 	const socketRef = useRef<Socket | null>(null);
 
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
+	const [partner, setPartner] = useState<any>(null);
+	const [loading, setLoading] = useState(false);
+
+	// NEW: Online / offline + última conexión
 	const [online, setOnline] = useState(false);
+	const [lastSeen, setLastSeen] = useState<string | null>(null);
+
 	const [typing, setTyping] = useState(false);
-	const [isSending, setIsSending] = useState(false);
+
+	// Sound
+	const soundRef = useRef<HTMLAudioElement | null>(null);
+
+	useEffect(() => {
+		soundRef.current = new Audio("/sounds/message.mp3"); // pon el archivo en /public/sounds
+	}, []);
 
 	// ======================
-	// 🔵 CONECTAR SOCKET
+	// CONNECT
 	// ======================
 	useEffect(() => {
 		if (!userId) return;
@@ -34,61 +46,77 @@ export function useChatSocket(userId: string, receiverId?: string) {
 
 		socketRef.current = socket;
 
-		// Log de conexión
 		socket.on("connect", () => {
-			console.log("🟢 Socket conectado:", socket.id);
-
-			// FIX: si el receptor soy yo mismo en otra pantalla
-			if (userId === receiverId) {
-				setOnline(true);
-			}
+			console.log("🟢 Conectado:", socket.id);
 		});
 
-		// Cargar historial al conectar
+		// Obtener historial
 		if (receiverId) {
+			setLoading(true);
 			socket.emit("getHistory", { userId, receiverId });
 		}
 
-		// Recibir historial
 		socket.on("messagesHistory", (history) => {
-			if (history && Array.isArray(history.messages)) {
-				setMessages(history.messages);
-			} else {
-				setMessages([]);
-			}
+			setPartner(history.partner);
+			setMessages(history.messages || []);
+			setLoading(false);
 		});
 
 		// ======================
-		// 🔥 FIX ONLINE / OFFLINE
+		// ONLINE / OFFLINE
 		// ======================
-		socket.on("userOnline", ({ userId: onlineId }) => {
-			if (onlineId === receiverId) {
+		socket.on("userOnline", ({ userId: id }) => {
+			if (id === receiverId) {
 				setOnline(true);
 			}
 		});
 
-		socket.on("userOffline", ({ userId: offlineId }) => {
-			if (offlineId === receiverId) {
+		socket.on("userOffline", ({ userId: id }) => {
+			if (id === receiverId) {
 				setOnline(false);
+				setLastSeen(new Date().toISOString()); // guardamos última conexión
 			}
 		});
 
 		// ======================
-		// 📩 NUEVOS MENSAJES
+		// NEW MESSAGE
 		// ======================
-		socket.on("receiveMessage", (msg: ChatMessage) => {
+		socket.on("receiveMessage", (msg) => {
 			const isBetween =
 				(msg.senderId === userId && msg.receiverId === receiverId) ||
 				(msg.senderId === receiverId && msg.receiverId === userId);
 
 			if (isBetween) {
 				setMessages((prev) => [...prev, msg]);
+
+				// sound only if it's NOT me
+				if (msg.senderId !== userId) {
+					soundRef.current?.play().catch(() => {});
+				}
 			}
 		});
 
-		// ======================
-		// ✏️ TYPING
-		// ======================
+		// Delivered ✓✓ gris
+		socket.on("messageDelivered", ({ messageId }) => {
+			setMessages((prev) =>
+				prev.map((m) =>
+					m.id === messageId ? { ...m, delivered: true } : m
+				)
+			);
+		});
+
+		// Read ✓✓ azul
+		socket.on("allMessagesRead", ({ from }) => {
+			if (from === receiverId) {
+				setMessages((prev) =>
+					prev.map((m) =>
+						m.receiverId === userId ? { ...m, read: true } : m
+					)
+				);
+			}
+		});
+
+		// TYPING
 		socket.on("typing", ({ from }) => {
 			if (from === receiverId) setTyping(true);
 		});
@@ -97,54 +125,47 @@ export function useChatSocket(userId: string, receiverId?: string) {
 			if (from === receiverId) setTyping(false);
 		});
 
-		// Cleanup
 		return () => {
 			socket.disconnect();
 		};
 	}, [userId, receiverId]);
 
 	// ======================
-	// ✉️ ENVIAR MENSAJE
+	// SEND MESSAGE
 	// ======================
 	const sendMessage = (content: string) => {
 		if (!socketRef.current || !receiverId) return;
 
-		setIsSending(true);
-
-		socketRef.current.emit(
-			"sendMessage",
-			{ senderId: userId, receiverId, content },
-			() => setIsSending(false)
-		);
+		socketRef.current.emit("sendMessage", {
+			senderId: userId,
+			receiverId,
+			content,
+		});
 	};
 
-	// ======================
-	// ✏️ ENVIAR TYPING
-	// ======================
+	// TYPING
 	const sendTyping = () => {
-		if (!receiverId) return;
 		socketRef.current?.emit("typing", { from: userId, to: receiverId });
 	};
 
 	const stopTyping = () => {
-		if (!receiverId) return;
 		socketRef.current?.emit("stopTyping", { from: userId, to: receiverId });
 	};
 
-	// ======================
-	// 👁️ MARCAR COMO LEÍDO
-	// ======================
+	// READ
 	const markAsRead = () => {
-		if (!receiverId) return;
 		socketRef.current?.emit("markAsRead", { userId, receiverId });
 	};
 
 	return {
 		socket: socketRef.current,
 		messages,
-		online,
+		setMessages, // 👈 AGREGA ESTO
+		partner,
+		loading,
 		typing,
-		isSending,
+		online,
+		lastSeen,
 		sendMessage,
 		sendTyping,
 		stopTyping,
