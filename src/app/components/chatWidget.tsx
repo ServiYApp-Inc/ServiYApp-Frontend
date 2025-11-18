@@ -59,7 +59,6 @@ export default function ChatWidget() {
 	const [content, setContent] = useState("");
 	const [localLoading, setLocalLoading] = useState(false);
 
-	// *** 🔥 Partner local para poder limpiarlo ***
 	const [localPartner, setLocalPartner] = useState<any>(null);
 
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -80,67 +79,75 @@ export default function ChatWidget() {
 		activeChat ? activeChat.userId : ""
 	);
 
-	// Sync partner → pero controlado
 	useEffect(() => {
 		if (partner) setLocalPartner(partner);
 	}, [partner]);
 
-	// ======================================
-	// LOAD INBOX
-	// ======================================
-	useEffect(() => {
+	// --------------------------------------
+	// LOAD / REFRESH CONVERSATIONS
+	// --------------------------------------
+	const refreshConversations = async () => {
 		if (!user?.id) return;
 
-		const load = async () => {
-			const res = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
+		const res = await fetch(
+			`${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
+			{ headers: { Authorization: `Bearer ${token}` } }
+		);
 
-			const data: Conversation[] = await res.json();
-			data.forEach((c: any) => {
-				if (c.lastMessageObj)
-					c.lastSenderId = c.lastMessageObj.senderId;
-			});
+		const data: Conversation[] = await res.json();
+		data.forEach((c: any) => {
+			if (c.lastMessageObj) c.lastSenderId = c.lastMessageObj.senderId;
+		});
 
-			setConversations(data);
-		};
+		setConversations(data);
+	};
 
-		load();
+	useEffect(() => {
+		refreshConversations();
 	}, [user?.id, token]);
 
-	// ======================================
-	// OPEN FROM OUTSIDE
-	// ======================================
+	// --------------------------------------
+	// OPEN FROM OUTSIDE (StartChatButton)
+	// --------------------------------------
 	useEffect(() => {
 		if (!targetUserId) return;
 
-		const conv = conversations.find((c) => c.userId === targetUserId);
-		if (conv) {
-			setActiveChat(null);
-			setLocalPartner(null); // limpia partner
+		// Buscar conversación existente
+		let conv = conversations.find((c) => c.userId === targetUserId);
 
-			setTimeout(() => {
-				setActiveChat(conv);
-				markAsRead();
-			}, 80);
-
-			openWidget();
+		// Si no existe, crear una temporal
+		if (!conv) {
+			conv = {
+				userId: targetUserId,
+				lastMessage: "",
+				time: new Date().toISOString(),
+				read: true,
+				user: undefined,
+			};
 		}
 
+		setActiveChat(null);
+		setLocalPartner(null);
+		setMessages([]);
+
+		setTimeout(() => {
+			setActiveChat(conv!);
+		}, 80);
+
+		openWidget();
 		clearTarget();
 	}, [targetUserId, conversations]);
 
-	// ======================================
+	// --------------------------------------
 	// SCROLL
-	// ======================================
+	// --------------------------------------
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
 
-	// ======================================
+	// --------------------------------------
 	// MARK AS READ (blue ✓✓)
-	// ======================================
+	// --------------------------------------
 	useEffect(() => {
 		if (!activeChat) return;
 
@@ -157,36 +164,45 @@ export default function ChatWidget() {
 		}, 80);
 	}, [activeChat]);
 
-	// ======================================
+	// --------------------------------------
 	// SEND
-	// ======================================
+	// --------------------------------------
 	const handleSend = () => {
 		if (!content.trim()) return;
 		sendMessage(content);
 		setContent("");
 		stopTyping();
+
+		// actualizar inbox después de enviar
+		setTimeout(() => {
+			refreshConversations();
+		}, 150);
 	};
 
-	// ======================================
+	// --------------------------------------
 	// TIME
-	// ======================================
+	// --------------------------------------
 	const formatTime = (t: string) =>
 		new Date(t).toLocaleTimeString([], {
 			hour: "2-digit",
 			minute: "2-digit",
 		});
 
-	// ======================================
+	// --------------------------------------
 	// CHECKMARKS
-	// ======================================
+	// --------------------------------------
 	const renderTicks = (msg: Message) => {
-		if (!msg.delivered) return <span className="text-gray-400 text-[11px]">✓</span>;
-		if (!msg.read) return <span className="text-gray-500 text-[11px]">✓✓</span>;
-		return <span className="text-blue-500 font-semibold text-[11px]">✓✓</span>;
+		if (!msg.delivered)
+			return <span className="text-gray-400 text-[11px]">✓</span>;
+		if (!msg.read)
+			return <span className="text-gray-500 text-[11px]">✓✓</span>;
+		return (
+			<span className="text-blue-500 font-semibold text-[11px]">✓✓</span>
+		);
 	};
 
 	// ======================================
-	// Bubble
+	// BUBBLE
 	// ======================================
 	const Bubble = ({ msg }: { msg: Message }) => {
 		const mine = msg.senderId === user?.id;
@@ -199,7 +215,9 @@ export default function ChatWidget() {
 			>
 				<div
 					className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] shadow-sm ${
-						mine ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
+						mine
+							? "bg-primary text-white"
+							: "bg-gray-200 text-gray-700"
 					}`}
 					style={{
 						borderBottomRightRadius: mine ? "4px" : "20px",
@@ -235,7 +253,7 @@ export default function ChatWidget() {
 					onClick={() => {
 						setLocalLoading(true);
 						setActiveChat(null);
-						setLocalPartner(null); // limpiar partner
+						setLocalPartner(null);
 						setMessages([]);
 
 						setTimeout(() => {
@@ -246,16 +264,24 @@ export default function ChatWidget() {
 					}}
 				>
 					{c.user?.profilePicture ? (
-						<img src={c.user.profilePicture} className="w-10 h-10 rounded-full object-cover" />
+						<img
+							src={c.user.profilePicture}
+							className="w-10 h-10 rounded-full object-cover"
+						/>
 					) : (
 						<div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-							<FontAwesomeIcon icon={faUser} className="text-gray-600" />
+							<FontAwesomeIcon
+								icon={faUser}
+								className="text-gray-600"
+							/>
 						</div>
 					)}
 
 					<div className="flex-1">
 						<div className="font-medium text-sm">
-							{c.user ? `${c.user.names} ${c.user.surnames}` : c.userId}
+							{c.user
+								? `${c.user.names} ${c.user.surnames}`
+								: c.userId}
 						</div>
 						<div className="text-xs text-gray-500 truncate">
 							{c.lastSenderId === user?.id ? "Tú: " : ""}
@@ -263,7 +289,9 @@ export default function ChatWidget() {
 						</div>
 					</div>
 
-					<div className="text-[11px] text-gray-400">{formatTime(c.time)}</div>
+					<div className="text-[11px] text-gray-400">
+						{formatTime(c.time)}
+					</div>
 				</div>
 			))}
 		</div>
@@ -279,8 +307,18 @@ export default function ChatWidget() {
 				className="flex items-center gap-2 px-3 border-b bg-gray-100"
 				style={{ height: "54px", flexShrink: 0 }}
 			>
-				<button onClick={() => setActiveChat(null)}>
-					<FontAwesomeIcon icon={faChevronLeft} className="text-gray-600" />
+				<button
+					onClick={async () => {
+						setActiveChat(null);
+						setLocalPartner(null);
+						setMessages([]);
+						await refreshConversations();
+					}}
+				>
+					<FontAwesomeIcon
+						icon={faChevronLeft}
+						className="text-gray-600"
+					/>
 				</button>
 
 				{localPartner?.profilePicture ? (
@@ -290,12 +328,17 @@ export default function ChatWidget() {
 					/>
 				) : (
 					<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-						<FontAwesomeIcon icon={faUser} className="text-gray-600" />
+						<FontAwesomeIcon
+							icon={faUser}
+							className="text-gray-600"
+						/>
 					</div>
 				)}
 
 				<div className="font-medium text-sm">
-					{localPartner ? `${localPartner.names} ${localPartner.surnames}` : ""}
+					{localPartner
+						? `${localPartner.names} ${localPartner.surnames}`
+						: ""}
 				</div>
 			</div>
 
@@ -312,7 +355,9 @@ export default function ChatWidget() {
 						))}
 
 						{typing && (
-							<div className="text-sm text-gray-600 ml-1">escribiendo...</div>
+							<div className="text-sm text-gray-600 ml-1">
+								escribiendo...
+							</div>
 						)}
 
 						<div ref={bottomRef} />

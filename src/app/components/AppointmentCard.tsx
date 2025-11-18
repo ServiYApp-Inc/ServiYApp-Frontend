@@ -137,7 +137,6 @@ export default function AppointmentCard({
 							<div title="Enviar mensaje">
 								<StartChatButton
 									receiverId={order.provider.id}
-									role="user"
 								/>
 							</div>
 						)}

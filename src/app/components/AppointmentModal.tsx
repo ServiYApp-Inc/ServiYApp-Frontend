@@ -131,7 +131,6 @@ export default function AppointmentModal({
 								</p>
 
 								<StartChatButton
-									role="user"
 									receiverId={order.provider.id}
 								/>
 							</div>

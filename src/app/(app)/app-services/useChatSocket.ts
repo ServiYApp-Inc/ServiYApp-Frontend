@@ -26,13 +26,6 @@ export function useChatSocket(userId: string, receiverId?: string) {
 
 	const [typing, setTyping] = useState(false);
 
-	// Sound
-	const soundRef = useRef<HTMLAudioElement | null>(null);
-
-	useEffect(() => {
-		soundRef.current = new Audio("/sounds/message.mp3"); // pon el archivo en /public/sounds
-	}, []);
-
 	// ======================
 	// CONNECT
 	// ======================
@@ -66,15 +59,13 @@ export function useChatSocket(userId: string, receiverId?: string) {
 		// ONLINE / OFFLINE
 		// ======================
 		socket.on("userOnline", ({ userId: id }) => {
-			if (id === receiverId) {
-				setOnline(true);
-			}
+			if (id === receiverId) setOnline(true);
 		});
 
 		socket.on("userOffline", ({ userId: id }) => {
 			if (id === receiverId) {
 				setOnline(false);
-				setLastSeen(new Date().toISOString()); // guardamos última conexión
+				setLastSeen(new Date().toISOString());
 			}
 		});
 
@@ -88,11 +79,6 @@ export function useChatSocket(userId: string, receiverId?: string) {
 
 			if (isBetween) {
 				setMessages((prev) => [...prev, msg]);
-
-				// sound only if it's NOT me
-				if (msg.senderId !== userId) {
-					soundRef.current?.play().catch(() => {});
-				}
 			}
 		});
 
@@ -160,7 +146,7 @@ export function useChatSocket(userId: string, receiverId?: string) {
 	return {
 		socket: socketRef.current,
 		messages,
-		setMessages, // 👈 AGREGA ESTO
+		setMessages,
 		partner,
 		loading,
 		typing,
