@@ -12,7 +12,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import StartChatButton from "@/app/components/StartChatButton";
 import MapAddress from "@/app/components/MapAddress";
-import { IServiceOrder } from "../interfaces/IServiceOrder";
+import { IServiceOrder } from "../interfaces/IServiceOrder2";
 
 interface AppointmentModalProps {
 	order: IServiceOrder;
