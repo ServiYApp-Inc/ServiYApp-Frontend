@@ -360,7 +360,6 @@ export default function ProviderAppointmentsPage() {
 												o.status === "accepted") && (
 												<StartChatButton
 													receiverId={o.user.id}
-													role="provider"
 												/>
 											)}
 											{/* Aceptar */}
