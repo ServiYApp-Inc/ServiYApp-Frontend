@@ -12,6 +12,7 @@ import {
 	faSearch,
 	faCopy,
 	faTrash,
+	faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,7 +66,9 @@ export default function ProviderAppointmentsPage() {
 	const [orders, setOrders] = useState<ServiceOrder[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [processingId, setProcessingId] = useState<string | null>(null);
-	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
+	const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(
+		null
+	);
 
 	const [tab, setTab] = useState<"upcoming" | "completed" | "cancelled">(
 		"upcoming"
@@ -352,7 +355,6 @@ export default function ProviderAppointmentsPage() {
 											>
 												<FontAwesomeIcon icon={faEye} />
 											</button>
-
 											{/* CHAT */}
 											{(o.status === "paid" ||
 												o.status === "accepted") && (
@@ -361,7 +363,6 @@ export default function ProviderAppointmentsPage() {
 													role="provider"
 												/>
 											)}
-
 											{/* Aceptar */}
 											{o.status === "paid" && (
 												<button
@@ -382,7 +383,6 @@ export default function ProviderAppointmentsPage() {
 													)}
 												</button>
 											)}
-
 											{/* Cancelar */}
 											{canCancel(o.status) && (
 												<button
@@ -422,6 +422,18 @@ export default function ProviderAppointmentsPage() {
 															icon={faTrash}
 														/>
 													)}
+												</button>
+											)}{" "}
+											{/* ⭐ Añadir review */}
+											{o.status === "completed" && (
+												<button
+													title="Añadir reseña"
+													// onClick={onReview}
+													className="text-yellow-500 hover:text-yellow-600"
+												>
+													<FontAwesomeIcon
+														icon={faStar}
+													/>
 												</button>
 											)}
 										</div>
@@ -524,9 +536,7 @@ export default function ProviderAppointmentsPage() {
 											});
 
 											if (result.isConfirmed) {
-												handleCancel(
-													selectedOrder.id
-												);
+												handleCancel(selectedOrder.id);
 												setSelectedOrder(null);
 											}
 										}}
