@@ -49,6 +49,8 @@ export const deleteService = async (id: string) => {
     return data;
 };
 
+// CATEGORIAS //
+
 export const createCategory = async (categoryData: any) => {
     const { data } = await apiClient.post(`categories/create`, categoryData);
     return data;
@@ -58,3 +60,12 @@ export const getCategories = async () => {
     const { data } = await apiClient.get(`categories`);
     return data;
 }
+export const updateCategory = async (id: string, payload: any) => {
+    const { data } = await apiClient.patch(`categories/update/${id}`, payload);
+    return data;
+};
+
+export const deleteCategory = async (id: string) => {
+    const { data } = await apiClient.delete(`categories/delete/${id}`);
+    return data;
+};

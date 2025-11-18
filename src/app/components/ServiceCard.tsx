@@ -25,12 +25,27 @@ export default function ServiceCard({
 	category,
 }: IService) {
 	const providerName = `${provider.names} ${provider.surnames}`;
-	const { role } = useAuthStore();
+	const { user, role } = useAuthStore();
 	const router = useRouter();
 
 	const handleAddToCart = () => {
 		router.push(`/user/order/confirm?id=${id}`);
 	};
+
+	const getCurrencyByCountry = (countryName?: string) => {
+		if (!countryName) return "COP"; // default
+
+		const normalized = countryName.toLowerCase();
+
+		if (normalized.includes("colombia")) return "COP";
+		if (normalized.includes("méxico") || normalized.includes("mexico")) return "MXN";
+		if (normalized.includes("argentina")) return "ARS";
+
+		return "COP"; // fallback
+	};
+
+	const userCountry = user?.country?.name;
+	const currency = getCurrencyByCountry(userCountry);
 
 	// -------------------------
 	// URL DE LA IMAGEN (robusta)
@@ -77,7 +92,7 @@ export default function ServiceCard({
 
 			<span className="flex flex-row justify-between items-center px-4 mt-2">
 				<p className="text-md text-[var(--color-primary)] font-bold">
-					${price} mxn
+					${price} {currency}
 				</p>
 				<div className="flex items-center gap-2">
 					<SeeMoreBtn id={id} />

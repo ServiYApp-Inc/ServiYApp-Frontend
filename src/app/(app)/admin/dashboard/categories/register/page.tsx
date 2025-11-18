@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import Swal from "sweetalert2";
 
 const categorySchema = Yup.object().shape({
     name: Yup.string()
@@ -34,12 +35,19 @@ export default function CategoriesRegisterPage () {
                         setLoading(true);
                         await createCategory(values);
                         
-                        alert("Categoría creada con éxito");
+                        await Swal.fire({
+                            icon: "success",
+                            title: "Categoría creada con exito",
+                        });
                         resetForm();
                         router.push("/provider/categories"); // si querés redireccionar
                     } catch (error: any) {
                         console.error(error);
-                        alert("Error al crear la categoría");
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: "No se pudo crear la categoría",
+                        });
                     } finally {
                         setLoading(false);
                     }

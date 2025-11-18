@@ -5,7 +5,7 @@ import axios from "axios";
 import { useAuthStore } from "@/app/store/auth.store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL!;
+const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL!;
 
 let socket: Socket | null = null;
 
