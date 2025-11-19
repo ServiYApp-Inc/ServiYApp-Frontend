@@ -1,9 +1,10 @@
 "use client";
 
-import { getProviders } from "@/app/(app)/provider/serviceRegister/service.service";
+import { activeProvider, getProviders, inactiveProvider } from "@/app/(app)/provider/serviceRegister/service.service";
 import IProvider from "@/app/interfaces/IProvider";
-import { faXmarkCircle, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faXmarkCircle, faSearch, faCheck, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -41,6 +42,48 @@ export default function PageAdminProviders() {
             </div>
         );
 
+    const handleToggleStatus = async (id: string, status: string) => {
+
+        const isActive = status === "active";
+
+        const result = await Swal.fire({
+            title: isActive 
+                ? "¿Deshabilitar proveedor?" 
+                : "¿Habilitar proveedor?",
+            text: isActive
+                ? "El proveedor dejará de estar disponible."
+                : "El proveedor volverá a estar activo.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: isActive ? "Sí, deshabilitar" : "Sí, habilitar",
+            cancelButtonText: "Cancelar",
+            reverseButtons: true,
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            if (isActive) {
+                await inactiveProvider(id);
+            } else {
+                await activeProvider(id);
+            }
+
+            Swal.fire({
+                title: "Operación exitosa",
+                text: isActive
+                    ? "El proveedor fue deshabilitado."
+                    : "El proveedor fue habilitado.",
+                icon: "success",
+                timer: 2000,
+            });
+
+            fetchProviders();
+        } catch (error) {
+            Swal.fire("Error", "No se pudo cambiar el estado del proveedor.", "error");
+        }
+    };
+
     return (
         <main className="px-4 sm:px-6 md:px-10 py-6">
 
@@ -77,10 +120,16 @@ export default function PageAdminProviders() {
 
                         <div className="flex justify-center mt-4">
                             <button
-                                className="text-white bg-red-700 hover:bg-red-600 py-1 px-3 rounded-lg flex items-center gap-1 shadow-md transition-all"
+                                onClick={() => handleToggleStatus(p.id, p.status ?? "active")}
+                                className={`text-white py-1 px-3 rounded-lg flex items-center gap-1 shadow-md transition-all 
+                                    ${(p.status ?? "active") === "active"
+                                        ? "bg-red-700 hover:bg-red-600"
+                                        : "bg-green-700 hover:bg-green-600"
+                                    }`}
                             >
-                                <FontAwesomeIcon icon={faXmarkCircle} />
-                                Eliminar
+                                {p.status === "active" ?<FontAwesomeIcon icon={faXmarkCircle} /> :
+                                <FontAwesomeIcon icon={faCheckCircle} />}
+                                {(p.status ?? "active") === "active" ? "Deshabilitar" : "Habilitar"}
                             </button>
                         </div>
                     </div>
