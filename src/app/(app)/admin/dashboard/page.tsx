@@ -3,94 +3,157 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
+import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 import {
 	faTags,
 	faFileShield,
 	faCalendarDays,
 	faRightFromBracket,
+	faChartLine,
+	faCircleCheck,
+	faCircleXmark,
+	faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import Swal from "sweetalert2";
 
+import {
+	ResponsiveContainer,
+	PieChart,
+	Pie,
+	Cell,
+	Tooltip,
+	Legend,
+} from "recharts";
+
+import { useAuthStore } from "@/app/store/auth.store";
 import { getCategories } from "@/app/services/provider.service";
 import { Api } from "@/app/services/api";
-import { useAuthStore } from "@/app/store/auth.store";
 
 interface AdminOrder {
 	id: string;
-	status: "pending" | "completed" | "cancelled" | string;
+	status:
+		| "pending"
+		| "paid"
+		| "accepted"
+		| "completed"
+		| "cancelled"
+		| string;
 	createdAt: string;
 
-	user?: {
-		names: string;
-		surnames: string;
-		email: string;
-		phone?: string;
-	};
-
-	provider?: {
-		names: string;
-		surnames: string;
-		email: string;
-		phone?: string;
-	};
-
-	service?: {
-		name: string;
-		price?: number;
-		duration?: number;
-		photos?: string[];
-	};
+	user?: { names: string; surnames: string };
+	provider?: { names: string; surnames: string };
+	service?: { name: string };
 }
+
+const fadeUp = {
+	initial: { opacity: 0, y: 20 },
+	animate: { opacity: 1, y: 0 },
+};
+
+const PIE_COLORS = [
+	"#F4C542", // Amarillo (pending)
+	"#4A90E2",
+	"#34A853", // Azul (paid)
+	"#1D2846", // Azul marino (accepted)
+	// Verde (completed)
+	"#EA4335", // Rojo (cancelled)
+];
 
 export default function AdminDashboard() {
 	const router = useRouter();
 	const { user, clearAuth, token } = useAuthStore();
 
-	/* ---------------- STATE ---------------- */
-	const [categories, setCategories] = useState([]);
-	const [pendingDocs, setPendingDocs] = useState([]);
+	const [categories, setCategories] = useState<any[]>([]);
+	const [pendingDocs, setPendingDocs] = useState<any[]>([]);
 	const [orders, setOrders] = useState<AdminOrder[]>([]);
-
 	const [loading, setLoading] = useState(true);
 
-	/* ---------------- FETCH DATA ---------------- */
+	useEffect(() => {
+		if (!token) return;
 
-	const fetchAllData = async () => {
-		try {
-			setLoading(true);
+		const fetchAll = async () => {
+			try {
+				setLoading(true);
 
-			// Categorías
-			const categoriesData = await getCategories();
-			setCategories(categoriesData);
+				const categoriesData = await getCategories();
+				setCategories(categoriesData || []);
 
-			// Documentos pendientes
-			const docsRes = await Api.get("provider-documents/admin/pending", {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			setPendingDocs(docsRes.data || []);
+				const docsRes = await Api.get(
+					"provider-documents/admin/pending",
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
+				setPendingDocs(docsRes.data || []);
 
-			// Citas
-			const ordersRes = await Api.get("/service-orders/orders-all", {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			setOrders(ordersRes.data || []);
-		} catch (error) {
-			console.warn("Error cargando dashboard", error);
-		} finally {
-			setLoading(false);
+				const ordersRes = await Api.get("/service-orders/orders-all", {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				setOrders(ordersRes.data || []);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchAll();
+	}, [token]);
+
+	// ---------------- MÉTRICAS POR ESTADO ----------------
+	const totalOrders = orders.length;
+
+	const pendingCount = orders.filter((o) => o.status === "pending").length;
+	const paidCount = orders.filter((o) => o.status === "paid").length;
+	const acceptedCount = orders.filter((o) => o.status === "accepted").length;
+	const completedCount = orders.filter(
+		(o) => o.status === "completed"
+	).length;
+	const cancelledCount = orders.filter(
+		(o) => o.status === "cancelled"
+	).length;
+
+	const categoriesCount = categories.length;
+	const pendingDocsCount = pendingDocs.length;
+
+	// ---------------- DATA GRÁFICA PASTEL ----------------
+	const pieData = [
+		{ name: "Pendientes", value: pendingCount },
+		{ name: "Pagadas (por aceptar)", value: paidCount },
+		{ name: "Aceptadas", value: acceptedCount },
+		{ name: "Finalizadas", value: completedCount },
+		{ name: "Canceladas", value: cancelledCount },
+	].filter((item) => item.value > 0);
+
+	// ---------------- ÚLTIMAS CITAS ----------------
+	const latestOrders = [...orders]
+		.sort(
+			(a, b) =>
+				new Date(b.createdAt).getTime() -
+				new Date(a.createdAt).getTime()
+		)
+		.slice(0, 6);
+
+	const formatStatusLabel = (status: string) => {
+		switch (status) {
+			case "pending":
+				return "Pendiente";
+			case "paid":
+				return "Pagada (por aceptar)";
+			case "accepted":
+				return "Aceptada";
+			case "completed":
+				return "Finalizada";
+			case "cancelled":
+				return "Cancelada";
+			default:
+				return status.toUpperCase();
 		}
 	};
 
-	useEffect(() => {
-		fetchAllData();
-	}, []);
-
-	/* ---------------- LOGOUT ---------------- */
 	const handleLogout = async () => {
-		const result = await Swal.fire({
+		const r = await Swal.fire({
 			title: "¿Cerrar sesión?",
-			text: "Tu sesión actual se cerrará",
 			icon: "warning",
 			showCancelButton: true,
 			confirmButtonColor: "#1D2846",
@@ -99,235 +162,399 @@ export default function AdminDashboard() {
 			cancelButtonText: "Cancelar",
 		});
 
-		if (result.isConfirmed) {
+		if (r.isConfirmed) {
 			clearAuth();
 			router.push("/");
 		}
 	};
 
-	/* ---------------- METRICS ---------------- */
-
-	const totalOrders = orders.length;
-
-	const pendingOrders = orders.filter((o) => o.status === "pending").length;
-	const completedOrders = orders.filter(
-		(o) => o.status === "completed"
-	).length;
-	const cancelledOrders = orders.filter(
-		(o) => o.status === "cancelled"
-	).length;
-
-	const categoriesCount = categories.length;
-	const pendingDocsCount = pendingDocs.length;
-
-	/* ---------------- SIMPLE BAR CHART ---------------- */
-
-	const chartMax = Math.max(
-		totalOrders,
-		completedOrders,
-		cancelledOrders,
-		pendingOrders,
-		1
-	);
-
-	const bar = (value: number) => (value / chartMax) * 100;
-
-	/* ---------------- RENDER ---------------- */
+	if (loading) {
+		return (
+			<div className="flex justify-center items-center h-[60vh] text-[var(--color-primary)] text-xl">
+				Cargando panel de administrador…
+			</div>
+		);
+	}
 
 	return (
-		<main className="max-w-6xl mx-auto mt-8 px-4">
-			<h1 className="text-4xl md:text-5xl font-bold text-[var(--color-primary)] mb-6">
-				Panel <strong>Administrador</strong>
-			</h1>
-
-			{/* ---------------- USER INFO ---------------- */}
-			<div className="bg-[var(--color-primary)] p-6 rounded-3xl text-white flex flex-col gap-8 shadow-xl">
-				<div className="flex flex-col md:flex-row items-center gap-6">
-					<img
-						src={user?.profilePicture}
-						alt="Foto de Perfil"
-						className="w-[130px] h-[130px] rounded-full border-2 border-white object-cover"
-					/>
-
-					<div>
-						<h3 className="font-bold text-[32px] leading-tight">
-							{user?.names} {user?.surnames}
-						</h3>
-						<h5 className="text-[20px] opacity-90">
-							{user?.email}
-						</h5>
+		<main className="max-w-6xl mx-auto px-4 py-8 font-nunito">
+			{/* BANNER AZUL SÓLIDO */}
+			<motion.section
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="bg-[var(--color-primary)] rounded-3xl p-8 text-white shadow-xl mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+			>
+				<div className="flex items-center gap-5">
+					<div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white shadow-lg bg-white/10 flex items-center justify-center">
+						{user?.profilePicture ? (
+							<img
+								src={user.profilePicture}
+								alt="profile"
+								className="w-full h-full object-cover"
+							/>
+						) : (
+							<span className="text-3xl font-bold">
+								{user?.names?.[0] || "A"}
+							</span>
+						)}
 					</div>
-				</div>
 
-				{/* Resume Metrics */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
 					<div>
-						<p className="text-[36px]">{completedOrders}</p>
-						<p className="text-[18px] opacity-80">
-							Servicios Finalizados
+						<p className="text-xs uppercase opacity-80 tracking-[0.25em]">
+							Panel administrador
 						</p>
-					</div>
-					<div>
-						<p className="text-[36px]">{pendingOrders}</p>
-						<p className="text-[18px] opacity-80">Pendientes</p>
-					</div>
-					<div>
-						<p className="text-[36px]">{pendingDocsCount}</p>
-						<p className="text-[18px] opacity-80">
-							Documentos por revisar
+						<h1 className="text-3xl md:text-4xl font-bold mt-1">
+							Hola, {user?.names} {user?.surnames}
+						</h1>
+						<p className="text-white/80 text-sm mt-2 max-w-xl">
+							Administra categorías, proveedores, documentos y
+							citas de toda la plataforma desde un solo lugar.
 						</p>
 					</div>
 				</div>
-			</div>
 
-			{/* ---------------- QUICK LINKS ---------------- */}
-			<h2 className="text-[32px] font-semibold text-[var(--color-primary)] mt-10 mb-4">
-				Administración Rápida
-			</h2>
-
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<Link href="/admin/dashboard/categories">
-					<div className="bg-white border border-gray-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition shadow">
+				<div className="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
+					<button
+						onClick={handleLogout}
+						className="border border-white/40 px-4 py-2 rounded-xl text-sm hover:bg-white/10 transition"
+					>
 						<FontAwesomeIcon
-							icon={faTags}
-							className="text-3xl mb-3 text-[var(--color-primary)]"
+							icon={faRightFromBracket}
+							className="mr-2"
 						/>
-						<h3 className="text-xl font-semibold text-[var(--color-primary)]">
+						Cerrar sesión
+					</button>
+				</div>
+			</motion.section>
+
+			{/* TARJETAS PRINCIPALES */}
+			<motion.section
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+			>
+				{/* Citas (resumen) */}
+				<Link href="/admin/dashboard/appointments">
+					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
+						<div className="flex justify-between items-center mb-4">
+							<h3 className="text-xl font-bold text-[var(--color-primary)] flex items-center gap-2">
+								<FontAwesomeIcon icon={faCalendarDays} />
+								Citas
+							</h3>
+							<span className="text-3xl font-bold text-[var(--color-primary)]">
+								{totalOrders}
+							</span>
+						</div>
+
+						<div className="grid grid-cols-2 gap-2 text-xs">
+							<div className="bg-slate-50 rounded-xl p-2">
+								<p className="text-slate-700 font-semibold text-[10px] uppercase">
+									Pendientes
+								</p>
+								<p className="font-bold text-slate-900 text-sm">
+									{pendingCount}
+								</p>
+							</div>
+							<div className="bg-slate-50 rounded-xl p-2">
+								<p className="text-slate-700 font-semibold text-[10px] uppercase">
+									Pagadas
+								</p>
+								<p className="font-bold text-slate-900 text-sm">
+									{paidCount}
+								</p>
+							</div>
+							<div className="bg-slate-50 rounded-xl p-2">
+								<p className="text-slate-700 font-semibold text-[10px] uppercase">
+									Aceptadas
+								</p>
+								<p className="font-bold text-slate-900 text-sm">
+									{acceptedCount}
+								</p>
+							</div>
+							<div className="bg-slate-50 rounded-xl p-2">
+								<p className="text-slate-700 font-semibold text-[10px] uppercase">
+									Finalizadas
+								</p>
+								<p className="font-bold text-slate-900 text-sm">
+									{completedCount}
+								</p>
+							</div>
+						</div>
+					</div>
+				</Link>
+
+				{/* Categorías */}
+				<Link href="/admin/dashboard/categories">
+					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
+						<h3 className="text-xl font-bold text-[var(--color-primary)] mb-3 flex items-center gap-2">
+							<FontAwesomeIcon icon={faTags} />
 							Categorías
 						</h3>
-						<p className="text-gray-500">
-							{categoriesCount} categorías registradas
+						<p className="text-4xl font-bold text-[var(--color-primary)]">
+							{categoriesCount}
+						</p>
+						<p className="text-gray-500 text-sm mt-2">
+							Organización del catálogo de servicios disponible en
+							la plataforma.
 						</p>
 					</div>
 				</Link>
 
+				{/* Documentos */}
 				<Link href="/admin/dashboard/ReviewDocuments">
-					<div className="bg-white border border-gray-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition shadow">
-						<FontAwesomeIcon
-							icon={faFileShield}
-							className="text-3xl mb-3 text-[var(--color-primary)]"
-						/>
-						<h3 className="text-xl font-semibold text-[var(--color-primary)]">
-							Revisión de Documentos
+					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
+						<h3 className="text-xl font-bold text-[var(--color-primary)] mb-3 flex items-center gap-2">
+							<FontAwesomeIcon icon={faFileShield} />
+							Documentos
 						</h3>
-						<p className="text-gray-500">
-							{pendingDocsCount} documentos pendientes
+						<p className="text-4xl font-bold text-[var(--color-primary)]">
+							{pendingDocsCount}
+						</p>
+						<p className="text-gray-500 text-sm mt-2">
+							Documentación pendiente de revisar para validar
+							proveedores.
 						</p>
 					</div>
 				</Link>
 
+				{/* Citas aceptadas (card blanca, como pediste) */}
 				<Link href="/admin/dashboard/appointments">
-					<div className="bg-white border border-gray-300 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition shadow">
-						<FontAwesomeIcon
-							icon={faCalendarDays}
-							className="text-3xl mb-3 text-[var(--color-primary)]"
-						/>
-						<h3 className="text-xl font-semibold text-[var(--color-primary)]">
-							Gestión de Citas
+					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
+						<h3 className="text-xl font-bold text-[var(--color-primary)] mb-3 flex items-center gap-2">
+							<FontAwesomeIcon icon={faCircleCheck} />
+							Citas aceptadas
 						</h3>
-						<p className="text-gray-500">
-							{totalOrders} citas registradas
+						<p className="text-4xl font-bold text-[var(--color-primary)]">
+							{acceptedCount}
+						</p>
+						<p className="text-gray-500 text-sm mt-2">
+							Citas confirmadas por el proveedor, listas para
+							realizarse.
 						</p>
 					</div>
 				</Link>
-			</div>
+			</motion.section>
 
-			{/* ---------------- GRAPH SECTION ---------------- */}
-			<h2 className="text-[32px] font-semibold text-[var(--color-primary)] mt-10">
-				Estadísticas Rápidas
-			</h2>
-
-			<div className="bg-white mt-4 p-6 rounded-2xl shadow border border-gray-200">
-				<h4 className="text-[20px] font-semibold text-[var(--color-primary)] mb-4">
-					Resumen de Citas
-				</h4>
-
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center mt-6">
-					{/* TOTAL */}
-					<div>
-						<div
-							className="bg-[var(--color-primary)]/20 rounded-xl h-32 mx-auto flex items-end"
-							style={{
-								width: "60%",
-								height: `${bar(totalOrders)}%`,
-							}}
-						>
-							<div className="bg-[var(--color-primary)] w-full h-3 rounded-b-xl"></div>
-						</div>
-						<p className="font-semibold text-[var(--color-primary)] mt-2">
-							Total
-						</p>
-						<p className="text-sm text-gray-600">{totalOrders}</p>
+			{/* GRÁFICA PASTEL + KPIs LATERALES */}
+			<motion.section
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12"
+			>
+				{/* Gráfica pastel */}
+				<div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm lg:col-span-2">
+					<div className="flex items-center justify-between mb-2">
+						<h3 className="text-lg font-bold text-[var(--color-primary)] flex items-center gap-2">
+							<FontAwesomeIcon icon={faChartLine} />
+							Distribución de citas por estado
+						</h3>
+						<span className="text-xs text-gray-500">
+							Estados: pendiente, pagada, aceptada, finalizada,
+							cancelada
+						</span>
 					</div>
 
-					{/* COMPLETED */}
-					<div>
-						<div
-							className="bg-green-200 rounded-xl mx-auto flex items-end"
-							style={{
-								width: "60%",
-								height: `${bar(completedOrders)}%`,
-								minHeight: "20px",
-							}}
-						>
-							<div className="bg-green-600 w-full h-3 rounded-b-xl"></div>
-						</div>
-						<p className="font-semibold text-[var(--color-primary)] mt-2">
-							Finalizadas
+					<div className="w-full h-64 mt-2">
+						{pieData.length === 0 ? (
+							<div className="flex items-center justify-center h-full text-sm text-gray-500">
+								Aún no hay datos suficientes para mostrar la
+								gráfica.
+							</div>
+						) : (
+							<ResponsiveContainer width="100%" height="100%">
+								<PieChart>
+									<Pie
+										data={pieData}
+										dataKey="value"
+										nameKey="name"
+										cx="50%"
+										cy="50%"
+										innerRadius={60}
+										outerRadius={90}
+										paddingAngle={3}
+									>
+										{pieData.map((entry, index) => (
+											<Cell
+												key={`cell-${index}`}
+												fill={
+													PIE_COLORS[
+														index %
+															PIE_COLORS.length
+													]
+												}
+											/>
+										))}
+									</Pie>
+									<Tooltip
+										formatter={(
+											value: number,
+											name: string
+										) => [`${value} citas`, name]}
+									/>
+									<Legend />
+								</PieChart>
+							</ResponsiveContainer>
+						)}
+					</div>
+				</div>
+
+				{/* KPIs laterales */}
+				<div className="grid grid-cols-1 gap-4">
+					<div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-sm">
+						<p className="text-xs uppercase text-gray-400 mb-1">
+							Citas finalizadas
 						</p>
+						<h3 className="text-2xl font-bold text-[var(--color-primary)] flex items-center gap-2 mb-1">
+							<FontAwesomeIcon
+								icon={faCircleCheck}
+								className="text-green-500"
+							/>
+							{completedCount}
+						</h3>
 						<p className="text-sm text-gray-600">
-							{completedOrders}
+							Servicios completados exitosamente dentro de la
+							plataforma.
 						</p>
 					</div>
 
-					{/* PENDING */}
-					<div>
-						<div
-							className="bg-yellow-200 rounded-xl mx-auto flex items-end"
-							style={{
-								width: "60%",
-								height: `${bar(pendingOrders)}%`,
-								minHeight: "20px",
-							}}
-						>
-							<div className="bg-yellow-600 w-full h-3 rounded-b-xl"></div>
-						</div>
-						<p className="font-semibold text-[var(--color-primary)] mt-2">
-							Pendientes
+					<div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-sm">
+						<p className="text-xs uppercase text-gray-400 mb-1">
+							Citas canceladas
 						</p>
-						<p className="text-sm text-gray-600">{pendingOrders}</p>
-					</div>
-
-					{/* CANCELLED */}
-					<div>
-						<div
-							className="bg-red-200 rounded-xl mx-auto flex items-end"
-							style={{
-								width: "60%",
-								height: `${bar(cancelledOrders)}%`,
-								minHeight: "20px",
-							}}
-						>
-							<div className="bg-red-600 w-full h-3 rounded-b-xl"></div>
-						</div>
-						<p className="font-semibold text-[var(--color-primary)] mt-2">
-							Canceladas
-						</p>
+						<h3 className="text-2xl font-bold text-[var(--color-primary)] flex items-center gap-2 mb-1">
+							<FontAwesomeIcon
+								icon={faCircleXmark}
+								className="text-red-500"
+							/>
+							{cancelledCount}
+						</h3>
 						<p className="text-sm text-gray-600">
-							{cancelledOrders}
+							Cancelaciones registradas, útiles para monitorear
+							fricción.
+						</p>
+					</div>
+
+					<div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-sm">
+						<p className="text-xs uppercase text-gray-400 mb-1">
+							Pendientes y pagadas
+						</p>
+						<h3 className="text-2xl font-bold text-[var(--color-primary)] flex items-center gap-2 mb-1">
+							<FontAwesomeIcon
+								icon={faClockRotateLeft}
+								className="text-yellow-500"
+							/>
+							{pendingCount + paidCount}
+						</h3>
+						<p className="text-sm text-gray-600">
+							Citas que aún requieren acción del usuario o del
+							proveedor.
 						</p>
 					</div>
 				</div>
-			</div>
+			</motion.section>
 
-			{/* LOGOUT */}
-			<button
-				onClick={handleLogout}
-				className="mt-8 px-5 py-2 border border-gray-300 rounded-xl text-[20px] font-semibold hover:bg-gray-100 transition text-[var(--color-primary)]"
-			>
-				<FontAwesomeIcon icon={faRightFromBracket} className="mr-2" />
-				Cerrar sesión
-			</button>
+			{/* TABLA DE ÚLTIMAS CITAS */}
+			<section>
+				<div className="flex items-center justify-between mb-4">
+					<h2 className="text-xl font-bold text-[var(--color-primary)]">
+						Últimas citas registradas
+					</h2>
+
+					<Link
+						href="/admin/dashboard/appointments"
+						className="text-sm font-semibold text-[var(--color-primary)] underline"
+					>
+						Ver todas
+					</Link>
+				</div>
+
+				<div className="overflow-x-auto border border-gray-200 rounded-2xl shadow-sm bg-white">
+					<table className="min-w-full text-sm">
+						<thead className="bg-gray-50 text-gray-600 text-left">
+							<tr>
+								<th className="py-3 px-4">Servicio</th>
+								<th className="py-3 px-4">Usuario</th>
+								<th className="py-3 px-4">Proveedor</th>
+								<th className="py-3 px-4">Estado</th>
+								<th className="py-3 px-4">Fecha</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							{latestOrders.length === 0 ? (
+								<tr>
+									<td
+										colSpan={5}
+										className="py-6 px-4 text-center text-gray-500"
+									>
+										Aún no hay citas registradas.
+									</td>
+								</tr>
+							) : (
+								latestOrders.map((o) => (
+									<tr
+										key={o.id}
+										className="border-t hover:bg-gray-50 transition"
+									>
+										<td className="py-3 px-4 font-semibold text-[var(--color-primary)]">
+											{o.service?.name || "Servicio"}
+										</td>
+
+										<td className="py-3 px-4">
+											{o.user
+												? `${o.user.names} ${o.user.surnames}`
+												: "No disponible"}
+										</td>
+
+										<td className="py-3 px-4">
+											{o.provider
+												? `${o.provider.names} ${o.provider.surnames}`
+												: "No disponible"}
+										</td>
+
+										<td className="py-3 px-4">
+											<span
+												className={`text-xs font-semibold px-3 py-1 rounded-full
+													${
+														o.status === "completed"
+															? "bg-green-100 text-green-700"
+															: o.status ===
+															  "cancelled"
+															? "bg-red-100 text-red-700"
+															: o.status ===
+															  "paid"
+															? "bg-blue-100 text-blue-700"
+															: o.status ===
+															  "accepted"
+															? "bg-indigo-100 text-indigo-700"
+															: "bg-yellow-100 text-yellow-700"
+													}`}
+											>
+												{formatStatusLabel(o.status)}
+											</span>
+										</td>
+
+										<td className="py-3 px-4 text-gray-600">
+											{new Date(
+												o.createdAt
+											).toLocaleString("es-MX", {
+												day: "2-digit",
+												month: "short",
+												year: "numeric",
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
+			</section>
 		</main>
 	);
 }
