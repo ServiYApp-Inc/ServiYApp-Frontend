@@ -9,6 +9,9 @@ const nunito = Nunito({ subsets: ["latin"], weight: ["400", "600", "700"] });
 export const metadata = {
 	title: "ServiYApp",
 	description: "Descubre la belleza donde estés",
+	icons: {
+		icon: "/icon.png",
+	},
 };
 
 export default function RootLayout({
