@@ -69,3 +69,21 @@ export const deleteCategory = async (id: string) => {
     const { data } = await apiClient.delete(`categories/delete/${id}`);
     return data;
 };
+
+
+// Providers //
+
+export const getProviders = async () => {
+    const { data } = await apiClient.get(`providers`);
+    return data;
+}
+
+export const inactiveProvider = async (id: string) => {
+    const { data } = await apiClient.delete(`providers/${id}`);
+    return data;
+};
+
+export const activeProvider = async (id: string) => {
+    const { data } = await apiClient.patch(`providers/${id}/reactivate`);
+    return data;
+};
