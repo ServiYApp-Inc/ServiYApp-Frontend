@@ -111,12 +111,6 @@ const handleSearchResults = (data: IService[]) => {
 				onClick={() => handleFilter("price")}
 			/>
 			<FilterTag
-				icon={faStar}
-				label="Mejores Valorados"
-				isActive={activeFilter === "rating"}
-				onClick={() => handleFilter("rating")}
-			/>
-			<FilterTag
 				icon={faClock}
 				label="Menor Duración"
 				isActive={activeFilter === "duration"}

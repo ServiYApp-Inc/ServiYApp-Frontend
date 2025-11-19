@@ -1,173 +1,136 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Api } from "@/app/services/api";
+import { useState } from "react";
+import { createProviderReview } from "../services/provider.service";
 import { useAuthStore } from "@/app/store/auth.store";
-import { toast } from "react-toastify";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faTimes, faCamera, faImage } from "@fortawesome/free-solid-svg-icons";
+import { IServiceOrder } from "../interfaces/IServiceOrder";
 
-export default function ReviewModal({
-    orderId,
-    providerId,
-    onClose,
-    onSuccess,
-}: {
-    orderId: string;
-    providerId: string;
+interface ReviewModalProps {
+    order: IServiceOrder; // o IServiceOrder si la tenés
     onClose: () => void;
     onSuccess: () => void;
-}) {
+    }
+
+    export default function ReviewModal({ order, onClose, onSuccess }: ReviewModalProps) {
     const { user, token } = useAuthStore();
 
-    const [rate, setRate] = useState(0);
+    const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
-    const [preview, setPreview] = useState<string | null>(null);
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
+    const [preview, setPreview] = useState<string | null>(null);
 
-    const fileRef = useRef<HTMLInputElement | null>(null);
 
-    const submitReview = async () => {
-        if(!user){
-            toast.error("No hay usuario");
-            return;
+    const handleSubmit = async () => {
+        console.log("ORDER:", order);
+        console.log("USER:", user);
+        console.log("order.provider:", order?.provider);
+        console.log("order.provider.id:", order?.provider?.id);
+
+        if (!user || !token) return alert("No hay usuario registrado");
+        if (!rating) return alert("Debes elegir una calificación");
+
+        const form = new FormData();
+
+        // 🟢 AHORA SÍ: estos deberían aparecer en la consola
+        form.append("orderId", order.id);
+        form.append("authorUserId", user.id);
+        form.append("targetProviderId", order.provider.id);
+        form.append("rating", String(rating));
+        form.append("comment", comment || "");
+
+        if (file) form.append("files", file);
+
+        // 🔥 LOG FINAL PARA CONFIRMAR
+        for (const pair of form.entries()) {
+            console.log("FORMDATA:", pair[0], pair[1]);
         }
-        if (!rate) {
-            toast.error("Selecciona una calificación");
-            return;
-        }
-
 
         setLoading(true);
-
         try {
-            const formData = new FormData();
-            formData.append("authorUserId", user.id);
-            formData.append("targetProviderId", providerId);
-            formData.append("orderId", orderId);
-            formData.append("rate", String(rate));
-            formData.append("comment", comment || "");
-
-            if (file) {
-                formData.append("files", file);
-            }
-
-            await Api.post("reviews/createReviewProvider", formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-
-            toast.success("Reseña enviada");
+            await createProviderReview(form, token);
             onSuccess();
             onClose();
-        } catch (e) {
-            toast.error("Error al enviar la reseña");
-            console.error(e);
+        } catch (err) {
+            const error = err as any;
+            console.log("ERROR RESPONSE:", error?.response?.data);
+            alert("Error al enviar la reseña");
         } finally {
             setLoading(false);
         }
     };
 
+
     return (
-        <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            >
-                <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95 }}
-                    className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 space-y-5 relative"
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Calificar servicio</h2>
+
+            <div className="flex gap-2 mb-4">
+            {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                key={n}
+                onClick={() => setRating(n)}
+                className={`text-2xl ${
+                    rating >= n ? "text-yellow-500" : "text-gray-300"
+                }`}
                 >
-                    {/* Cerrar */}
-                    <button
-                        className="absolute top-4 left-4 p-2 bg-black/40 text-white rounded-full"
-                        onClick={onClose}
-                    >
-                        <FontAwesomeIcon icon={faTimes} />
-                    </button>
+                ★
+                </button>
+            ))}
+            </div>
 
-                    <h2 className="text-2xl font-bold text-center text-[var(--color-primary)]">
-                        Calificar servicio
-                    </h2>
+            <textarea
+            className="w-full border rounded-lg p-2 text-sm mb-4"
+            rows={3}
+            placeholder="Escribe un comentario..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            />
 
-                    {/* RATE */}
-                    <div className="flex justify-center gap-3 text-3xl">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                            <FontAwesomeIcon
-                                key={n}
-                                icon={faStar}
-                                className={`cursor-pointer transition ${
-                                    rate >= n ? "text-yellow-400" : "text-gray-300"
-                                }`}
-                                onClick={() => setRate(n)}
-                            />
-                        ))}
-                    </div>
+            {/* Imagen */}
+            <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+                const f = e.target.files?.[0] || null;
+                setFile(f);
+                if (f) {
+                const url = URL.createObjectURL(f);
+                setPreview(url);
+                } else {
+                setPreview(null);
+                }
+            }}
+            className="mb-4 text-white py-1 px-2 rounded-xl bg-[var(--color-primary)]"
+            />
 
-                    {/* COMMENT */}
-                    <textarea
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        placeholder="Escribe un comentario..."
-                        className="w-full p-3 border rounded-lg h-28 text-sm"
-                    />
+            {/* Preview */}
+            {preview && (
+            <div className="mb-4">
+                <img
+                src={preview}
+                className="w-full h-40 object-cover rounded-lg border"
+                alt="Vista previa"
+                />
+            </div>
+            )}
 
-                    {/* IMAGE */}
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="relative w-40 h-40 rounded-xl overflow-hidden border-4 border-[var(--color-primary)]">
-                            {preview ? (
-                                <img src={preview} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                    <FontAwesomeIcon
-                                        icon={faImage}
-                                        className="text-gray-400 text-3xl"
-                                    />
-                                </div>
-                            )}
-                        </div>
 
-                        <input
-                            type="file"
-                            ref={fileRef}
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                const f = e.target.files?.[0] || null;
-                                if (!f) return;
-                                setFile(f);
-                                setPreview(URL.createObjectURL(f));
-                            }}
-                        />
+            <div className="flex justify-end gap-3">
+            <button className="px-4 py-2" onClick={onClose}>
+                Cancelar
+            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => fileRef.current?.click()}
-                            className="px-5 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[#1b2a5e] transition"
-                        >
-                            <FontAwesomeIcon icon={faCamera} /> Subir imagen
-                        </button>
-                    </div>
-
-                    {/* SEND */}
-                    <button
-                        onClick={submitReview}
-                        disabled={loading}
-                        className="w-full py-3 rounded-lg text-white font-semibold shadow-md"
-                        style={{ backgroundColor: "var(--color-primary)" }}
-                    >
-                        {loading ? "Enviando..." : "Enviar Reseña"}
-                    </button>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+            <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg"
+            >
+                {loading ? "Enviando..." : "Enviar Reseña"}
+            </button>
+            </div>
+        </div>
+        </div>
     );
-}
+    }

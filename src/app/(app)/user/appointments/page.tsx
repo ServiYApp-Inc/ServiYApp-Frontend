@@ -9,16 +9,19 @@ import Swal from "sweetalert2";
 import AppointmentCard from "@/app/components/AppointmentCard";
 import AppointmentModal from "@/app/components/AppointmentModal";
 import { useRouter } from "next/navigation";
+import ReviewModal from "@/app/components/ReviewModal";
 
 export default function UserAppointmentsPage() {
 	const { user, token } = useAuthStore();
 	const { refreshInbox } = useChatWidgetStore.getState();
 	const router = useRouter();
 
-	const [orders, setOrders] = useState<any[]>([]);
-	const [tab, setTab] = useState("upcoming");
-	const [loading, setLoading] = useState(false);
-	const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [tab, setTab] = useState("upcoming");
+  const [loading, setLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [reviewOrder, setReviewOrder] = useState(null);
+
 
 	// -------------------------------------
 	// FETCH
@@ -213,6 +216,7 @@ export default function UserAppointmentsPage() {
 							onCancel={() => confirmCancel(o.id)}
 							onFinish={() => confirmFinish(o.id)}
 							onDetails={() => setSelectedOrder(o)}
+              onReview={() => setReviewOrder(o)}
 						/>
 					))}
 				</div>
@@ -227,6 +231,18 @@ export default function UserAppointmentsPage() {
 					onReview={() => goToReview(selectedOrder.id)}
 				/>
 			)}
+
+      {reviewOrder && (
+        <ReviewModal
+          order={reviewOrder}
+          onClose={() => setReviewOrder(null)}
+          onSuccess={() => {
+            toast.success("Reseña creada con éxito");
+            fetchOrders(); // refresca la lista
+          }}
+        />
+      )}
+
 		</main>
 	);
 }
