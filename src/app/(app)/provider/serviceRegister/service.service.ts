@@ -87,3 +87,20 @@ export const activeProvider = async (id: string) => {
     const { data } = await apiClient.patch(`providers/${id}/reactivate`);
     return data;
 };
+
+// Users //
+
+export const getUsers = async () => {
+    const { data } = await apiClient.get(`users`);
+    return data;
+}
+
+export const inactiveUser = async (id: string) => {
+    const { data } = await apiClient.delete(`users/${id}`);
+    return data;
+};
+
+export const activeUser = async (id: string) => {
+    const { data } = await apiClient.patch(`users/${id}/reactivate`);
+    return data;
+};
