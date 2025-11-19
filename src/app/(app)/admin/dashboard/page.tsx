@@ -577,8 +577,6 @@ export default function AdminDashboard() {
 					</table>
 				</div>
 			</section>
-			<button  onClick={() => {router.push(`dashboard/providers`)}} className="bg-black/30 text-white">proveedores</button>
-			<button  onClick={() => {router.push(`dashboard/users`)}} className="bg-black/30 text-white">users</button>
 		</main>
 	);
 }
