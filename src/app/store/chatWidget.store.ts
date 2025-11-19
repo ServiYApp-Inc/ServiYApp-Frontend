@@ -5,14 +5,12 @@ interface ChatWidgetState {
 	minimized: boolean;
 	targetUserId: string | null;
 
-	// funciones originales
 	openWidget: (userId?: string) => void;
 	closeWidget: () => void;
 	minimizeWidget: () => void;
 	clearTarget: () => void;
 
-	// 🟣 nuevas funciones
-	resetActiveChat: () => void;
+	// 🟣 nuevas funciones globales
 	refreshInbox: () => void;
 	setRefreshInbox: (fn: () => void) => void;
 }
@@ -22,9 +20,6 @@ export const useChatWidgetStore = create<ChatWidgetState>((set) => ({
 	minimized: false,
 	targetUserId: null,
 
-	// ---------------------------
-	// FUNCIONES ORIGINALES
-	// ---------------------------
 	openWidget: (userId) =>
 		set({
 			open: true,
@@ -42,20 +37,13 @@ export const useChatWidgetStore = create<ChatWidgetState>((set) => ({
 
 	clearTarget: () => set({ targetUserId: null }),
 
-	// ---------------------------
-	// 🟣 NUEVAS FUNCIONES
-	// ---------------------------
-
-	// Permite cerrar el chat activo desde el exterior (UserAppointmentsPage)
-	resetActiveChat: () => {
-		// No tocamos activeChat aquí porque ChatWidget mantiene su propio state.
-		// Solo provocamos el "cierre" al quitar el targetUserId.
-		set({ targetUserId: null });
-	},
-
-	// función placeholder, la definirá el widget
+	// --------------------------------
+	// NUEVAS FUNCIONES
+	// --------------------------------
 	refreshInbox: () => {},
 
-	// ChatWidget podrá registrar su función real aquí
-	setRefreshInbox: (fn) => set({ refreshInbox: fn }),
+	setRefreshInbox: (fn) =>
+		set({
+			refreshInbox: fn,
+		}),
 }));

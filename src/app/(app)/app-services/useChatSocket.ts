@@ -20,21 +20,19 @@ export function useChatSocket(userId: string, receiverId?: string) {
 	const [partner, setPartner] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
 
-	// NEW: Online / offline + última conexión
 	const [online, setOnline] = useState(false);
 	const [lastSeen, setLastSeen] = useState<string | null>(null);
-
 	const [typing, setTyping] = useState(false);
 
 	// ======================
-	// CONNECT
+	// CONNECT SOCKET
 	// ======================
 	useEffect(() => {
 		if (!userId) return;
 
 		const socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
 			transports: ["websocket"],
-			query: { userId },
+			query: { userId }, // <-- ESTE ES EL ID DEL USUARIO LOGGEADO SIEMPRE
 		});
 
 		socketRef.current = socket;
@@ -43,7 +41,7 @@ export function useChatSocket(userId: string, receiverId?: string) {
 			console.log("🟢 Conectado:", socket.id);
 		});
 
-		// Obtener historial
+		// Obtener historial apenas entra al chat
 		if (receiverId) {
 			setLoading(true);
 			socket.emit("getHistory", { userId, receiverId });
@@ -70,7 +68,7 @@ export function useChatSocket(userId: string, receiverId?: string) {
 		});
 
 		// ======================
-		// NEW MESSAGE
+		// RECEIVE MESSAGE
 		// ======================
 		socket.on("receiveMessage", (msg) => {
 			const isBetween =
@@ -82,7 +80,7 @@ export function useChatSocket(userId: string, receiverId?: string) {
 			}
 		});
 
-		// Delivered ✓✓ gris
+		// Delivered ✓✓
 		socket.on("messageDelivered", ({ messageId }) => {
 			setMessages((prev) =>
 				prev.map((m) =>
@@ -102,7 +100,9 @@ export function useChatSocket(userId: string, receiverId?: string) {
 			}
 		});
 
+		// ======================
 		// TYPING
+		// ======================
 		socket.on("typing", ({ from }) => {
 			if (from === receiverId) setTyping(true);
 		});
@@ -129,7 +129,7 @@ export function useChatSocket(userId: string, receiverId?: string) {
 		});
 	};
 
-	// TYPING
+	// typing
 	const sendTyping = () => {
 		socketRef.current?.emit("typing", { from: userId, to: receiverId });
 	};
@@ -138,7 +138,6 @@ export function useChatSocket(userId: string, receiverId?: string) {
 		socketRef.current?.emit("stopTyping", { from: userId, to: receiverId });
 	};
 
-	// READ
 	const markAsRead = () => {
 		socketRef.current?.emit("markAsRead", { userId, receiverId });
 	};

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Api } from "@/app/services/api";
 import { useAuthStore } from "@/app/store/auth.store";
+import { useChatWidgetStore } from "@/app/store/chatWidget.store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import AppointmentCard from "@/app/components/AppointmentCard";
@@ -11,6 +12,7 @@ import { useRouter } from "next/navigation";
 
 export default function UserAppointmentsPage() {
 	const { user, token } = useAuthStore();
+	const { refreshInbox } = useChatWidgetStore.getState();
 	const router = useRouter();
 
 	const [orders, setOrders] = useState<any[]>([]);
@@ -40,7 +42,7 @@ export default function UserAppointmentsPage() {
 	};
 
 	// -------------------------------------
-	// CANCELAR (CON SWEET ALERT)
+	// CANCELAR
 	// -------------------------------------
 	const confirmCancel = async (id: string) => {
 		const result = await Swal.fire({
@@ -57,24 +59,25 @@ export default function UserAppointmentsPage() {
 		if (!result.isConfirmed) return;
 
 		try {
-			// 🟣 OBTENER EL PROVEEDOR DE ESTA ORDEN
 			const order = orders.find((o) => o.id === id);
 			const providerId = order?.provider?.id;
 
-			// 🟣 CANCELAR SERVICIO
 			await Api.patch(
 				`service-orders/${id}/cancel`,
 				{},
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
 
-			// 🟣 BORRAR CHAT SOLO SI HAY PROVIDER
 			if (providerId) {
 				await Api.delete(
 					`chat/conversations/user/${user?.id}/provider/${providerId}`,
 					{ headers: { Authorization: `Bearer ${token}` } }
 				);
+
+				// 🔥 REFRESCAR WIDGET
+				refreshInbox?.();
 			}
+
 			await Swal.fire({
 				title: "Cita cancelada",
 				icon: "success",
@@ -88,7 +91,7 @@ export default function UserAppointmentsPage() {
 	};
 
 	// -------------------------------------
-	// FINALIZAR SERVICIO (CON SWEET ALERT)
+	// FINALIZAR
 	// -------------------------------------
 	const confirmFinish = async (id: string) => {
 		const result = await Swal.fire({
@@ -109,6 +112,7 @@ export default function UserAppointmentsPage() {
 				{},
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
+
 			const order = orders.find((o) => o.id === id);
 			const providerId = order?.provider?.id;
 
@@ -117,6 +121,9 @@ export default function UserAppointmentsPage() {
 					`chat/conversations/user/${user?.id}/provider/${providerId}`,
 					{ headers: { Authorization: `Bearer ${token}` } }
 				);
+
+				// 🔥 REFRESCAR WIDGET
+				refreshInbox?.();
 			}
 
 			await Swal.fire({
@@ -132,7 +139,7 @@ export default function UserAppointmentsPage() {
 	};
 
 	// -------------------------------------
-	// IR A REVIEW
+	// REVIEW
 	// -------------------------------------
 	const goToReview = async (id: string) => {
 		await Swal.fire({
@@ -172,7 +179,6 @@ export default function UserAppointmentsPage() {
 				Mis reservas
 			</h1>
 
-			{/* TABS */}
 			<div className="flex gap-3 mb-8">
 				{[
 					{ key: "upcoming", label: "Próximas" },
@@ -193,7 +199,6 @@ export default function UserAppointmentsPage() {
 				))}
 			</div>
 
-			{/* LISTADO */}
 			{loading ? (
 				<p className="text-center text-gray-500">Cargando...</p>
 			) : finalFiltered.length === 0 ? (
@@ -213,7 +218,6 @@ export default function UserAppointmentsPage() {
 				</div>
 			)}
 
-			{/* MODAL */}
 			{selectedOrder && (
 				<AppointmentModal
 					order={selectedOrder}
