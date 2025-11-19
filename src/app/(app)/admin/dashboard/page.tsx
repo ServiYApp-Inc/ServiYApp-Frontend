@@ -10,12 +10,15 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faTags,
 	faFileShield,
-	faCalendarDays,
 	faRightFromBracket,
 	faChartLine,
 	faCircleCheck,
 	faCircleXmark,
 	faClockRotateLeft,
+	faUserCheck,
+	faUser,
+	faUserLock,
+	faUserGear,
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -30,6 +33,9 @@ import {
 import { useAuthStore } from "@/app/store/auth.store";
 import { getCategories } from "@/app/services/provider.service";
 import { Api } from "@/app/services/api";
+import IProvider from "@/app/interfaces/IProvider";
+import { getProviders, getUsers } from "../../provider/serviceRegister/service.service";
+import IUser from "@/app/interfaces/IUser";
 
 interface AdminOrder {
 	id: string;
@@ -69,6 +75,44 @@ export default function AdminDashboard() {
 	const [pendingDocs, setPendingDocs] = useState<any[]>([]);
 	const [orders, setOrders] = useState<AdminOrder[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [providers, setProviders] = useState<IProvider[]>([]);
+	const [users, setUsers] = useState<IUser[]>([]);
+	
+	const fetchUsers = async () => {
+		try {
+			setLoading(true);
+			const data = await getUsers();
+			setUsers(data);
+		} catch (error) {
+			console.error("Error al obtener usuarios:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
+	
+	useEffect(() => {
+		fetchUsers();
+	}, []);
+
+	// fetch proveedores para numero
+	const fetchProviders = async () => {
+		try {
+			setLoading(true);
+			const data = await getProviders();
+			setProviders(data);
+		} catch (error) {
+			console.error("Error al obtener providers:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
+	
+	useEffect(() => {
+		fetchProviders();
+	}, []);
+
+	
+
 
 	useEffect(() => {
 		if (!token) return;
@@ -236,54 +280,32 @@ export default function AdminDashboard() {
 				className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
 			>
 				{/* Citas (resumen) */}
-				<Link href="/admin/dashboard/appointments">
-					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
-						<div className="flex justify-between items-center mb-4">
-							<h3 className="text-xl font-bold text-[var(--color-primary)] flex items-center gap-2">
-								<FontAwesomeIcon icon={faCalendarDays} />
-								Citas
-							</h3>
-							<span className="text-3xl font-bold text-[var(--color-primary)]">
-								{totalOrders}
-							</span>
-						</div>
+					<div className="flex flex-col justify-between items-center mb-4 gap-4 w-full">
+						<Link href="/admin/dashboard/providers" className="w-full">
+							<div className="flex justify-between bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer w-full">
+								<h3 className="text-xl font-bold text-[var(--color-primary)] flex items-center gap-2">
+									<FontAwesomeIcon icon={faUserGear} />
+									Proveedores
+								</h3>
+								<span className="text-3xl font-bold text-[var(--color-primary)]">
+									{providers.length}
+								</span>
+							</div>
+						</Link>
 
-						<div className="grid grid-cols-2 gap-2 text-xs">
-							<div className="bg-slate-50 rounded-xl p-2">
-								<p className="text-slate-700 font-semibold text-[10px] uppercase">
-									Pendientes
-								</p>
-								<p className="font-bold text-slate-900 text-sm">
-									{pendingCount}
-								</p>
+						<Link href="/admin/dashboard/users" className="w-full">
+							<div className="flex justify-between bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer w-full">
+								<h3 className="text-xl font-bold text-[var(--color-primary)] flex items-center gap-2">
+									<FontAwesomeIcon icon={faUserGear} />
+									Usuarios
+								</h3>
+								<span className="text-3xl font-bold text-[var(--color-primary)]">
+									{users.length}
+								</span>
 							</div>
-							<div className="bg-slate-50 rounded-xl p-2">
-								<p className="text-slate-700 font-semibold text-[10px] uppercase">
-									Pagadas
-								</p>
-								<p className="font-bold text-slate-900 text-sm">
-									{paidCount}
-								</p>
-							</div>
-							<div className="bg-slate-50 rounded-xl p-2">
-								<p className="text-slate-700 font-semibold text-[10px] uppercase">
-									Aceptadas
-								</p>
-								<p className="font-bold text-slate-900 text-sm">
-									{acceptedCount}
-								</p>
-							</div>
-							<div className="bg-slate-50 rounded-xl p-2">
-								<p className="text-slate-700 font-semibold text-[10px] uppercase">
-									Finalizadas
-								</p>
-								<p className="font-bold text-slate-900 text-sm">
-									{completedCount}
-								</p>
-							</div>
-						</div>
+						</Link>
 					</div>
-				</Link>
+
 
 				{/* Categorías */}
 				<Link href="/admin/dashboard/categories">
