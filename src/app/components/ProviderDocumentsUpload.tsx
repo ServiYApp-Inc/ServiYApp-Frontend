@@ -7,7 +7,6 @@ import { useAuthStore } from "../store/auth.store";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faUpload,
-	faFilePdf,
 	faImage,
 	faSpinner,
 	faCamera,
@@ -67,7 +66,9 @@ export default function UploadProviderDocumentsModal({
 	const openCamera = async () => {
 		setCameraOpen(true);
 		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+			const stream = await navigator.mediaDevices.getUserMedia({
+				video: true,
+			});
 
 			if (videoRef.current) {
 				videoRef.current.srcObject = stream;
@@ -102,11 +103,28 @@ export default function UploadProviderDocumentsModal({
 	};
 
 	/* -------------------- VALIDACIONES -------------------- */
-	const validateIdentity = () => {
-		if (!idFile || idFile.type !== "application/pdf")
-			return toast.error("El documento debe ser un PDF.");
+	const validateImage = (file: File | null) => {
+		if (!file) return false;
 
-		if (!idPhoto) return toast.error("Falta la foto de verificación.");
+		const validTypes = [
+			"image/jpg",
+			"image/jpeg",
+			"image/png",
+			"image/webp",
+		];
+
+		return validTypes.includes(file.type);
+	};
+
+	const validateIdentity = () => {
+		if (!validateImage(idFile))
+			return toast.error(
+				"El documento debe ser una imagen (JPG, PNG, JPEG)."
+			);
+
+		if (!validateImage(idPhoto))
+			return toast.error("La foto debe ser una imagen válida.");
+
 		if (!idData.documentType || !idData.documentNumber)
 			return toast.error("Completa todos los datos obligatorios.");
 
@@ -114,8 +132,10 @@ export default function UploadProviderDocumentsModal({
 	};
 
 	const validateBank = () => {
-		if (!bankFile || bankFile.type !== "application/pdf")
-			return toast.error("El documento bancario debe ser un PDF.");
+		if (!validateImage(bankFile))
+			return toast.error(
+				"El comprobante bancario debe ser una imagen (JPG, PNG)."
+			);
 
 		if (!bankData.bank || !bankData.accountType || !bankData.accountNumber)
 			return toast.error("Completa todos los datos bancarios.");
@@ -148,7 +168,9 @@ export default function UploadProviderDocumentsModal({
 			toast.success("Documento de identidad enviado.");
 			setStep("bank");
 		} catch (error: any) {
-			toast.error(error?.response?.data?.message || "Error al enviar documento.");
+			toast.error(
+				error?.response?.data?.message || "Error al enviar documento."
+			);
 		} finally {
 			setLoadingIdentity(false);
 		}
@@ -159,8 +181,6 @@ export default function UploadProviderDocumentsModal({
 		if (!validateBank()) return;
 
 		const formData = new FormData();
-
-		// CUMPLIR CON EL BACKEND
 		formData.append("documentType", bankData.accountType);
 		formData.append("documentNumber", bankData.accountNumber);
 
@@ -183,7 +203,9 @@ export default function UploadProviderDocumentsModal({
 			toast.success("Datos bancarios enviados.");
 			setStep("done");
 		} catch (error: any) {
-			toast.error(error?.response?.data?.message || "Error al enviar documento.");
+			toast.error(
+				error?.response?.data?.message || "Error al enviar documento."
+			);
 		} finally {
 			setLoadingBank(false);
 		}
@@ -196,7 +218,7 @@ export default function UploadProviderDocumentsModal({
 		return (
 			<div className="mt-2 flex items-center gap-3 bg-gray-100 border rounded-lg px-3 py-2 shadow-sm">
 				<FontAwesomeIcon
-					icon={file.type === "application/pdf" ? faFilePdf : faImage}
+					icon={faImage}
 					className="text-[var(--color-primary)] text-lg"
 				/>
 				<span className="text-xs truncate">{file.name}</span>
@@ -208,52 +230,58 @@ export default function UploadProviderDocumentsModal({
 	return (
 		<div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
 			<div className="bg-white w-full max-w-xl rounded-2xl shadow-xl relative overflow-hidden">
-
 				{/* HEADER */}
 				<div className="flex items-center justify-between p-5 border-b">
 					<h1 className="text-xl font-bold text-[var(--color-primary)]">
 						Verificación de documentos
 					</h1>
 
-					<button onClick={onClose} className="text-gray-600 hover:text-red-500 text-xl">
+					<button
+						onClick={onClose}
+						className="text-gray-600 hover:text-red-500 text-xl"
+					>
 						<FontAwesomeIcon icon={faXmark} />
 					</button>
 				</div>
 
 				{/* STEPS */}
 				<div className="flex border-b">
-					<div className={`flex-1 text-center py-3 font-semibold ${
-						step === "identity"
-							? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
-							: "text-gray-400"
-					}`}>
+					<div
+						className={`flex-1 text-center py-3 font-semibold ${
+							step === "identity"
+								? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
+								: "text-gray-400"
+						}`}
+					>
 						1. Identidad
 					</div>
 
-					<div className={`flex-1 text-center py-3 font-semibold ${
-						step === "bank"
-							? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
-							: "text-gray-400"
-					}`}>
+					<div
+						className={`flex-1 text-center py-3 font-semibold ${
+							step === "bank"
+								? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
+								: "text-gray-400"
+						}`}
+					>
 						2. Datos bancarios
 					</div>
 
-					<div className={`flex-1 text-center py-3 font-semibold ${
-						step === "done"
-							? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
-							: "text-gray-400"
-					}`}>
+					<div
+						className={`flex-1 text-center py-3 font-semibold ${
+							step === "done"
+								? "text-[var(--color-primary)] border-b-4 border-[var(--color-primary)]"
+								: "text-gray-400"
+						}`}
+					>
 						3. Finalizado
 					</div>
 				</div>
 
 				{/* CONTENIDO */}
 				<div className="p-6 max-h-[70vh] overflow-y-auto">
-
 					{/* PASO 1 – IDENTIDAD */}
 					{step === "identity" && (
 						<div className="space-y-6">
-
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Tipo de documento
@@ -261,7 +289,10 @@ export default function UploadProviderDocumentsModal({
 								<select
 									value={idData.documentType}
 									onChange={(e) =>
-										setIdData({ ...idData, documentType: e.target.value })
+										setIdData({
+											...idData,
+											documentType: e.target.value,
+										})
 									}
 									className="w-full border p-2 rounded"
 								>
@@ -284,24 +315,33 @@ export default function UploadProviderDocumentsModal({
 									placeholder="Ej. 12345678"
 									value={idData.documentNumber}
 									onChange={(e) =>
-										setIdData({ ...idData, documentNumber: e.target.value })
+										setIdData({
+											...idData,
+											documentNumber: e.target.value,
+										})
 									}
 								/>
 							</div>
 
 							<div>
 								<label className="block text-sm font-semibold mb-1">
-									Documento (PDF)
+									Documento (Imagen)
 								</label>
 
 								<label className="cursor-pointer w-full border rounded-lg p-4 flex items-center justify-center gap-3 hover:bg-gray-50">
 									<FontAwesomeIcon icon={faUpload} />
-									<span className="text-sm">Subir PDF</span>
+									<span className="text-sm">
+										Subir imagen
+									</span>
 									<input
 										type="file"
-										accept="application/pdf"
+										accept="image/*"
 										className="hidden"
-										onChange={(e) => setIdFile(e.target.files?.[0] || null)}
+										onChange={(e) =>
+											setIdFile(
+												e.target.files?.[0] || null
+											)
+										}
 									/>
 								</label>
 
@@ -313,19 +353,24 @@ export default function UploadProviderDocumentsModal({
 									Foto de verificación
 								</label>
 								<p className="text-xs text-gray-500 mb-2">
-									Sostén tu documento y tómate una selfie clara.
+									Sostén tu documento y tómate una selfie
+									clara.
 								</p>
 
 								<div className="flex gap-3">
 									<label className="flex-1 cursor-pointer border rounded-lg p-4 flex items-center justify-center hover:bg-gray-50">
 										<FontAwesomeIcon icon={faImage} />
-										<span className="text-sm ml-2">Subir imagen</span>
+										<span className="text-sm ml-2">
+											Subir imagen
+										</span>
 										<input
 											type="file"
 											accept="image/*"
 											className="hidden"
 											onChange={(e) =>
-												setIdPhoto(e.target.files?.[0] || null)
+												setIdPhoto(
+													e.target.files?.[0] || null
+												)
 											}
 										/>
 									</label>
@@ -347,7 +392,9 @@ export default function UploadProviderDocumentsModal({
 								className="w-full py-3 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
 								style={{ background: "var(--color-primary)" }}
 							>
-								{loadingIdentity && <FontAwesomeIcon icon={faSpinner} spin />}
+								{loadingIdentity && (
+									<FontAwesomeIcon icon={faSpinner} spin />
+								)}
 								Enviar documento de identidad
 							</button>
 						</div>
@@ -356,7 +403,6 @@ export default function UploadProviderDocumentsModal({
 					{/* PASO 2 – BANCO */}
 					{step === "bank" && (
 						<div className="space-y-6">
-
 							<div>
 								<label className="block text-sm font-semibold mb-1">
 									Nombre del banco
@@ -367,7 +413,10 @@ export default function UploadProviderDocumentsModal({
 									placeholder="Ej. BBVA, Bancolombia..."
 									value={bankData.bank}
 									onChange={(e) =>
-										setBankData({ ...bankData, bank: e.target.value })
+										setBankData({
+											...bankData,
+											bank: e.target.value,
+										})
 									}
 								/>
 							</div>
@@ -380,15 +429,22 @@ export default function UploadProviderDocumentsModal({
 									className="w-full border p-2 rounded bg-white"
 									value={bankData.accountType}
 									onChange={(e) =>
-										setBankData({ ...bankData, accountType: e.target.value })
+										setBankData({
+											...bankData,
+											accountType: e.target.value,
+										})
 									}
 								>
 									<option value="">Selecciona...</option>
 									<option value="Débito">Débito</option>
 									<option value="Ahorros">Ahorros</option>
-									<option value="Corriente / Cheques">Corriente / Cheques</option>
+									<option value="Corriente / Cheques">
+										Corriente / Cheques
+									</option>
 									<option value="Nómina">Nómina</option>
-									<option value="Cuenta digital">Cuenta digital</option>
+									<option value="Cuenta digital">
+										Cuenta digital
+									</option>
 								</select>
 							</div>
 
@@ -402,25 +458,32 @@ export default function UploadProviderDocumentsModal({
 									placeholder="Ej. 1234567890"
 									value={bankData.accountNumber}
 									onChange={(e) =>
-										setBankData({ ...bankData, accountNumber: e.target.value })
+										setBankData({
+											...bankData,
+											accountNumber: e.target.value,
+										})
 									}
 								/>
 							</div>
 
 							<div>
 								<label className="block text-sm font-semibold mb-1">
-									Extracto bancario (PDF)
+									Extracto bancario (Imagen)
 								</label>
 
 								<label className="cursor-pointer w-full border rounded-lg p-4 flex items-center justify-center gap-3 hover:bg-gray-50">
 									<FontAwesomeIcon icon={faUpload} />
-									<span className="text-sm">Subir comprobante</span>
+									<span className="text-sm">
+										Subir imagen
+									</span>
 									<input
 										type="file"
-										accept="application/pdf"
+										accept="image/*"
 										className="hidden"
 										onChange={(e) =>
-											setBankFile(e.target.files?.[0] || null)
+											setBankFile(
+												e.target.files?.[0] || null
+											)
 										}
 									/>
 								</label>
@@ -434,7 +497,9 @@ export default function UploadProviderDocumentsModal({
 								className="w-full py-3 rounded-lg text-white font-semibold flex items-center justify-center gap-2"
 								style={{ background: "var(--color-primary)" }}
 							>
-								{loadingBank && <FontAwesomeIcon icon={faSpinner} spin />}
+								{loadingBank && (
+									<FontAwesomeIcon icon={faSpinner} spin />
+								)}
 								Enviar datos bancarios
 							</button>
 						</div>
@@ -448,9 +513,9 @@ export default function UploadProviderDocumentsModal({
 							</h2>
 
 							<p className="text-gray-600 leading-relaxed max-w-sm mx-auto">
-								Tus documentos están siendo revisados por un administrador de
-								ServiYApp.  
-								Te notificaremos cuando tu cuenta sea verificada.
+								Tus documentos están siendo revisados por un
+								administrador de ServiYApp. Te notificaremos
+								cuando tu cuenta sea verificada.
 							</p>
 
 							<button
@@ -467,9 +532,14 @@ export default function UploadProviderDocumentsModal({
 				{cameraOpen && (
 					<div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6">
 						<div className="bg-white p-4 rounded-xl w-full max-w-md relative">
-							<h3 className="text-lg font-bold mb-3">Tomar foto</h3>
+							<h3 className="text-lg font-bold mb-3">
+								Tomar foto
+							</h3>
 
-							<video ref={videoRef} className="w-full rounded-lg" />
+							<video
+								ref={videoRef}
+								className="w-full rounded-lg"
+							/>
 							<canvas ref={canvasRef} className="hidden"></canvas>
 
 							<div className="flex justify-end gap-3 mt-4">

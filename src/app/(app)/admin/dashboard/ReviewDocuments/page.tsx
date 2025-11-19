@@ -36,7 +36,9 @@ interface PendingDocument {
 export default function AdminPendingDocumentsPage() {
 	const [documents, setDocuments] = useState<PendingDocument[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [selectedDoc, setSelectedDoc] = useState<PendingDocument | null>(null);
+	const [selectedDoc, setSelectedDoc] = useState<PendingDocument | null>(
+		null
+	);
 	const [decisionLoading, setDecisionLoading] = useState(false);
 	const [comment, setComment] = useState("");
 	const { token } = useAuthStore();
@@ -132,16 +134,24 @@ export default function AdminPendingDocumentsPage() {
 
 					<tbody>
 						{documents.map((doc) => (
-							<tr key={doc.id} className="border-b hover:bg-gray-50">
+							<tr
+								key={doc.id}
+								className="border-b hover:bg-gray-50"
+							>
 								<td className="py-3 px-4">
 									<div className="font-bold capitalize text-[var(--color-primary)]">
-										{doc.provider.names} {doc.provider.surnames}
+										{doc.provider.names}{" "}
+										{doc.provider.surnames}
 									</div>
-									<div className="text-xs text-gray-500">{doc.provider.email}</div>
+									<div className="text-xs text-gray-500">
+										{doc.provider.email}
+									</div>
 								</td>
 
 								<td className="py-3 px-4">
-									<span className="font-semibold">{doc.documentType}</span>
+									<span className="font-semibold">
+										{doc.documentType}
+									</span>
 									<div className="text-xs text-gray-500">
 										#{doc.documentNumber}
 									</div>
@@ -174,7 +184,8 @@ export default function AdminPendingDocumentsPage() {
 						exit={{ opacity: 0 }}
 						className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
 						onClick={(e) => {
-							if (e.target === e.currentTarget) setSelectedDoc(null);
+							if (e.target === e.currentTarget)
+								setSelectedDoc(null);
 						}}
 					>
 						<motion.div
@@ -197,54 +208,87 @@ export default function AdminPendingDocumentsPage() {
 							{/* Proveedor */}
 							<p className="text-sm mb-1">
 								<strong>Proveedor:</strong>{" "}
-								{selectedDoc.provider.names} {selectedDoc.provider.surnames}
+								{selectedDoc.provider.names}{" "}
+								{selectedDoc.provider.surnames}
 							</p>
 
 							<p className="text-sm mb-1">
-								<strong>Email:</strong> {selectedDoc.provider.email}
+								<strong>Email:</strong>{" "}
+								{selectedDoc.provider.email}
 							</p>
 
 							<p className="text-sm mb-1">
-								<strong>Teléfono:</strong> {selectedDoc.provider.phone}
+								<strong>Teléfono:</strong>{" "}
+								{selectedDoc.provider.phone}
 							</p>
 
+							{/* Documento */}
 							{/* Documento */}
 							<p className="text-sm mt-4 mb-2">
 								<strong>Documento enviado:</strong>
 							</p>
 
-							<div className="space-y-3">
+							<div className="space-y-5">
+								{/* Imagen del documento principal */}
 								{selectedDoc.file && (
-									<a
-										href={selectedDoc.file}
-										target="_blank"
-										className="text-blue-600 underline text-sm"
-									>
-										Ver documento PDF
-									</a>
+									<div>
+										<img
+											src={selectedDoc.file}
+											alt="Documento de identidad"
+											className="w-40 rounded-lg shadow border"
+										/>
+										<a
+											href={selectedDoc.file}
+											target="_blank"
+											className="block text-blue-600 underline text-xs mt-1"
+										>
+											Ver imagen en grande
+										</a>
+									</div>
 								)}
 
+								{/* Foto de verificación (selfie) */}
 								{selectedDoc.photoVerification && (
-									<img
-										src={selectedDoc.photoVerification}
-										className="w-40 rounded-lg shadow"
-									/>
+									<div>
+										<img
+											src={selectedDoc.photoVerification}
+											alt="Foto de verificación"
+											className="w-40 rounded-lg shadow border"
+										/>
+										<a
+											href={selectedDoc.photoVerification}
+											target="_blank"
+											className="block text-blue-600 underline text-xs mt-1"
+										>
+											Ver imagen en grande
+										</a>
+									</div>
 								)}
 
+								{/* Extracto bancario (imagen) */}
 								{selectedDoc.accountFile && (
-									<a
-										href={selectedDoc.accountFile}
-										target="_blank"
-										className="text-blue-600 underline text-sm"
-									>
-										Ver extracto bancario
-									</a>
+									<div>
+										<img
+											src={selectedDoc.accountFile}
+											alt="Documento bancario"
+											className="w-40 rounded-lg shadow border"
+										/>
+										<a
+											href={selectedDoc.accountFile}
+											target="_blank"
+											className="block text-blue-600 underline text-xs mt-1"
+										>
+											Ver imagen en grande
+										</a>
+									</div>
 								)}
 							</div>
 
 							{/* Comentarios */}
 							<div className="mt-4">
-								<label className="font-semibold text-sm">Comentario (opcional)</label>
+								<label className="font-semibold text-sm">
+									Comentario (opcional)
+								</label>
 								<textarea
 									className="w-full border rounded-lg p-2 mt-1 text-sm"
 									rows={3}
@@ -261,7 +305,10 @@ export default function AdminPendingDocumentsPage() {
 									className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm"
 								>
 									{decisionLoading ? (
-										<FontAwesomeIcon icon={faSpinner} spin />
+										<FontAwesomeIcon
+											icon={faSpinner}
+											spin
+										/>
 									) : (
 										"Rechazar"
 									)}
@@ -272,7 +319,10 @@ export default function AdminPendingDocumentsPage() {
 									className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm"
 								>
 									{decisionLoading ? (
-										<FontAwesomeIcon icon={faSpinner} spin />
+										<FontAwesomeIcon
+											icon={faSpinner}
+											spin
+										/>
 									) : (
 										"Aprobar"
 									)}
