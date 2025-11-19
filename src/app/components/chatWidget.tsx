@@ -52,6 +52,8 @@ export default function ChatWidget() {
 		openWidget,
 		closeWidget,
 		clearTarget,
+		resetActiveChat,
+		setRefreshInbox,
 	} = useChatWidgetStore();
 
 	const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -60,6 +62,8 @@ export default function ChatWidget() {
 	const [localLoading, setLocalLoading] = useState(false);
 
 	const [localPartner, setLocalPartner] = useState<any>(null);
+	const [notifications, setNotifications] = useState<any[]>([]);
+	const [refreshingInbox, setRefreshingInbox] = useState(false);
 
 	const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +78,7 @@ export default function ChatWidget() {
 		stopTyping,
 		markAsRead,
 		loading,
+		socket,
 	} = useChatSocket(
 		activeChat ? user?.id || "" : "",
 		activeChat ? activeChat.userId : ""
@@ -84,10 +89,12 @@ export default function ChatWidget() {
 	}, [partner]);
 
 	// --------------------------------------
-	// LOAD / REFRESH CONVERSATIONS
+	// REFRESH CONVERSATIONS
 	// --------------------------------------
 	const refreshConversations = async () => {
 		if (!user?.id) return;
+
+		setRefreshingInbox(true);
 
 		const res = await fetch(
 			`${process.env.NEXT_PUBLIC_API_URL}chat/conversations?userId=${user.id}`,
@@ -100,22 +107,80 @@ export default function ChatWidget() {
 		});
 
 		setConversations(data);
+		setRefreshingInbox(false);
 	};
 
 	useEffect(() => {
 		refreshConversations();
 	}, [user?.id, token]);
 
+	// 🔥 Registrar refresh global
+	useEffect(() => {
+		setRefreshInbox(refreshConversations);
+	}, []);
+
 	// --------------------------------------
-	// OPEN FROM OUTSIDE (StartChatButton)
+	// NOTIFICACIONES DE MENSAJES
+	// --------------------------------------
+	useEffect(() => {
+		if (!socket) return;
+
+		socket.on("messageNotification", (payload: any) => {
+			// Si es del chat que está abierto → NO notificar
+			if (activeChat?.userId === payload.from) return;
+
+			// 🔥 refrescar inbox en tiempo real
+			refreshConversations();
+
+			// Agregar notificación visual
+			setNotifications((prev) => [
+				...prev,
+				{
+					id: Date.now(),
+					from: payload.from,
+					content: payload.content,
+					time: payload.time,
+				},
+			]);
+		});
+	}, [socket, activeChat]);
+
+	// Cerrar automáticamente notificaciones
+	useEffect(() => {
+		if (notifications.length === 0) return;
+
+		const timer = setTimeout(() => {
+			setNotifications((prev) => prev.slice(1));
+		}, 4500);
+
+		return () => clearTimeout(timer);
+	}, [notifications]);
+
+	// --------------------------------------
+	// CERRAR CHAT SI LA CONVERSACIÓN YA NO EXISTE
+	// --------------------------------------
+	useEffect(() => {
+		if (!activeChat) return;
+
+		const stillExists = conversations.some(
+			(c) => c.userId === activeChat.userId
+		);
+
+		if (!stillExists) {
+			setActiveChat(null);
+			setMessages([]);
+			stopTyping();
+		}
+	}, [conversations]);
+
+	// --------------------------------------
+	// OPEN FROM OUTSIDE
 	// --------------------------------------
 	useEffect(() => {
 		if (!targetUserId) return;
 
-		// Buscar conversación existente
 		let conv = conversations.find((c) => c.userId === targetUserId);
 
-		// Si no existe, crear una temporal
 		if (!conv) {
 			conv = {
 				userId: targetUserId,
@@ -146,7 +211,7 @@ export default function ChatWidget() {
 	}, [messages]);
 
 	// --------------------------------------
-	// MARK AS READ (blue ✓✓)
+	// MARK AS READ
 	// --------------------------------------
 	useEffect(() => {
 		if (!activeChat) return;
@@ -173,7 +238,6 @@ export default function ChatWidget() {
 		setContent("");
 		stopTyping();
 
-		// actualizar inbox después de enviar
 		setTimeout(() => {
 			refreshConversations();
 		}, 150);
@@ -208,21 +272,13 @@ export default function ChatWidget() {
 		const mine = msg.senderId === user?.id;
 
 		return (
-			<div
-				className={`flex ${
-					mine ? "justify-end" : "justify-start"
-				} animate-[fadeIn_.25s_ease,slideIn_.25s_ease]`}
-			>
+			<div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
 				<div
 					className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] shadow-sm ${
 						mine
 							? "bg-primary text-white"
 							: "bg-gray-200 text-gray-700"
 					}`}
-					style={{
-						borderBottomRightRadius: mine ? "4px" : "20px",
-						borderBottomLeftRadius: mine ? "20px" : "4px",
-					}}
 				>
 					<div>{msg.content}</div>
 
@@ -238,64 +294,74 @@ export default function ChatWidget() {
 	// ======================================
 	// INBOX
 	// ======================================
-	const renderInbox = () => (
-		<div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
-			{conversations.length === 0 && (
-				<p className="text-gray-500 text-center mt-10">
-					No tienes mensajes.
-				</p>
-			)}
-
-			{conversations.map((c) => (
-				<div
-					key={c.userId}
-					className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer border"
-					onClick={() => {
-						setLocalLoading(true);
-						setActiveChat(null);
-						setLocalPartner(null);
-						setMessages([]);
-
-						setTimeout(() => {
-							setActiveChat(c);
-							markAsRead();
-							setLocalLoading(false);
-						}, 150);
-					}}
-				>
-					{c.user?.profilePicture ? (
-						<img
-							src={c.user.profilePicture}
-							className="w-10 h-10 rounded-full object-cover"
-						/>
-					) : (
-						<div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-							<FontAwesomeIcon
-								icon={faUser}
-								className="text-gray-600"
-							/>
-						</div>
-					)}
-
-					<div className="flex-1">
-						<div className="font-medium text-sm">
-							{c.user
-								? `${c.user.names} ${c.user.surnames}`
-								: c.userId}
-						</div>
-						<div className="text-xs text-gray-500 truncate">
-							{c.lastSenderId === user?.id ? "Tú: " : ""}
-							{c.lastMessage}
-						</div>
-					</div>
-
-					<div className="text-[11px] text-gray-400">
-						{formatTime(c.time)}
-					</div>
+	const renderInbox = () => {
+		if (refreshingInbox) {
+			return (
+				<div className="flex-1 flex justify-center items-center">
+					<div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent" />
 				</div>
-			))}
-		</div>
-	);
+			);
+		}
+
+		return (
+			<div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
+				{conversations.length === 0 && (
+					<p className="text-gray-500 text-center mt-10">
+						No tienes mensajes.
+					</p>
+				)}
+
+				{conversations.map((c) => (
+					<div
+						key={c.userId}
+						className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer border"
+						onClick={() => {
+							setLocalLoading(true);
+							setActiveChat(null);
+							setLocalPartner(null);
+							setMessages([]);
+
+							setTimeout(() => {
+								setActiveChat(c);
+								markAsRead();
+								setLocalLoading(false);
+							}, 150);
+						}}
+					>
+						{c.user?.profilePicture ? (
+							<img
+								src={c.user.profilePicture}
+								className="w-10 h-10 rounded-full object-cover"
+							/>
+						) : (
+							<div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+								<FontAwesomeIcon
+									icon={faUser}
+									className="text-gray-600"
+								/>
+							</div>
+						)}
+
+						<div className="flex-1">
+							<div className="font-medium text-sm">
+								{c.user
+									? `${c.user.names} ${c.user.surnames}`
+									: c.userId}
+							</div>
+							<div className="text-xs text-gray-500 truncate">
+								{c.lastSenderId === user?.id ? "Tú: " : ""}
+								{c.lastMessage}
+							</div>
+						</div>
+
+						<div className="text-[11px] text-gray-400">
+							{formatTime(c.time)}
+						</div>
+					</div>
+				))}
+			</div>
+		);
+	};
 
 	// ======================================
 	// CHAT VIEW
@@ -303,10 +369,7 @@ export default function ChatWidget() {
 	const renderChat = () => (
 		<div className="flex flex-col h-full">
 			{/* HEADER */}
-			<div
-				className="flex items-center gap-2 px-3 border-b bg-gray-100"
-				style={{ height: "54px", flexShrink: 0 }}
-			>
+			<div className="flex items-center gap-2 px-3 border-b bg-gray-100" style={{ height: "54px" }}>
 				<button
 					onClick={async () => {
 						setActiveChat(null);
@@ -315,10 +378,7 @@ export default function ChatWidget() {
 						await refreshConversations();
 					}}
 				>
-					<FontAwesomeIcon
-						icon={faChevronLeft}
-						className="text-gray-600"
-					/>
+					<FontAwesomeIcon icon={faChevronLeft} className="text-gray-600" />
 				</button>
 
 				{localPartner?.profilePicture ? (
@@ -328,17 +388,12 @@ export default function ChatWidget() {
 					/>
 				) : (
 					<div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-						<FontAwesomeIcon
-							icon={faUser}
-							className="text-gray-600"
-						/>
+						<FontAwesomeIcon icon={faUser} className="text-gray-600" />
 					</div>
 				)}
 
 				<div className="font-medium text-sm">
-					{localPartner
-						? `${localPartner.names} ${localPartner.surnames}`
-						: ""}
+					{localPartner ? `${localPartner.names} ${localPartner.surnames}` : ""}
 				</div>
 			</div>
 
@@ -355,9 +410,7 @@ export default function ChatWidget() {
 						))}
 
 						{typing && (
-							<div className="text-sm text-gray-600 ml-1">
-								escribiendo...
-							</div>
+							<div className="text-sm text-gray-600 ml-1">escribiendo...</div>
 						)}
 
 						<div ref={bottomRef} />
@@ -366,10 +419,7 @@ export default function ChatWidget() {
 			</div>
 
 			{/* INPUT */}
-			<div
-				className="flex items-center gap-2 px-3 border-t bg-white rounded-b-xl"
-				style={{ height: "56px", flexShrink: 0 }}
-			>
+			<div className="flex items-center gap-2 px-3 border-t bg-white rounded-b-xl" style={{ height: "56px" }}>
 				<input
 					className="flex-1 border rounded-full px-3 py-2 text-sm"
 					placeholder="Escribe un mensaje..."
@@ -412,16 +462,26 @@ export default function ChatWidget() {
 				</button>
 			)}
 
+			{/* NOTIFICACIONES */}
+			<div className="fixed bottom-28 right-6 space-y-2 z-[9999]">
+				{notifications.map((n) => (
+					<div
+						key={n.id}
+						className="bg-white shadow-xl p-3 rounded-lg border w-64 animate-fadeIn"
+					>
+						<p className="font-medium text-sm mb-1">Nuevo mensaje</p>
+						<p className="text-xs text-gray-600 truncate">{n.content}</p>
+					</div>
+				))}
+			</div>
+
 			{/* WIDGET */}
 			{open && (
 				<div
 					className="fixed bottom-2 right-6 bg-white shadow-lg border rounded-xl flex flex-col z-50"
 					style={{ width: "24rem", height: "36rem" }}
 				>
-					<div
-						className="flex items-center justify-between px-4 bg-primary text-white rounded-t-xl"
-						style={{ height: "50px", flexShrink: 0 }}
-					>
+					<div className="flex items-center justify-between px-4 bg-primary text-white rounded-t-xl" style={{ height: "50px" }}>
 						<span className="font-medium text-sm">
 							{activeChat ? "Chat" : "Mensajes"}
 						</span>
