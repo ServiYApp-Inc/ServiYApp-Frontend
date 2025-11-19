@@ -66,7 +66,6 @@ export default function ServiceCard({
 					alt={`Imagen de ${name}`}
 					className="w-full h-full rounded-t-lg object-cover"
 				/>
-				<FavBtn />
 
 				<span className="absolute bottom-2 left-2 bg-white/90 px-2 py-1 rounded-lg text-sm font-medium">
 					<FontAwesomeIcon icon={faTag} /> {category.name}

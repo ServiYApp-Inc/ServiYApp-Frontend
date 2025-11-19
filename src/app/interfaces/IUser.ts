@@ -9,4 +9,5 @@ export default interface IUser {
 	country: ICountry;
 	role: "admin" | "provider" | "user";
 	phone: string;
+	status?: string
 }
