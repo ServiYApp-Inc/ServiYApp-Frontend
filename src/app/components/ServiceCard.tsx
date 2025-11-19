@@ -86,7 +86,7 @@ export default function ServiceCard({
 					<FontAwesomeIcon icon={faClock} /> {duration} min
 				</p>
 				<p className="text-md text-[var(--color-primary)] font-bold">
-					{rating} <FontAwesomeIcon icon={faStar} />
+					{rating ? rating : "5.0"} <FontAwesomeIcon icon={faStar} />
 				</p>
 			</span>
 

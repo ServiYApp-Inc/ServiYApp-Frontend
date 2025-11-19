@@ -113,3 +113,20 @@ export const reactivateAddress = async (id: string, token: string) => {
 	);
 	return data;
 };
+
+export const createProviderReview = async (formData: FormData, token: string) => {
+	const { data } = await Api.post(
+		"reviews/createReviewProvider",
+		formData,
+		{
+		headers: {
+			Authorization: `Bearer ${token}`,
+			// ❌ NO AGREGAR Content-Type
+		},
+		}
+	);
+
+	return data;
+	};
+
+
