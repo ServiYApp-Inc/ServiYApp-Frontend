@@ -1,297 +1,396 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import ProfileItem from "@/app/components/ProfileItem";
 import { Api } from "@/app/services/api";
-import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
+import { toast } from "react-toastify";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
-/*-- iconos --*/
 import {
-	faBookOpen,
-	faCalendarPlus,
-	faChartLine,
-	faGear,
+	faCalendar,
+	faCheckCircle,
+	faMoneyBill,
+	faStar,
+	faUser,
 	faScissors,
-	faMoneyBillWave,
+	faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+const fadeUp = {
+	initial: { opacity: 0, y: 20 },
+	animate: { opacity: 1, y: 0 },
+};
+
+interface ServiceOrder {
+	id: string;
+	status: string;
+	createdAt: string;
+
+	user: {
+		names: string;
+		surnames: string;
+		profilePicture?: string;
+	};
+
+	service: {
+		name: string;
+		photos?: string[];
+		price?: number;
+	};
+
+	payments: {
+		amount: string;
+		status: string;
+	}[];
+}
 
 export default function ProviderDashboard() {
 	const router = useRouter();
 	const { user, token, setAuth } = useAuthStore();
-	const [provider, setProvider] = useState<any>(null);
+
 	const [loading, setLoading] = useState(true);
+	const [isClient, setIsClient] = useState(false);
 
+	const [orders, setOrders] = useState<ServiceOrder[]>([]);
+
+	/* -----------------------------------------------------
+	   🚀 LOGIN CON GOOGLE + SESIÓN (SIN LOOP)
+	------------------------------------------------------- */
 	useEffect(() => {
-		const fetchProvider = async () => {
+		setIsClient(true);
+
+		const authenticate = async () => {
+			const params = new URLSearchParams(window.location.search);
+			const tokenParam = params.get("token");
+			const idParam = params.get("id");
+
 			try {
-				const params = new URLSearchParams(window.location.search);
-				const tokenParam = params.get("token");
-				const idParam = params.get("id");
-
-				let accessToken =
-					tokenParam ||
-					token ||
-					localStorage.getItem("access_token") ||
-					null;
-
-				let providerId =
-					idParam ||
-					user?.id ||
-					localStorage.getItem("provider_id") ||
-					null;
-
-				if (!accessToken || !providerId) {
-					return router.push("/loginProvider");
-				}
-
+				// 🔵 Google login
 				if (tokenParam && idParam) {
 					localStorage.setItem("access_token", tokenParam);
 					localStorage.setItem("provider_id", idParam);
-				}
 
-				if (user && token) {
-					setProvider(user);
+					const { data } = await Api.get(`/providers/${idParam}`, {
+						headers: { Authorization: `Bearer ${tokenParam}` },
+					});
+
+					setAuth({
+						token: tokenParam,
+						role: "provider",
+						user: data,
+					});
+
+					toast.success(`Bienvenida, ${data.names}!`);
+
+					window.history.replaceState(
+						{},
+						"",
+						window.location.pathname
+					);
 					setLoading(false);
 					return;
 				}
 
-				const { data } = await Api.get(`/providers/${providerId}`, {
-					headers: { Authorization: `Bearer ${accessToken}` },
-				});
+				// 🟣 Sesión persistida
+				const storedToken = localStorage.getItem("access_token");
+				const storedId = localStorage.getItem("provider_id");
 
-				setAuth({
-					token: accessToken,
-					role: "provider",
-					user: data,
-				});
+				if (!storedToken || !storedId) {
+					if (user === null) router.push("/loginProvider");
+					return;
+				}
 
-				setProvider(data);
-			} catch (error) {
-				console.error("Error al cargar proveedor:", error);
-				toast.error("No se pudo cargar tu perfil.");
+				// Si no está cargado en Zustand
+				if (!user) {
+					const { data } = await Api.get(`/providers/${storedId}`, {
+						headers: { Authorization: `Bearer ${storedToken}` },
+					});
+
+					setAuth({
+						token: storedToken,
+						role: "provider",
+						user: data,
+					});
+				}
+			} catch (err) {
+				console.error("Auth error:", err);
 				router.push("/loginProvider");
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		fetchProvider();
-	}, [router, setAuth, token, user]);
+		authenticate();
+	}, [user]);
 
-	if (loading)
+	/* -----------------------------------------------------
+	   🔥 CARGAR CITAS
+	------------------------------------------------------- */
+	useEffect(() => {
+		if (!token || !user?.id) return;
+
+		(async () => {
+			try {
+				const { data } = await Api.get(
+					`/service-orders/provider/${user.id}`,
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
+
+				setOrders(Array.isArray(data) ? data : []);
+			} catch (err) {
+				console.error("Error cargando citas:", err);
+			}
+		})();
+	}, [token, user]);
+
+	if (!isClient || loading) {
 		return (
 			<div className="flex justify-center items-center h-screen text-gray-500">
 				Cargando tu panel...
 			</div>
 		);
+	}
 
-	/* ---------------- MOCK DATA (BORRAR AL CONECTAR BACK) ---------------- */
-	const upcomingAppointments = [
-		{
-			id: 1,
-			date: "2025-11-05T15:00:00",
-			user: { names: "María López" },
-			service: { name: "Peinado de novia" },
-			status: "Confirmado",
-		},
-		{
-			id: 2,
-			date: "2025-11-06T10:30:00",
-			user: { names: "Fernanda Juárez" },
-			service: { name: "Manicure semipermanente" },
-			status: "Pendiente",
-		},
-	];
+	/* -----------------------------------------------------
+	   🧮 PROCESAR
+	------------------------------------------------------- */
 
-	const mockReviews = [
-		{
-			id: 1,
-			user: { names: "Claudia Gómez" },
-			rating: 5,
-			comment: "Excelente atención, puntual y amable.",
-		},
-		{
-			id: 2,
-			user: { names: "Daniela Ruiz" },
-			rating: 4,
-			comment: "Muy buena experiencia, el maquillaje me encantó.",
-		},
-	];
+	const paidOrders = orders.filter(
+		(o) => o.payments?.[0]?.status === "approved"
+	);
 
-	const kpis = [
-		{ label: "Promedio de calificación", value: "4.8" },
-		{ label: "Servicios completados", value: "36" },
-		{ label: "Ganancias del mes", value: "$12,400" },
-		{ label: "Clientes nuevos", value: "5" },
-	];
+	const upcoming = paidOrders.filter((o) =>
+		["paid", "accepted"].includes(o.status)
+	);
 
-	/* ------------------------------------------------------------------- */
+	const completed = paidOrders.filter((o) => o.status === "completed");
+
+	const totalRevenue = paidOrders.reduce(
+		(acc, o) => acc + Number(o.payments?.[0]?.amount || 0),
+		0
+	);
+
+	const reviewsCount = (user as any)?.reviews?.length || 0;
+
+	const formatMoney = (value: number) =>
+		value.toLocaleString("es-MX", {
+			style: "currency",
+			currency: "MXN",
+			maximumFractionDigits: 0,
+		});
+
+	/* -----------------------------------------------------
+	   🎨 UI MODERNA (tipo usuario)
+	------------------------------------------------------- */
 
 	return (
-		<main className="max-w-5xl mt-8 mx-auto mb-20">
-			{/* Encabezado */}
-			<h1 className="text-[48px] font-bold text-[var(--color-primary)] mb-2">
-				¡Hola, {provider?.names?.split(" ")[0] || "Proveedor"}!
-			</h1>
-			<p className="text-[20px] text-gray-600 mb-8">
-				Este es tu panel, aquí puedes administrar tus servicios, turnos
-				y ver tu rendimiento.
-			</p>
+		<main className="max-w-6xl mx-auto px-4 py-10 font-nunito">
+			{/* HEADER */}
+			<motion.h1
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="text-3xl md:text-4xl font-bold text-[var(--color-primary)] mb-6"
+			>
+				¡Hola, {user?.names?.split(" ")[0]}!
+			</motion.h1>
 
-			{/* Resumen principal */}
-			<div className="bg-[var(--color-primary)] p-6 rounded-3xl text-white flex flex-col gap-8">
-				<div className="flex flex-col md:flex-row items-center gap-6">
-					<img
-						src={provider?.profilePicture || "/default-avatar.png"}
-						alt="Provider profilePicture"
-						className="w-[130px] h-[130px] rounded-full border-2 border-white object-cover"
+			{/* ---------------- KPIs ---------------- */}
+			<motion.section
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"
+			>
+				<div className="bg-[var(--color-primary)] text-white p-5 rounded-2xl shadow">
+					<FontAwesomeIcon
+						icon={faCalendar}
+						className="text-2xl mb-2"
 					/>
-					<div>
-						<h3 className="font-bold text-[36px] capitalize">
-							{provider?.names || "Proveedor"}{" "}
-							{provider?.surnames || ""}
-						</h3>
-						<h5 className="font-medium text-[22px]">
-							{provider?.email}
-						</h5>
-					</div>
+					<p className="text-3xl font-bold">{upcoming.length}</p>
+					<p className="text-sm opacity-90">Próximas citas</p>
 				</div>
-			</div>
 
-			{/* KPIs */}
-			<section className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-				{kpis.map((kpi, i) => (
-					<div
-						key={i}
-						className="bg-white p-4 rounded-2xl border shadow-sm text-center"
+				<div className="bg-white p-5 rounded-2xl shadow text-center">
+					<FontAwesomeIcon
+						icon={faCheckCircle}
+						className="text-[var(--color-primary)] text-2xl"
+					/>
+					<p className="text-3xl font-bold">{completed.length}</p>
+					<p className="text-gray-600 text-sm">Completadas</p>
+				</div>
+
+				<div className="bg-white p-5 rounded-2xl shadow text-center">
+					<FontAwesomeIcon
+						icon={faMoneyBill}
+						className="text-[var(--color-primary)] text-2xl"
+					/>
+					<p className="text-2xl font-bold">
+						{formatMoney(totalRevenue)}
+					</p>
+					<p className="text-gray-600 text-sm">Ingresos</p>
+				</div>
+
+				<div className="bg-white p-5 rounded-2xl shadow text-center">
+					<FontAwesomeIcon
+						icon={faStar}
+						className="text-yellow-400 text-2xl"
+					/>
+					<p className="text-3xl font-bold">{reviewsCount}</p>
+					<p className="text-gray-600 text-sm">Reseñas</p>
+				</div>
+			</motion.section>
+
+			{/* ---------------- Próximas citas ---------------- */}
+			<motion.section
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="mb-10"
+			>
+				<div className="flex justify-between items-center mb-4">
+					<h2 className="text-xl font-bold text-[var(--color-primary)]">
+						Próximas citas con clientes
+					</h2>
+					<button
+						onClick={() => router.push("/provider/appointments")}
+						className="text-sm font-semibold text-[var(--color-primary)] flex items-center gap-1"
 					>
-						<p className="text-3xl font-bold text-[var(--color-primary)]">
-							{kpi.value}
-						</p>
-						<p className="text-sm text-gray-600">{kpi.label}</p>
-					</div>
-				))}
-			</section>
+						Ver todas <FontAwesomeIcon icon={faArrowRight} />
+					</button>
+				</div>
 
-			{/* Próximos turnos */}
-			<section className="mt-10">
-				<h2 className="text-2xl font-semibold mb-4 text-[var(--color-primary)]">
-					Próximos turnos
-				</h2>
-				<ul className="space-y-3">
-					{upcomingAppointments.map((appt) => (
-						<li
-							key={appt.id}
-							className="bg-white p-4 rounded-xl border shadow-sm flex justify-between items-center"
-						>
-							<div>
-								<p className="font-medium text-lg">
-									{appt.service.name}
-								</p>
-								<p className="text-sm text-gray-500">
-									{new Date(appt.date).toLocaleDateString(
-										"es-MX",
-										{
-											weekday: "long",
-											day: "numeric",
-											month: "long",
-											hour: "2-digit",
-											minute: "2-digit",
-										}
-									)}{" "}
-									— {appt.user.names}
-								</p>
-							</div>
-							<span
-								className={`px-3 py-1 text-sm rounded-full ${
-									appt.status === "Confirmado"
-										? "bg-green-100 text-green-700"
-										: "bg-yellow-100 text-yellow-700"
-								}`}
-							>
-								{appt.status}
-							</span>
-						</li>
-					))}
-				</ul>
-			</section>
-
-			{/* Servicios */}
-			<section className="mt-10">
-				<h2 className="text-2xl font-semibold mb-4 text-[var(--color-primary)]">
-					Mis servicios
-				</h2>
-				<div className="grid md:grid-cols-2 gap-4">
-					{provider?.services?.length ? (
-						provider.services.map((s: any) => (
+				{upcoming.length === 0 ? (
+					<p className="text-gray-500">No tienes citas próximas.</p>
+				) : (
+					<div className="grid gap-4">
+						{upcoming.slice(0, 3).map((o) => (
 							<div
-								key={s.id}
-								className="p-4 bg-white border rounded-2xl shadow-sm flex justify-between items-center"
+								key={o.id}
+								className="bg-white p-5 rounded-xl shadow flex items-center gap-6 hover:shadow-lg transition"
 							>
-								<div>
-									<p className="font-semibold text-lg">
-										{s.name}
+								{/* FOTO SERVICIO */}
+								<img
+									src={
+										o.service?.photos?.[0] ||
+										"/default-service.jpg"
+									}
+									className="w-20 h-20 rounded-full object-cover border"
+								/>
+
+								<div className="flex-1">
+									<p className="font-semibold text-lg text-[var(--color-primary)]">
+										{o.service.name}
 									</p>
-									<p className="text-sm text-gray-500">
-										{s.duration} min • ${s.price} MXN
+
+									{/* CLIENTE */}
+									<p className="text-gray-600 text-sm mt-1">
+										Cliente:{" "}
+										<span className="font-medium capitalize">
+											{o.user.names} {o.user.surnames}
+										</span>
+									</p>
+
+									{/* ESTADO */}
+									<p className="text-xs mt-1 font-semibold text-gray-500">
+										{o.status === "accepted"
+											? "CITA ACEPTADA"
+											: "CITA PAGADA — PENDIENTE"}
 									</p>
 								</div>
-								<span
-									className={`text-sm font-medium px-3 py-1 rounded-full ${
-										s.active
-											? "bg-green-100 text-green-700"
-											: "bg-gray-200 text-gray-600"
-									}`}
+
+								<Link
+									href="/provider/appointments"
+									className="text-[var(--color-primary)] font-semibold underline text-sm"
 								>
-									{s.active ? "Activo" : "Pausado"}
-								</span>
+									Gestionar
+								</Link>
 							</div>
-						))
-					) : (
-						<p className="text-gray-500 text-sm">
-							Aún no has registrado servicios.
-						</p>
-					)}
-				</div>
-			</section>
+						))}
+					</div>
+				)}
+			</motion.section>
 
-			{/* Reseñas */}
-			<section className="mt-10">
-				<h2 className="text-2xl font-semibold mb-4 text-[var(--color-primary)]">
-					Reseñas recientes
+			{/* ---------------- Completados ---------------- */}
+			<motion.section
+				variants={fadeUp}
+				initial="initial"
+				animate="animate"
+				className="mb-10"
+			>
+				<h2 className="text-xl font-bold text-[var(--color-primary)] mb-4">
+					Últimos servicios completados
 				</h2>
-				<div className="space-y-3">
-					{mockReviews.map((r) => (
-						<div
-							key={r.id}
-							className="bg-white p-4 rounded-xl border shadow-sm"
-						>
-							<div className="flex justify-between items-center mb-2">
-								<p className="font-medium">{r.user.names}</p>
-								<span className="text-yellow-500">
-									⭐ {r.rating}
-								</span>
-							</div>
-							<p className="text-gray-600 text-sm">{r.comment}</p>
-						</div>
-					))}
-				</div>
-			</section>
 
-			{/* Atajos rápidos */}
-			<div className="flex flex-wrap gap-3 mt-10">
-				<button className="bg-[var(--color-primary)] text-white px-5 py-2 rounded-lg font-medium hover:opacity-90">
-					+ Nuevo servicio
+				{completed.length === 0 ? (
+					<p className="text-gray-500">
+						Aún no tienes servicios completados.
+					</p>
+				) : (
+					<div className="grid gap-4">
+						{completed.slice(0, 4).map((o) => (
+							<div
+								key={o.id}
+								className="bg-white p-5 rounded-xl shadow flex items-center justify-between"
+							>
+								<div>
+									<p className="font-semibold text-[var(--color-primary)]">
+										{o.service.name}
+									</p>
+
+									<p className="text-gray-600 text-sm">
+										Cliente: {o.user.names}{" "}
+										{o.user.surnames}
+									</p>
+								</div>
+
+								<div className="text-right">
+									<p className="font-bold text-[var(--color-primary)]">
+										{formatMoney(
+											Number(o.payments?.[0]?.amount || 0)
+										)}
+									</p>
+									<p className="text-xs text-gray-500">
+										Ingreso acreditado
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</motion.section>
+
+			{/* ---------------- Atajos ---------------- */}
+			<section className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
+				<button
+					onClick={() => router.push("/provider/serviceRegister")}
+					className="bg-[var(--color-primary)] text-white p-4 rounded-xl shadow text-center font-semibold hover:scale-[1.02] transition"
+				>
+					<FontAwesomeIcon icon={faScissors} className="mr-2" />
+					Nuevo servicio
 				</button>
-				<button className="border border-[var(--color-primary)] text-[var(--color-primary)] px-5 py-2 rounded-lg font-medium hover:bg-[var(--color-bg-light)]">
-					Ver agenda completa
+
+				<button
+					onClick={() => router.push("/provider/appointments")}
+					className="bg-white p-4 border border-[var(--color-primary)] text-[var(--color-primary)] rounded-xl shadow text-center font-semibold hover:scale-[1.02] transition"
+				>
+					<FontAwesomeIcon icon={faCalendar} className="mr-2" />
+					Agenda completa
 				</button>
-				<button className="border border-[var(--color-primary)] text-[var(--color-primary)] px-5 py-2 rounded-lg font-medium hover:bg-[var(--color-bg-light)]">
-					Configurar perfil
+
+				<button
+					onClick={() => router.push("/provider/profile")}
+					className="bg-white p-4 border border-[var(--color-primary)] text-[var(--color-primary)] rounded-xl shadow text-center font-semibold hover:scale-[1.02] transition"
+				>
+					<FontAwesomeIcon icon={faUser} className="mr-2" />
+					Perfil personal
 				</button>
-			</div>
+			</section>
 		</main>
 	);
 }
