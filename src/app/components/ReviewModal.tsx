@@ -22,29 +22,31 @@ interface ReviewModalProps {
 
 
     const handleSubmit = async () => {
-        console.log("ORDER:", order);
-        console.log("USER:", user);
-        console.log("order.provider:", order?.provider);
-        console.log("order.provider.id:", order?.provider?.id);
 
         if (!user || !token) return alert("No hay usuario registrado");
         if (!rating) return alert("Debes elegir una calificación");
 
         const form = new FormData();
 
+        console.log("DEBUG REVIEW ORDER ===>");
+        console.log("order:", order);
+        console.log("order.service:", order?.service);
+        console.log("order.service.id:", order?.service?.id);
+
         // 🟢 AHORA SÍ: estos deberían aparecer en la consola
         form.append("orderId", order.id);
+        if (!order.service?.id) {
+            alert("Error: este pedido no tiene un servicio asociado");
+            return;
+        }
+
+        form.append("serviceId", order.service.id);
         form.append("authorUserId", user.id);
         form.append("targetProviderId", order.provider.id);
         form.append("rating", String(rating));
         form.append("comment", comment || "");
 
         if (file) form.append("files", file);
-
-        // 🔥 LOG FINAL PARA CONFIRMAR
-        for (const pair of form.entries()) {
-            console.log("FORMDATA:", pair[0], pair[1]);
-        }
 
         setLoading(true);
         try {
