@@ -146,11 +146,6 @@ export default function ServiceDetailPage() {
 				/>
 				<div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent"></div>
 
-				{/* Ranking arriba derecha */}
-				<div className="absolute top-3 sm:top-5 right-4 sm:right-8 flex items-center gap-2 bg-white/90 backdrop-blur-sm text-[var(--color-primary)] font-semibold rounded-full px-3 sm:px-4 py-1 text-sm sm:text-base shadow-md">
-					<FontAwesomeIcon icon={faStar} />
-					<span>{service.rating?.toFixed(1) || "5.0"}</span>
-				</div>
 
 				{/* Nombre dentro de la imagen */}
 				<div className="absolute bottom-20 sm:bottom-24 left-4 sm:left-8 text-white drop-shadow-xl">
