@@ -135,50 +135,6 @@ export default function Services() {
 					))}
 				</div>
 			</div>
-
-			{/* Paginador */}
-			<div className="flex justify-center items-center gap-3 mt-10">
-				<button
-					onClick={() => handlePageChange(page - 1)}
-					disabled={page === 1}
-					className={`px-4 py-2 rounded-md ${
-						page === 1
-							? "bg-gray-300 text-gray-500 cursor-not-allowed"
-							: "bg-[var(--color-primary)] text-white hover:opacity-90"
-					}`}
-				>
-					Anterior
-				</button>
-
-				{/* 🔹 Números de página simples (muestra la actual y las adyacentes) */}
-				{[page - 1, page, page + 1]
-					.filter((p) => p >= 1)
-					.map((num) => (
-						<button
-							key={num}
-							onClick={() => handlePageChange(num)}
-							className={`px-3 py-2 rounded-md ${
-								page === num
-									? "bg-[var(--color-primary)] text-white font-semibold"
-									: "bg-gray-200 text-black hover:bg-gray-300"
-							}`}
-						>
-							{num}
-						</button>
-					))}
-
-				<button
-					onClick={() => handlePageChange(page + 1)}
-					disabled={!hasNextPage}
-					className={`px-4 py-2 rounded-md ${
-						!hasNextPage
-							? "bg-gray-300 text-gray-500 cursor-not-allowed"
-							: "bg-[var(--color-primary)] text-white hover:opacity-90"
-					}`}
-				>
-					Siguiente
-				</button>
-			</div>
 		</main>
 	);
 }
