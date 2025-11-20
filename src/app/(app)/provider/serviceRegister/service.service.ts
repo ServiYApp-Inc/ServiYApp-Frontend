@@ -88,6 +88,12 @@ export const activeProvider = async (id: string) => {
     return data;
 };
 
+export const getReviewService = async (providerId: string, serviceId: string) => {
+    const { data } = await apiClient.get(`/provider/${providerId}/service/${serviceId}/reviews`);
+    return data;
+};
+
+
 // Users //
 
 export const getUsers = async () => {

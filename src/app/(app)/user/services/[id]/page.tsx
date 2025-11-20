@@ -17,29 +17,15 @@ import { motion } from "framer-motion";
 import { useCartStore } from "@/app/store/useCartStore";
 import { useAuthStore } from "@/app/store/auth.store";
 
-interface ReviewHard {
-    userName: string;
+interface IReview {
     rating: number;
     comment: string;
-    photo: string;
+    photoUrl: string | null;
+    createdAt: string;
+    serviceName: string | null;
+	userName: string;
 }
 
-interface ServiceHard {
-    id: number;
-    reviews: ReviewHard;
-}
-
-const services: ServiceHard[] = [
-    {
-        id: 1,
-        reviews: {
-            userName: "Juan Perez",
-            rating: 4,
-            comment: "Excelente trabajo, muy profesionales",
-            photo: "https://static.wixstatic.com/media/4304a4_d7707815b8d940a0b237a7a0c488e563~mv2.webp/v1/fill/w_568,h_568,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/4304a4_d7707815b8d940a0b237a7a0c488e563~mv2.webp"
-        }
-    }
-]
 
 export default function ServiceDetailPage() {
 	const { id } = useParams();
@@ -47,6 +33,8 @@ export default function ServiceDetailPage() {
 	const router = useRouter();
 	const [service, setService] = useState<IService | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [reviews, setReviews] = useState<IReview[]>([]);
+
 
 	const getCurrencyByCountry = (countryName?: string) => {
 		if (!countryName) return "COP"; // default
@@ -65,19 +53,60 @@ export default function ServiceDetailPage() {
 
 	useEffect(() => {
 		if (!id) return;
-		const fetchService = async () => {
+
+		const fetchData = async () => {
 			try {
-				const { data } = await Api.get(`/services/find/${id}`);
-				setService(data);
+				// 1. Obtener servicio
+				const { data: serviceData } = await Api.get(`/services/find/${id}`);
+				setService(serviceData);
+
+				const providerId = serviceData.provider?.id;
+				const serviceId = serviceData.id;
+
+				// 2. Si hay proveedor y servicio → buscar reviews
+				if (providerId && serviceId) {
+					try {
+						const reviewsResponse = await Api.get(
+							`/provider/${providerId}/service/${serviceId}/reviews`
+						);
+
+						const list =
+							reviewsResponse.data.reviews ??
+							reviewsResponse.data ??
+							[];
+
+						const normalized = list.map((r: any) => ({
+							rating: r.rating,
+							comment: r.comment,
+							photoUrl: r.photoUrl ?? null,
+							createdAt: r.createdAt,
+							serviceName: r.serviceName ?? null,
+							userName: r.userName ?? "Usuario",
+						}));
+
+						setReviews(normalized);
+
+					} catch (error: any) {
+						if (error.response?.status === 404) {
+							// No hay reviews
+							setReviews([]);
+						} else {
+							throw error;
+						}
+					}
+				}
+
 			} catch (error) {
-				console.error("Error al cargar el servicio:", error);
+				console.error("Error al cargar servicio o reviews:", error);
 				notFound();
 			} finally {
 				setLoading(false);
 			}
 		};
-		fetchService();
+
+		fetchData();
 	}, [id]);
+
 
 	if (loading)
 		return (
@@ -91,6 +120,9 @@ export default function ServiceDetailPage() {
 	const handleAddToCart = () => {
 		router.push(`/user/order/confirm?id=${service.id}`);
 	};
+
+
+
 
 	return (
 		<main className="min-h-screen flex flex-col items-center font-nunito bg-gray-50 pb-10">
@@ -219,7 +251,7 @@ export default function ServiceDetailPage() {
 				</h2>
 
 				{/* Si no hay reviews */}
-				{(!services || services.length === 0) && (
+				{reviews.length === 0 && (
 					<p className="text-gray-500 italic">
 						Aún no hay opiniones sobre este servicio.
 					</p>
@@ -227,47 +259,41 @@ export default function ServiceDetailPage() {
 
 				{/* Lista de reviews */}
 				<div className="space-y-4">
-					{services.map((s, index) => (
-						<div
-							key={index}
-							className="bg-white shadow-sm rounded-xl p-4 border border-gray-100"
-						>
-							<div className="flex items-center justify-between mb-2">
-								<div className="flex items-center gap-2">
-									<FontAwesomeIcon
-										icon={faUser}
-										className="text-[var(--color-primary)]"
-									/>
-									<p className="font-semibold">{s.reviews.userName}</p>
-								</div>
-
-								{/* Stars */}
-								<div className="flex items-center gap-1">
-									{[1,2,3,4,5].map(num => (
-										<FontAwesomeIcon
-											key={num}
-											icon={faStar}
-											className={`${
-												num <= s.reviews.rating
-													? "text-yellow-400"
-													: "text-gray-300"
-											}`}
-										/>
-									))}
-								</div>
+					{reviews.map((r, index) => (
+					<div key={index} className="bg-white shadow-sm rounded-xl p-4 border border-gray-100">
+						
+						<div className="flex items-center justify-between mb-2">
+							<div className="flex items-center gap-2">
+								<FontAwesomeIcon icon={faUser} className="text-[var(--color-primary)]" />
+								<p className="font-semibold">{r.userName ? "Usuario" : "Usuario"}</p>
 							</div>
 
-							<p className="text-gray-700 mb-2">{s.reviews.comment}</p>
-
-							{s.reviews.photo && (
-								<img
-									src={s.reviews.photo}
-									alt="Imagen del usuario"
-									className="w-32 h-32 object-cover rounded-lg mt-2"
-								/>
-							)}
+							{/* Stars */}
+							<div className="flex items-center gap-1">
+								{[1,2,3,4,5].map(num => (
+									<FontAwesomeIcon
+										key={num}
+										icon={faStar}
+										className={`${
+											num <= r.rating ? "text-yellow-400" : "text-gray-300"
+										}`}
+									/>
+								))}
+							</div>
 						</div>
-					))}
+
+						<p className="text-gray-700 mb-2">{r.comment}</p>
+
+						{r.photoUrl && (
+							<img
+								src={r.photoUrl}
+								alt="Imagen del usuario"
+								className="w-32 h-32 object-cover rounded-lg mt-2"
+							/>
+						)}
+					</div>
+				))}
+
 				</div>
 			</section>
 		</main>

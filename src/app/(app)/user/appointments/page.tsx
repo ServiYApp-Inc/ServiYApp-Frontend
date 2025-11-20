@@ -203,46 +203,45 @@ export default function UserAppointmentsPage() {
 			</div>
 
 			{loading ? (
-				<p className="text-center text-gray-500">Cargando...</p>
-			) : finalFiltered.length === 0 ? (
-				<p className="text-center text-gray-500">No hay resultados.</p>
-			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-					{finalFiltered.map((o) => (
-						<AppointmentCard
-							key={o.id}
-							order={o}
-							showCancel={["paid", "accepted"].includes(o.status)}
-							onCancel={() => confirmCancel(o.id)}
-							onFinish={() => confirmFinish(o.id)}
-							onDetails={() => setSelectedOrder(o)}
-              onReview={() => setReviewOrder(o)}
-						/>
-					))}
-				</div>
-			)}
+					<p className="text-center text-gray-500">Cargando...</p>
+				) : finalFiltered.length === 0 ? (
+					<p className="text-center text-gray-500">No hay resultados.</p>
+				) : (
+					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+						{finalFiltered.map((o) => (
+							<AppointmentCard
+								key={o.id}
+								order={o}
+								showCancel={["paid", "accepted"].includes(o.status)}
+								onCancel={() => confirmCancel(o.id)}
+								onFinish={() => confirmFinish(o.id)}
+								onDetails={() => setSelectedOrder(o)}
+				onReview={() => setReviewOrder(o)}
+							/>
+						))}
+					</div>
+				)}
 
-			{selectedOrder && (
-				<AppointmentModal
-					order={selectedOrder}
-					onClose={() => setSelectedOrder(null)}
-					onCancel={() => confirmCancel(selectedOrder.id)}
-					onFinish={() => confirmFinish(selectedOrder.id)}
-					onReview={() => goToReview(selectedOrder.id)}
-				/>
-			)}
+				{selectedOrder && (
+					<AppointmentModal
+						order={selectedOrder}
+						onClose={() => setSelectedOrder(null)}
+						onCancel={() => confirmCancel(selectedOrder.id)}
+						onFinish={() => confirmFinish(selectedOrder.id)}
+						onReview={() => goToReview(selectedOrder.id)}
+					/>
+				)}
 
-      {reviewOrder && (
-        <ReviewModal
-          order={reviewOrder}
-          onClose={() => setReviewOrder(null)}
-          onSuccess={() => {
-            toast.success("Reseña creada con éxito");
-            fetchOrders(); // refresca la lista
-          }}
-        />
-      )}
-
+		{reviewOrder && (
+			<ReviewModal
+			order={reviewOrder}
+			onClose={() => setReviewOrder(null)}
+			onSuccess={() => {
+				toast.success("Reseña creada con éxito");
+				fetchOrders(); // refresca la lista
+			}}
+			/>
+		)}
 		</main>
 	);
 }
