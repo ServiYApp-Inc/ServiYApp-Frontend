@@ -325,7 +325,7 @@ export default function AdminDashboard() {
 				</Link>
 
 				{/* Documentos */}
-				<Link href="/admin/dashboard/reviewDocuments">
+				<Link href="/admin/dashboard/ReviewDocuments">
 					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
 						<h3 className="text-xl font-bold text-[var(--color-primary)] mb-3 flex items-center gap-2">
 							<FontAwesomeIcon icon={faFileShield} />
@@ -486,7 +486,7 @@ export default function AdminDashboard() {
 					</h2>
 
 					<Link
-						href="/admin/dashboard/appointments"
+						href="/admin/appointments"
 						className="text-sm font-semibold text-[var(--color-primary)] underline"
 					>
 						Ver todas

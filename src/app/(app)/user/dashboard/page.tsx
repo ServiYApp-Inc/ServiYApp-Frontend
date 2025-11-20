@@ -239,14 +239,7 @@ export default function UserDashboard() {
 					<p className="text-gray-600 text-sm">Gastado</p>
 				</div>
 
-				<div className="bg-white p-5 rounded-2xl shadow text-center">
-					<FontAwesomeIcon
-						icon={faStar}
-						className="text-yellow-400 text-2xl"
-					/>
-					<p className="text-3xl font-bold">{reviews.length}</p>
-					<p className="text-gray-600 text-sm">Reseñas</p>
-				</div>
+				
 			</motion.section>
 
 			{/* ⭐ PRÓXIMAS CITAS */}
