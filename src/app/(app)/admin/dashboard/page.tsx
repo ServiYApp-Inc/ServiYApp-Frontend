@@ -486,7 +486,7 @@ export default function AdminDashboard() {
 					</h2>
 
 					<Link
-						href="/admin/dashboard/appointments"
+						href="/admin/appointments"
 						className="text-sm font-semibold text-[var(--color-primary)] underline"
 					>
 						Ver todas
