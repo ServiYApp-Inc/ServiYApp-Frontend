@@ -90,33 +90,6 @@ interface ReviewModalProps {
             onChange={(e) => setComment(e.target.value)}
             />
 
-            {/* Imagen */}
-            <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-                const f = e.target.files?.[0] || null;
-                setFile(f);
-                if (f) {
-                const url = URL.createObjectURL(f);
-                setPreview(url);
-                } else {
-                setPreview(null);
-                }
-            }}
-            className="mb-4 text-white py-1 px-2 rounded-xl bg-[var(--color-primary)]"
-            />
-
-            {/* Preview */}
-            {preview && (
-            <div className="mb-4">
-                <img
-                src={preview}
-                className="w-full h-40 object-cover rounded-lg border"
-                alt="Vista previa"
-                />
-            </div>
-            )}
 
 
             <div className="flex justify-end gap-3">
