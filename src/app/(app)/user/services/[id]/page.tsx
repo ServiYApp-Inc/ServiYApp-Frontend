@@ -222,7 +222,7 @@ export default function ServiceDetailPage() {
 				{/* Precio y CTA */}
 				<div className="flex flex-col sm:flex-row justify-between items-center border-t pt-5 mt-2 gap-4 sm:gap-0">
 					<p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-primary)]">
-						${service.price} {currency}
+						${service.price}
 					</p>
 
 					<motion.button

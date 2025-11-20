@@ -113,7 +113,7 @@ export default function PageAdminUsers() {
                             {u.names} {u.surnames}
                         </span>
 
-                        <span className="text-gray-600 mt-1 text-sm">{u.email}</span>
+                        <span className="text-gray-600 mt-1 text-sm overflow-hidden text-ellipsis whitespace-nowrap">{u.email}</span>
 
                         <div className="flex justify-center mt-4">
                             <button

@@ -91,7 +91,7 @@ export default function ServiceCard({
 
 			<span className="flex flex-row justify-between items-center px-4 mt-2">
 				<p className="text-md text-[var(--color-primary)] font-bold">
-					${price} {currency}
+					${price}
 				</p>
 				<div className="flex items-center gap-2">
 					<SeeMoreBtn id={id} />
