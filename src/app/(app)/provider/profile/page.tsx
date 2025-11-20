@@ -11,6 +11,8 @@ import {
 	faGlobe,
 	faCity,
 	faPenToSquare,
+	faCircleCheck,
+	faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
@@ -21,11 +23,15 @@ import { Api } from "@/app/services/api";
 import IProvider from "@/app/interfaces/IProvider";
 import UploadProviderDocumentsModal from "@/app/components/ProviderDocumentsUpload";
 
-// ⭐️ Nuevo componente modal
-
 const ProfileItem = dynamic(() => import("@/app/components/ProfileItem"), {
 	ssr: false,
 });
+
+// 💡 NUEVO TYIPO PARA STATUS
+type VerificationStatus = {
+	state: "approved" | "pending" | "rejected" | "null";
+	comment: string | null;
+};
 
 export default function ProviderProfilePage() {
 	const { user, token, setAuth } = useAuthStore();
@@ -34,14 +40,89 @@ export default function ProviderProfilePage() {
 	const [currentProvider, setCurrentProvider] = useState<IProvider | null>(
 		provider
 	);
-
 	const [showEdit, setShowEdit] = useState(false);
 	const [showUpload, setShowUpload] = useState(false);
-
-	// ⭐️ Nuevo: estado para modal de documentos
 	const [showDocumentsModal, setShowDocumentsModal] = useState(false);
 
-	// Refrescar datos
+	// ⭐ Status debe ser un objeto, no un string
+	const [status, setStatus] = useState<VerificationStatus>({
+		state: "null",
+		comment: null,
+	});
+
+	/* ---------------------------------------------------------
+	   🔍 VERIFICACIÓN DE DOCUMENTOS (últimos 2)
+	---------------------------------------------------------- */
+
+	useEffect(() => {
+		const fetchVerification = async () => {
+			try {
+				const { data } = await Api.get("provider-documents/me", {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+
+				// Si no hay docs
+				if (!data || data.length === 0) {
+					setStatus({ state: "null", comment: null });
+					return;
+				}
+
+				// Ordenar por fecha desc
+				const sorted = [...data].sort(
+					(a, b) =>
+						new Date(b.date).getTime() - new Date(a.date).getTime()
+				);
+
+				// Tomar los 2 más recientes
+				const lastTwo = sorted.slice(0, 2);
+				const states = lastTwo.map((d) => d.status);
+				const comments = lastTwo.map((d) => d.comment);
+
+				const allApproved = states.every((s) => s === "approved");
+				const allPending = states.every((s) => s === "pending");
+				const allRejected = states.every((s) => s === "rejected");
+
+				if (allApproved) {
+					setStatus({ state: "approved", comment: null });
+					return;
+				}
+
+				if (allPending) {
+					setStatus({ state: "pending", comment: null });
+					return;
+				}
+
+				if (allRejected) {
+					setStatus({
+						state: "rejected",
+						comment:
+							comments[0] ||
+							"El administrador no dejó ningún mensaje",
+					});
+					return;
+				}
+
+				// Mezcla → usar el último documento
+				const latest = sorted[0];
+				setStatus({
+					state: latest.status,
+					comment:
+						latest.comment ||
+						"El administrador no dejó ningún mensaje",
+				});
+			} catch (error) {
+				console.error("Error verificando documentos:", error);
+				setStatus({ state: "null", comment: null });
+			}
+		};
+
+		fetchVerification();
+	}, [token]);
+
+	/* ---------------------------------------------------------
+	   🔁 Refresh provider
+	---------------------------------------------------------- */
+
 	const refreshProvider = async () => {
 		try {
 			if (!provider?.id || !token) return;
@@ -61,99 +142,127 @@ export default function ProviderProfilePage() {
 
 	if (!currentProvider) return null;
 
+	/* ---------------------------------------------------------
+	   RENDER PAGE
+	---------------------------------------------------------- */
+
 	return (
 		<main className="max-w-6xl mx-auto mt-10 px-4 font-nunito">
-			{/* HEADER */}
-			<section className="relative bg-[var(--color-primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg transition-all">
+			{/* ---------------- HEADER ---------------- */}
+			<section className="relative bg-[var(--color-primary)] text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg">
 				<div className="flex items-center gap-8 flex-col md:flex-row">
-					<div className="flex items-center gap-6 relative">
-						<div className="relative group w-36 h-36">
-							{/* FOTO */}
-							{provider?.profilePicture ? (
-								<img
-									src={provider.profilePicture}
-									alt="Provider profile"
-									className="w-36 h-36 rounded-full border-4 border-white object-cover shadow-lg transition group-hover:opacity-80"
+					{/* FOTO */}
+					<div className="relative group w-36 h-36">
+						{provider?.profilePicture ? (
+							<img
+								src={provider.profilePicture}
+								alt="Provider profile"
+								className="w-36 h-36 rounded-full border-4 border-white object-cover shadow-lg transition group-hover:opacity-80"
+							/>
+						) : (
+							<div className="w-36 h-36 rounded-full border-4 border-white flex items-center justify-center bg-white/20 shadow-lg">
+								<FontAwesomeIcon
+									icon={faUser}
+									className="text-4xl text-gray-200"
 								/>
-							) : (
-								<div className="w-36 h-36 rounded-full border-4 border-white flex items-center justify-center bg-white/20 shadow-lg">
-									<FontAwesomeIcon
-										icon={faUser}
-										className="text-4xl text-gray-200"
-									/>
-								</div>
-							)}
+							</div>
+						)}
 
-							{/* EDITAR FOTO */}
-							<button
-								onClick={() => setShowUpload(true)}
-								className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow hover:bg-gray-100 transition"
-							>
-								<FontAwesomeIcon icon={faPenToSquare} />
-							</button>
-						</div>
+						{/* EDITAR FOTO */}
+						<button
+							onClick={() => setShowUpload(true)}
+							className="absolute bottom-2 right-2 bg-white text-[var(--color-primary)] rounded-full p-2 shadow hover:bg-gray-100 transition"
+						>
+							<FontAwesomeIcon icon={faPenToSquare} />
+						</button>
+					</div>
 
-						<div className="text-center md:text-left">
-							<h2 className="text-4xl font-bold capitalize">
-								{currentProvider.names}{" "}
-								{currentProvider.surnames}
-							</h2>
-							<p className="text-lg opacity-90">
-								{currentProvider.email}
-							</p>
+					{/* DATOS */}
+					<div className="text-center md:text-left">
+						<h2 className="text-4xl font-bold capitalize">
+							{currentProvider.names} {currentProvider.surnames}
+						</h2>
+						<p className="text-lg opacity-90">
+							{currentProvider.email}
+						</p>
 
-							<button
-								onClick={() => setShowEdit(true)}
-								className="mt-4 px-4 py-2 bg-white text-[var(--color-primary)] font-semibold rounded-lg flex items-center gap-2 hover:bg-gray-100 transition mx-auto md:mx-0"
-							>
-								<FontAwesomeIcon icon={faPenToSquare} />
-								Editar perfil
-							</button>
-						</div>
+						{/* CHIP DE VERIFICACIÓN */}
+						{status.state === "approved" && (
+							<div className="mt-4 inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold shadow">
+								<FontAwesomeIcon
+									icon={faCircleCheck}
+									className="text-green-600"
+								/>
+								Proveedor verificado
+							</div>
+						)}
+
+						<button
+							onClick={() => setShowEdit(true)}
+							className="mt-4 px-4 py-2 bg-white text-[var(--color-primary)] font-semibold rounded-lg flex items-center gap-2 hover:bg-gray-100 transition mx-auto md:mx-0"
+						>
+							<FontAwesomeIcon icon={faPenToSquare} />
+							Editar perfil
+						</button>
 					</div>
 				</div>
 			</section>
-			<section className="mt-10 bg-white border border-gray-200 rounded-3xl shadow-md p-8">
-				<div className="flex items-center gap-4 mb-4">
-					<div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							strokeWidth={2}
-							stroke="#D42D2D"
-							className="w-7 h-7"
+
+			{/* ---------------- VERIFICACIÓN ---------------- */}
+			{status.state !== "approved" && (
+				<section className="mt-10 bg-white border border-gray-200 rounded-3xl shadow-md p-8">
+					<div className="flex items-center gap-4">
+						<div
+							className={`w-12 h-12 rounded-full flex items-center justify-center ${
+								status.state === "pending"
+									? "bg-yellow-100"
+									: "bg-red-100"
+							}`}
 						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
+							<FontAwesomeIcon
+								icon={faCircleExclamation}
+								className={`w-7 h-7 ${
+									status.state === "pending"
+										? "text-yellow-600"
+										: "text-red-600"
+								}`}
 							/>
-						</svg>
+						</div>
+
+						<div>
+							<h2 className="text-xl font-bold text-[var(--color-primary)]">
+								{status.state === "pending" &&
+									"Documentos en revisión"}
+								{status.state === "rejected" &&
+									"Tus documentos fueron rechazados"}
+								{status.state === "null" &&
+									"Aún no estás verificado"}
+							</h2>
+
+							<p className="text-gray-600 text-sm">
+								{status.state === "pending" &&
+									"Nuestro equipo está revisando tus documentos. Te notificaremos cuando sean aprobados."}
+
+								{status.state === "rejected" &&
+									(status.comment ||
+										"El administrador no dejó ningún mensaje")}
+
+								{status.state === "null" &&
+									"Sube tus documentos para completar tu verificación y empezar a trabajar."}
+							</p>
+						</div>
 					</div>
 
-					<div>
-						<h2 className="text-xl font-bold text-[var(--color-primary)]">
-							Aún no estás verificado
-						</h2>
-						<p className="text-gray-600 text-sm">
-							Sube tus documentos para completar tu verificación
-							y empezar a trabajar.
-						</p>
-					</div>
-				</div>
-
-				<div className="flex justify-start mt-6">
 					<button
 						onClick={() => setShowDocumentsModal(true)}
-						className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-semibold shadow hover:bg-[var(--color-primary-hover)] transition-all"
+						className="mt-6 px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-semibold shadow hover:bg-[var(--color-primary-hover)] transition-all"
 					>
 						Subir documentos
 					</button>
-				</div>
-			</section>
+				</section>
+			)}
 
-			{/* ---------------- INFO DEL PROVEEDOR ---------------- */}
+			{/* ---------------- INFORMACIÓN ---------------- */}
 			<section className="mt-10 bg-white border border-gray-200 rounded-3xl shadow-md p-8">
 				<h3 className="text-2xl font-bold text-[var(--color-primary)] mb-6">
 					Información del proveedor
@@ -232,7 +341,7 @@ export default function ProviderProfilePage() {
 						</div>
 					</div>
 
-					{/* CIUDAD + REGIÓN */}
+					{/* CIUDAD / REGIÓN */}
 					<div className="flex items-center gap-3">
 						<FontAwesomeIcon
 							icon={faCity}
@@ -330,7 +439,7 @@ export default function ProviderProfilePage() {
 					</motion.div>
 				)}
 
-				{/* ⭐️ MODAL DE VERIFICACIÓN DE DOCUMENTOS */}
+				{/* SUBIR DOCUMENTOS */}
 				{showDocumentsModal && (
 					<motion.div
 						initial={{ opacity: 0 }}
@@ -345,7 +454,6 @@ export default function ProviderProfilePage() {
 							transition={{ duration: 0.25 }}
 							className="bg-white rounded-3xl p-6 shadow-xl relative max-h-[50vh] overflow-y-auto"
 						>
-							{/* Cerrar modal */}
 							<button
 								onClick={() => setShowDocumentsModal(false)}
 								className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -353,7 +461,6 @@ export default function ProviderProfilePage() {
 								×
 							</button>
 
-							{/* Componente COMPLETO */}
 							<UploadProviderDocumentsModal
 								isOpen={true}
 								onClose={() => setShowDocumentsModal(false)}

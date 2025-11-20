@@ -325,7 +325,7 @@ export default function AdminDashboard() {
 				</Link>
 
 				{/* Documentos */}
-				<Link href="/admin/dashboard/ReviewDocuments">
+				<Link href="/admin/dashboard/reviewDocuments">
 					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
 						<h3 className="text-xl font-bold text-[var(--color-primary)] mb-3 flex items-center gap-2">
 							<FontAwesomeIcon icon={faFileShield} />
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
 				</Link>
 
 				{/* Citas aceptadas (card blanca, como pediste) */}
-				<Link href="/admin/dashboard/appointments">
+				<Link href="/admin/appointments">
 					<div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:-translate-y-1 hover:shadow-lg transition cursor-pointer">
 						<h3 className="text-xl font-bold text-[var(--color-primary)] mb-3 flex items-center gap-2">
 							<FontAwesomeIcon icon={faCircleCheck} />
