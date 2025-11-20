@@ -67,7 +67,7 @@ export default function ServiceDetailPage() {
 				if (providerId && serviceId) {
 					try {
 						const reviewsResponse = await Api.get(
-							`/provider/${providerId}/service/${serviceId}/reviews`
+							`reviews/provider/${providerId}/service/${serviceId}/reviews`
 						);
 
 						const list =
@@ -121,6 +121,10 @@ export default function ServiceDetailPage() {
 		router.push(`/user/order/confirm?id=${service.id}`);
 	};
 
+	const averageRating =
+ 		reviews.length > 0
+    	? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+    	: null;
 
 
 
@@ -247,8 +251,10 @@ export default function ServiceDetailPage() {
 			{/* === Reviews Section === */}
 			<section className="w-full max-w-4xl mt-10 px-4 sm:px-8 md:px-10">
 				<h2 className="text-2xl font-bold text-[var(--color-primary)] mb-4">
-					Opiniones del servicio
+					Opiniones del servicio {averageRating ? `(${averageRating}` : "(0"}
+					<FontAwesomeIcon icon={faStar} style={{ fontSize: '18px' }}></FontAwesomeIcon>)
 				</h2>
+
 
 				{/* Si no hay reviews */}
 				{reviews.length === 0 && (
@@ -265,7 +271,7 @@ export default function ServiceDetailPage() {
 						<div className="flex items-center justify-between mb-2">
 							<div className="flex items-center gap-2">
 								<FontAwesomeIcon icon={faUser} className="text-[var(--color-primary)]" />
-								<p className="font-semibold">{r.userName ? "Usuario" : "Usuario"}</p>
+								<p className="font-semibold">{r.userName ? "Usuario Anónimo" : "Usuario Anónimo"}</p>
 							</div>
 
 							{/* Stars */}

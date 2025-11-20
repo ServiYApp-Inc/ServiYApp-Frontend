@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 
 export default function PageServices() {
 	const router = useRouter();
-	const { token } = useAuthStore();
+	const { user, token } = useAuthStore();
 	const [services, setServices] = useState<IService[]>([]);
 	const [activeFilter, setActiveFilter] = useState<string>("");
 	const [page, setPage] = useState<number>(1);
@@ -28,27 +28,35 @@ export default function PageServices() {
 
 	const fetchServices = async (paramValue = param, page = pageNumber) => {
 		try {
-		const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}services`;
-		const endpoint = paramValue
-			? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}`
-			: `${baseUrl}/find-all-paged?page=${page}&limit=9`;
+			const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}services`;
 
-		const res = await axios.get(endpoint, {
+			const countryParam = user?.country?.name
+			? `&country=${encodeURIComponent(user.country.name)}`
+			: "";
+
+			const endpoint = paramValue
+			? `${baseUrl}/find-all-by-param?param=${paramValue}&page=${page}&limit=${limit}${countryParam}`
+			: `${baseUrl}/find-all-paged?page=${page}&limit=${limit}${countryParam}`;
+
+			const res = await axios.get(endpoint, {
 			headers: {
 				Authorization: `Bearer ${token}`
 			}
-		});
-		setServices(res.data);
+			});
 
-		if (res.data.length < limit) {
+			setServices(res.data);
+
+			if (res.data.length < limit) {
 			setTotalPages(page);
-		} else {
+			} else {
 			setTotalPages(page + 1);
-		}
+			}
 		} catch (error) {
-		console.error("Error fetching services:", error);
+			console.error("Error fetching services:", error);
 		}
 	};
+
+
 
 	useEffect(() => {
 		fetchServices(undefined, page);
