@@ -14,6 +14,7 @@ import {
 	faImage,
 	faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { toast } from "react-toastify";
 
 // =====================
 // VALIDACIÓN
@@ -51,35 +52,33 @@ export default function ServiceForm() {
 	// =====================
 	// ENVÍO DEL FORMULARIO
 	// =====================
-	const handleSubmit = async (values: any, { resetForm }: any) => {
-		if (!user) return alert("Usuario no autenticado");
+const handleSubmit = async (values: any, { resetForm }: any) => {
+	if (!user) return toast.error("Usuario no autenticado");
 
-		const formData = new FormData();
+	const formData = new FormData();
 
-		formData.append("name", values.name);
-		formData.append("description", values.description);
-		formData.append("price", values.price);
-		formData.append("duration", values.duration);
-		formData.append("categoryId", values.categoryId);
+	formData.append("name", values.name);
+	formData.append("description", values.description);
+	formData.append("price", values.price);
+	formData.append("duration", values.duration);
+	formData.append("categoryId", values.categoryId);
 
-		// provider
-		if (user.role === "provider") {
-			formData.append("providerId", user.id);
-		}
+	if (user.role === "provider") {
+		formData.append("providerId", user.id);
+	}
 
-		// Foto (archivo real)
-		formData.append("photos", values.photoFile);
+	formData.append("photos", values.photoFile);
 
-		try {
-			await createService(formData);
-			alert("Servicio creado correctamente");
-			resetForm();
-			router.back();
-		} catch (err: any) {
-			console.error(err);
-			alert("Error creando servicio");
-		}
-	};
+	try {
+		await createService(formData);
+		toast.success("Servicio creado correctamente");
+		resetForm();
+		router.back();
+	} catch (err: any) {
+		console.error(err);
+		toast.error("Error creando servicio");
+	}
+};
 
 	return (
 		<div className="flex flex-col items-center">
